@@ -1,31 +1,30 @@
 import React, { useState } from 'react';
-import { Button, Stack, useTheme, type ButtonIntent, type ButtonVariant, type ButtonSize } from '@scaffold/ui';
+import {
+  PageShell,
+  Container,
+  Header,
+  Card,
+  Grid,
+  Button,
+  Stack,
+  useTheme,
+  type ButtonIntent,
+  type ButtonVariant,
+  type ButtonSize,
+} from '@scaffold/ui';
 
 export function App() {
   const { mode, toggleMode, colors, tokens } = useTheme();
-  const [activeTab, setActiveTab] = useState<'buttons' | 'stack' | 'tokens'>('buttons');
+  const [activeTab, setActiveTab] = useState<'buttons' | 'stack' | 'cards' | 'tokens'>('buttons');
 
   const intents: ButtonIntent[] = ['primary', 'secondary', 'neutral', 'success', 'danger'];
   const variants: ButtonVariant[] = ['solid', 'outline', 'subtle', 'ghost'];
   const sizes: ButtonSize[] = ['sm', 'md', 'lg'];
 
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        backgroundColor: colors.bg.canvas,
-        color: colors.text.primary,
-        transition: 'background-color 0.2s ease, color 0.2s ease',
-      }}
-    >
-      {/* Header */}
-      <header
-        style={{
-          borderBottom: `1px solid ${colors.border.subtle}`,
-          backgroundColor: colors.bg.surface,
-          padding: `${tokens.spacing[3]} ${tokens.spacing[6]}`,
-        }}
-      >
+    <PageShell>
+      {/* Structural Header Component */}
+      <Header sticky>
         <Stack direction="row" align="center" justify="between">
           <Stack direction="row" align="center" gap={3}>
             <div
@@ -69,7 +68,15 @@ export function App() {
               size="sm"
               onClick={() => setActiveTab('stack')}
             >
-              Stack Layout
+              Stack &amp; Grid
+            </Button>
+            <Button
+              variant={activeTab === 'cards' ? 'solid' : 'ghost'}
+              intent={activeTab === 'cards' ? 'primary' : 'neutral'}
+              size="sm"
+              onClick={() => setActiveTab('cards')}
+            >
+              Cards
             </Button>
             <Button
               variant={activeTab === 'tokens' ? 'solid' : 'ghost'}
@@ -89,32 +96,24 @@ export function App() {
             </Button>
           </Stack>
         </Stack>
-      </header>
+      </Header>
 
-      {/* Main Content */}
-      <main style={{ maxWidth: '1100px', margin: '0 auto', padding: tokens.spacing[8] }}>
+      {/* Structural Container */}
+      <Container maxWidth="xl">
         {activeTab === 'buttons' && (
           <Stack gap={8}>
             <section>
-              <h2 style={{ fontSize: tokens.typography.fontSize.xl, marginBottom: tokens.spacing[2] }}>
+              <h2 style={{ fontSize: tokens.typography.fontSize.xl, margin: '0 0 8px 0' }}>
                 Button Intents &amp; Variants
               </h2>
-              <p style={{ color: colors.text.secondary, marginBottom: tokens.spacing[6] }}>
+              <p style={{ color: colors.text.secondary, margin: '0 0 24px 0' }}>
                 Every button variant strictly derives from theme tokens. No arbitrary classes or custom hex codes allowed.
               </p>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: tokens.spacing[6] }}>
+              <Grid minItemWidth={280} gap={6}>
                 {variants.map((v) => (
-                  <div
-                    key={v}
-                    style={{
-                      backgroundColor: colors.bg.surface,
-                      border: `1px solid ${colors.border.subtle}`,
-                      borderRadius: tokens.radii.lg,
-                      padding: tokens.spacing[5],
-                    }}
-                  >
-                    <h3 style={{ textTransform: 'capitalize', margin: `0 0 ${tokens.spacing[4]} 0`, fontSize: tokens.typography.fontSize.base }}>
+                  <Card key={v} padding="normal">
+                    <h3 style={{ textTransform: 'capitalize', margin: '0 0 16px 0', fontSize: tokens.typography.fontSize.base }}>
                       Variant: {v}
                     </h3>
                     <Stack gap={3}>
@@ -124,26 +123,19 @@ export function App() {
                         </Button>
                       ))}
                     </Stack>
-                  </div>
+                  </Card>
                 ))}
-              </div>
+              </Grid>
             </section>
 
             <section>
-              <h2 style={{ fontSize: tokens.typography.fontSize.xl, marginBottom: tokens.spacing[2] }}>
+              <h2 style={{ fontSize: tokens.typography.fontSize.xl, margin: '0 0 16px 0' }}>
                 Button Sizes &amp; States
               </h2>
-              <div
-                style={{
-                  backgroundColor: colors.bg.surface,
-                  border: `1px solid ${colors.border.subtle}`,
-                  borderRadius: tokens.radii.lg,
-                  padding: tokens.spacing[5],
-                }}
-              >
+              <Card padding="normal">
                 <Stack gap={5}>
                   <div>
-                    <h4 style={{ margin: `0 0 ${tokens.spacing[2]} 0` }}>Sizes (sm, md, lg)</h4>
+                    <h4 style={{ margin: '0 0 8px 0' }}>Sizes (sm, md, lg)</h4>
                     <Stack direction="row" align="center" gap={3}>
                       {sizes.map((s) => (
                         <Button key={s} size={s}>
@@ -154,7 +146,7 @@ export function App() {
                   </div>
 
                   <div>
-                    <h4 style={{ margin: `0 0 ${tokens.spacing[2]} 0` }}>States (Disabled, Loading)</h4>
+                    <h4 style={{ margin: '0 0 8px 0' }}>States (Disabled, Loading)</h4>
                     <Stack direction="row" align="center" gap={3}>
                       <Button disabled>Disabled Solid</Button>
                       <Button variant="outline" disabled>Disabled Outline</Button>
@@ -163,7 +155,7 @@ export function App() {
                     </Stack>
                   </div>
                 </Stack>
-              </div>
+              </Card>
             </section>
           </Stack>
         )}
@@ -171,38 +163,59 @@ export function App() {
         {activeTab === 'stack' && (
           <Stack gap={6}>
             <section>
-              <h2 style={{ fontSize: tokens.typography.fontSize.xl, marginBottom: tokens.spacing[2] }}>
-                Stack Primitive
+              <h2 style={{ fontSize: tokens.typography.fontSize.xl, margin: '0 0 8px 0' }}>
+                Stack &amp; Grid Primitives
               </h2>
-              <p style={{ color: colors.text.secondary, marginBottom: tokens.spacing[4] }}>
+              <p style={{ color: colors.text.secondary, margin: '0 0 16px 0' }}>
                 Governs layouts with strict design token spacing, eliminating the need for AI to guess margins or paddings.
               </p>
 
-              <div
-                style={{
-                  backgroundColor: colors.bg.surface,
-                  border: `1px solid ${colors.border.subtle}`,
-                  borderRadius: tokens.radii.lg,
-                  padding: tokens.spacing[6],
-                }}
-              >
-                <h4 style={{ margin: `0 0 ${tokens.spacing[3]} 0` }}>Horizontal Row (gap=3, align=center)</h4>
+              <Card padding="spacious">
+                <h4 style={{ margin: '0 0 16px 0' }}>Horizontal Row with Wrap (gap=3)</h4>
                 <Stack direction="row" align="center" gap={3} wrap>
-                  {[1, 2, 3, 4, 5].map((item) => (
-                    <div
-                      key={item}
-                      style={{
-                        padding: `${tokens.spacing[3]} ${tokens.spacing[5]}`,
-                        backgroundColor: colors.bg.subtle,
-                        border: `1px solid ${colors.border.default}`,
-                        borderRadius: tokens.radii.md,
-                      }}
-                    >
-                      Block {item}
-                    </div>
+                  {[1, 2, 3, 4, 5, 6].map((item) => (
+                    <Card key={item} variant="subtle" padding="compact">
+                      Stack Block {item}
+                    </Card>
                   ))}
                 </Stack>
-              </div>
+              </Card>
+            </section>
+          </Stack>
+        )}
+
+        {activeTab === 'cards' && (
+          <Stack gap={6}>
+            <section>
+              <h2 style={{ fontSize: tokens.typography.fontSize.xl, margin: '0 0 8px 0' }}>
+                Card Variants &amp; Paddings
+              </h2>
+              <p style={{ color: colors.text.secondary, margin: '0 0 24px 0' }}>
+                Structured surface blocks providing elevation and grouping without arbitrary CSS styling.
+              </p>
+
+              <Grid minItemWidth={300} gap={6}>
+                <Card variant="surface" padding="normal">
+                  <h4 style={{ margin: '0 0 8px 0' }}>Surface Card (Normal)</h4>
+                  <p style={{ margin: 0, color: colors.text.secondary, fontSize: tokens.typography.fontSize.sm }}>
+                    Standard elevated surface with subtle border.
+                  </p>
+                </Card>
+
+                <Card variant="subtle" padding="normal">
+                  <h4 style={{ margin: '0 0 8px 0' }}>Subtle Card (Normal)</h4>
+                  <p style={{ margin: 0, color: colors.text.secondary, fontSize: tokens.typography.fontSize.sm }}>
+                    Muted background surface for secondary content.
+                  </p>
+                </Card>
+
+                <Card variant="outline" padding="normal">
+                  <h4 style={{ margin: '0 0 8px 0' }}>Outline Card (Normal)</h4>
+                  <p style={{ margin: 0, color: colors.text.secondary, fontSize: tokens.typography.fontSize.sm }}>
+                    Transparent background with default border.
+                  </p>
+                </Card>
+              </Grid>
             </section>
           </Stack>
         )}
@@ -210,20 +223,12 @@ export function App() {
         {activeTab === 'tokens' && (
           <Stack gap={6}>
             <section>
-              <h2 style={{ fontSize: tokens.typography.fontSize.xl, marginBottom: tokens.spacing[2] }}>
+              <h2 style={{ fontSize: tokens.typography.fontSize.xl, margin: '0 0 8px 0' }}>
                 Semantic Color Tokens ({mode} mode)
               </h2>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: tokens.spacing[4] }}>
+              <Grid minItemWidth={200} gap={4}>
                 {Object.entries(colors.intent).map(([name, intentToken]) => (
-                  <div
-                    key={name}
-                    style={{
-                      backgroundColor: colors.bg.surface,
-                      border: `1px solid ${colors.border.subtle}`,
-                      borderRadius: tokens.radii.md,
-                      overflow: 'hidden',
-                    }}
-                  >
+                  <Card key={name} padding="none">
                     <div style={{ height: '60px', backgroundColor: intentToken.main }} />
                     <div style={{ padding: tokens.spacing[3] }}>
                       <strong style={{ display: 'block', textTransform: 'capitalize' }}>{name}</strong>
@@ -231,13 +236,13 @@ export function App() {
                         {intentToken.main}
                       </span>
                     </div>
-                  </div>
+                  </Card>
                 ))}
-              </div>
+              </Grid>
             </section>
           </Stack>
         )}
-      </main>
-    </div>
+      </Container>
+    </PageShell>
   );
 }
