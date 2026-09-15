@@ -10,6 +10,8 @@ import {
   Heading,
   Text,
   Section,
+  Avatar,
+  Badge,
   useTheme,
   type ButtonIntent,
   type ButtonVariant,
@@ -18,7 +20,7 @@ import {
 
 export function App() {
   const { mode, toggleMode, colors, tokens } = useTheme();
-  const [activeTab, setActiveTab] = useState<'buttons' | 'stack' | 'cards' | 'typography' | 'tokens'>('buttons');
+  const [activeTab, setActiveTab] = useState<'buttons' | 'stack' | 'cards' | 'typography' | 'badges' | 'tokens'>('buttons');
 
   const intents: ButtonIntent[] = ['primary', 'secondary', 'neutral', 'success', 'danger'];
   const variants: ButtonVariant[] = ['solid', 'outline', 'subtle', 'ghost'];
@@ -30,22 +32,7 @@ export function App() {
       <Header sticky>
         <Stack direction="row" align="center" justify="between">
           <Stack direction="row" align="center" gap={3}>
-            <div
-              style={{
-                width: '32px',
-                height: '32px',
-                borderRadius: tokens.radii.md,
-                backgroundColor: colors.intent.primary.main,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#ffffff',
-                fontWeight: 'bold',
-                fontSize: '14px',
-              }}
-            >
-              SC
-            </div>
+            <Avatar fallback="SC" size="md" intent="primary" shape="rounded" />
             <div>
               <Heading level={1} size="base">
                 Scaffold Workbench
@@ -80,6 +67,14 @@ export function App() {
               onClick={() => setActiveTab('cards')}
             >
               Cards
+            </Button>
+            <Button
+              variant={activeTab === 'badges' ? 'solid' : 'ghost'}
+              intent={activeTab === 'badges' ? 'primary' : 'neutral'}
+              size="sm"
+              onClick={() => setActiveTab('badges')}
+            >
+              Badges &amp; Avatars
             </Button>
             <Button
               variant={activeTab === 'typography' ? 'solid' : 'ghost'}
@@ -225,6 +220,50 @@ export function App() {
           </Section>
         )}
 
+        {activeTab === 'badges' && (
+          <Stack gap={6}>
+            <Section
+              title="Badges & Avatars"
+              description="Status indicators, tags, and identity markers using strict design tokens."
+            >
+              <Grid minItemWidth={300} gap={6}>
+                <Card padding="normal">
+                  <Stack gap={4}>
+                    <Heading level={4} size="base">Badges by Intent</Heading>
+                    <Stack direction="row" align="center" gap={2} wrap>
+                      {intents.map((i) => (
+                        <Badge key={i} intent={i} variant="subtle">
+                          {i}
+                        </Badge>
+                      ))}
+                    </Stack>
+                    <Stack direction="row" align="center" gap={2} wrap>
+                      {intents.map((i) => (
+                        <Badge key={i} intent={i} variant="solid">
+                          {i}
+                        </Badge>
+                      ))}
+                    </Stack>
+                  </Stack>
+                </Card>
+
+                <Card padding="normal">
+                  <Stack gap={4}>
+                    <Heading level={4} size="base">Avatars (Sizes & Shapes)</Heading>
+                    <Stack direction="row" align="center" gap={3}>
+                      <Avatar fallback="SC" size="sm" intent="primary" />
+                      <Avatar fallback="SC" size="md" intent="primary" />
+                      <Avatar fallback="SC" size="lg" intent="primary" />
+                      <Avatar fallback="JD" size="lg" intent="success" shape="circle" />
+                      <Avatar fallback="AI" size="lg" intent="danger" shape="circle" />
+                    </Stack>
+                  </Stack>
+                </Card>
+              </Grid>
+            </Section>
+          </Stack>
+        )}
+
         {activeTab === 'typography' && (
           <Stack gap={6}>
             <Section
@@ -260,18 +299,20 @@ export function App() {
             title={`Semantic Color Tokens (${mode} mode)`}
             description="Centralized color palette driving all component variants and surfaces."
           >
-            <Grid minItemWidth={200} gap={4}>
+            <Grid minItemWidth={220} gap={4}>
               {Object.entries(colors.intent).map(([name, intentToken]) => (
-                <Card key={name} padding="none">
-                  <div style={{ height: '60px', backgroundColor: intentToken.main }} />
-                  <div style={{ padding: tokens.spacing[3] }}>
-                    <Text weight="bold" transform="capitalize">
-                      {name}
-                    </Text>
-                    <Text size="xs" color="muted">
-                      {intentToken.main}
-                    </Text>
-                  </div>
+                <Card key={name} padding="normal">
+                  <Stack direction="row" align="center" gap={3}>
+                    <Avatar fallback={name} size="md" intent={name as ButtonIntent} shape="rounded" />
+                    <Stack gap={1}>
+                      <Text weight="bold" transform="capitalize">
+                        {name}
+                      </Text>
+                      <Badge intent={name as ButtonIntent} size="sm">
+                        {intentToken.main}
+                      </Badge>
+                    </Stack>
+                  </Stack>
                 </Card>
               ))}
             </Grid>

@@ -12,3 +12,5 @@ export * from './components/PageShell/PageShell';
 export * from './components/Heading/Heading';
 export * from './components/Text/Text';
 export * from './components/Section/Section';
+export * from './components/Avatar/Avatar';
+export * from './components/Badge/Badge';
