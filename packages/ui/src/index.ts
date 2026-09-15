@@ -9,3 +9,6 @@ export * from './components/Card/Card';
 export * from './components/Grid/Grid';
 export * from './components/Header/Header';
 export * from './components/PageShell/PageShell';
+export * from './components/Heading/Heading';
+export * from './components/Text/Text';
+export * from './components/Section/Section';
