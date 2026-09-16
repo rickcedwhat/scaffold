@@ -204,7 +204,7 @@ export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(function T
   const labelStyles: React.CSSProperties = {
     position: 'absolute',
     left: prefixSlot ? `calc(${sizeStyles.paddingX} + 1.25rem - 4px)` : `calc(${sizeStyles.paddingX} - 4px)`,
-    top: shouldShrink ? '0' : '50%',
+    top: shouldShrink ? '-0.5px' : '50%',
     transform: shouldShrink
       ? 'translateY(-50%) scale(0.75)'
       : 'translateY(-50%) scale(1)',
@@ -222,7 +222,7 @@ export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(function T
       : tokens.typography.fontWeight.medium,
     pointerEvents: 'none',
     userSelect: 'none',
-    backgroundColor: shouldShrink ? getBackgroundColor() : 'transparent',
+    backgroundColor: shouldShrink ? colors.bg.surface : 'transparent',
     padding: '0 4px',
     zIndex: 1,
     lineHeight: 1,

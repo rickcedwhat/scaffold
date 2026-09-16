@@ -311,7 +311,7 @@ export const Dropdown = forwardRef<HTMLSelectElement, DropdownProps>(function Dr
   const labelStyles: React.CSSProperties = {
     position: 'absolute',
     left: `calc(${sizeStyles.paddingLeft} - 4px)`,
-    top: shouldShrink ? '0' : '50%',
+    top: shouldShrink ? '-0.5px' : '50%',
     transform: shouldShrink
       ? 'translateY(-50%) scale(0.75)'
       : 'translateY(-50%) scale(1)',
@@ -329,7 +329,7 @@ export const Dropdown = forwardRef<HTMLSelectElement, DropdownProps>(function Dr
       : tokens.typography.fontWeight.medium,
     pointerEvents: 'none',
     userSelect: 'none',
-    backgroundColor: shouldShrink ? getBackgroundColor() : 'transparent',
+    backgroundColor: shouldShrink ? colors.bg.surface : 'transparent',
     padding: '0 4px',
     zIndex: 1,
     lineHeight: 1,
