@@ -124,8 +124,6 @@ export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(function T
       paddingX: tokens.spacing[3],
       paddingY: '0',
       radius: tokens.radii.sm,
-      labelRestY: '7px',
-      labelShrinkY: '-9px',
     },
     medium: {
       height: '56px',
@@ -133,8 +131,6 @@ export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(function T
       paddingX: tokens.spacing[4],
       paddingY: '14px',
       radius: tokens.radii.md,
-      labelRestY: '17px',
-      labelShrinkY: '-10px',
     },
   }[size];
 
@@ -207,13 +203,13 @@ export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(function T
 
   const labelStyles: React.CSSProperties = {
     position: 'absolute',
-    left: prefixSlot ? `calc(${sizeStyles.paddingX} + 1.25rem)` : sizeStyles.paddingX,
-    top: '0',
+    left: prefixSlot ? `calc(${sizeStyles.paddingX} + 1.25rem - 4px)` : `calc(${sizeStyles.paddingX} - 4px)`,
+    top: shouldShrink ? '0' : '50%',
     transform: shouldShrink
-      ? `translate(0, ${sizeStyles.labelShrinkY}) scale(0.75)`
-      : `translate(0, ${sizeStyles.labelRestY}) scale(1)`,
-    transformOrigin: 'top left',
-    transition: 'transform 0.15s ease, color 0.15s ease',
+      ? 'translateY(-50%) scale(0.75)'
+      : 'translateY(-50%) scale(1)',
+    transformOrigin: '4px center',
+    transition: 'top 0.15s ease, transform 0.15s ease, color 0.15s ease',
     color: isError
       ? colors.intent.danger.main
       : isFocused || (isDirty && !isError)
@@ -226,8 +222,8 @@ export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(function T
       : tokens.typography.fontWeight.medium,
     pointerEvents: 'none',
     userSelect: 'none',
-    backgroundColor: shouldShrink ? colors.bg.surface : 'transparent',
-    padding: shouldShrink ? '0 4px' : '0',
+    backgroundColor: shouldShrink ? getBackgroundColor() : 'transparent',
+    padding: '0 4px',
     zIndex: 1,
     lineHeight: 1,
   };

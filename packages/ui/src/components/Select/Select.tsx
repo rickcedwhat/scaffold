@@ -219,8 +219,6 @@ export const Dropdown = forwardRef<HTMLSelectElement, DropdownProps>(function Dr
       paddingLeft: tokens.spacing[3],
       paddingRight: tokens.spacing[8],
       radius: tokens.radii.sm,
-      labelRestY: '7px',
-      labelShrinkY: '-9px',
       chevronRight: tokens.spacing[2],
       menuItemPadding: `${tokens.spacing[1]} ${tokens.spacing[3]}`,
     },
@@ -230,8 +228,6 @@ export const Dropdown = forwardRef<HTMLSelectElement, DropdownProps>(function Dr
       paddingLeft: tokens.spacing[4],
       paddingRight: tokens.spacing[10],
       radius: tokens.radii.md,
-      labelRestY: '17px',
-      labelShrinkY: '-10px',
       chevronRight: tokens.spacing[3],
       menuItemPadding: `${tokens.spacing[2]} ${tokens.spacing[4]}`,
     },
@@ -314,13 +310,13 @@ export const Dropdown = forwardRef<HTMLSelectElement, DropdownProps>(function Dr
 
   const labelStyles: React.CSSProperties = {
     position: 'absolute',
-    left: sizeStyles.paddingLeft,
-    top: '0',
+    left: `calc(${sizeStyles.paddingLeft} - 4px)`,
+    top: shouldShrink ? '0' : '50%',
     transform: shouldShrink
-      ? `translate(0, ${sizeStyles.labelShrinkY}) scale(0.75)`
-      : `translate(0, ${sizeStyles.labelRestY}) scale(1)`,
-    transformOrigin: 'top left',
-    transition: 'transform 0.15s ease, color 0.15s ease',
+      ? 'translateY(-50%) scale(0.75)'
+      : 'translateY(-50%) scale(1)',
+    transformOrigin: '4px center',
+    transition: 'top 0.15s ease, transform 0.15s ease, color 0.15s ease',
     color: isError
       ? colors.intent.danger.main
       : isFocused || isOpen || (isDirty && !isError)
@@ -333,8 +329,8 @@ export const Dropdown = forwardRef<HTMLSelectElement, DropdownProps>(function Dr
       : tokens.typography.fontWeight.medium,
     pointerEvents: 'none',
     userSelect: 'none',
-    backgroundColor: shouldShrink ? colors.bg.surface : 'transparent',
-    padding: shouldShrink ? '0 4px' : '0',
+    backgroundColor: shouldShrink ? getBackgroundColor() : 'transparent',
+    padding: '0 4px',
     zIndex: 1,
     lineHeight: 1,
   };
