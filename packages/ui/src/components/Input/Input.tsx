@@ -38,6 +38,8 @@ export interface TextInputProps
   inputVariant?: TextInputVariant;
   /** Full width container (default: false) */
   fullWidth?: boolean;
+  /** Always keep floating label anchored to border (default: false) */
+  floatingLabel?: boolean;
   /** Optional prefix adornment */
   prefixSlot?: ReactNode;
   /** Optional suffix adornment */
@@ -54,6 +56,7 @@ export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(function T
     size = 'medium',
     inputVariant = 'default',
     fullWidth = false,
+    floatingLabel = false,
     prefixSlot,
     suffixSlot,
     id: explicitId,
@@ -82,10 +85,9 @@ export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(function T
   const isControlled = value !== undefined;
   const currentValue = isControlled ? value : internalValue;
   const hasContent = String(currentValue ?? '').length > 0;
-  const isDense = size === 'small';
 
-  // Floating label shrinks when focused, has content, or when in dense mode
-  const shouldShrink = Boolean(isFocused || hasContent || isDense || placeholder);
+  // Floating label shrinks to border when focused, has content, or floatingLabel is explicitly enabled
+  const shouldShrink = Boolean(isFocused || hasContent || floatingLabel);
 
   const innerRef = useRef<HTMLInputElement | null>(null);
 
@@ -268,7 +270,7 @@ export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(function T
           value={value}
           defaultValue={defaultValue}
           disabled={disabled}
-          placeholder={isFocused || shouldShrink || !label ? placeholder : undefined}
+          placeholder={!label ? placeholder : isFocused && !hasContent ? placeholder : undefined}
           aria-invalid={isError}
           aria-describedby={helperText ? helperId : undefined}
           style={inputStyles}

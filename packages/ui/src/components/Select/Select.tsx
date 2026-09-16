@@ -35,6 +35,8 @@ export interface DropdownProps {
   size?: DropdownSize;
   inputVariant?: DropdownVariant;
   fullWidth?: boolean;
+  /** Always keep floating label anchored to border (default: false) */
+  floatingLabel?: boolean;
   options?: DropdownOption[];
   placeholder?: string;
   disabled?: boolean;
@@ -60,6 +62,7 @@ export const Dropdown = forwardRef<HTMLSelectElement, DropdownProps>(function Dr
     size = 'medium',
     inputVariant = 'default',
     fullWidth = false,
+    floatingLabel = false,
     options: optionsProp,
     placeholder,
     children,
@@ -114,8 +117,7 @@ export const Dropdown = forwardRef<HTMLSelectElement, DropdownProps>(function Dr
   const selectedOption = options.find((opt) => String(opt.value) === String(currentValue));
 
   const hasContent = Boolean(selectedOption && String(selectedOption.value) !== '');
-  const isDense = size === 'small';
-  const shouldShrink = Boolean(isFocused || isOpen || hasContent || isDense);
+  const shouldShrink = Boolean(isFocused || isOpen || hasContent || floatingLabel);
 
   const containerRef = useRef<HTMLDivElement | null>(null);
   const hiddenSelectRef = useRef<HTMLSelectElement | null>(null);
@@ -422,7 +424,11 @@ export const Dropdown = forwardRef<HTMLSelectElement, DropdownProps>(function Dr
           }}
           onKeyDown={handleTriggerKeyDown}
         >
-          {selectedOption?.label || (placeholder ? placeholder : '')}
+          {selectedOption
+            ? selectedOption.label
+            : !label || isFocused || isOpen
+            ? placeholder ?? ''
+            : ''}
         </button>
 
         {/* Hidden native select for form submit */}
