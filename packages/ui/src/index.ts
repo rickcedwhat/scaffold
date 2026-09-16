@@ -14,3 +14,7 @@ export * from './components/Text/Text';
 export * from './components/Section/Section';
 export * from './components/Avatar/Avatar';
 export * from './components/Badge/Badge';
+export * from './components/Input/Input';
+export * from './components/Textarea/Textarea';
+export * from './components/Select/Select';
+export * from './components/FormField/FormField';
