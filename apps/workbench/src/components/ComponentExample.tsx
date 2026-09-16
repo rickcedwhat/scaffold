@@ -7,27 +7,26 @@ export interface ComponentExampleProps {
   description?: string;
   code: string;
   language?: string;
-  defaultSplit?: boolean;
+  defaultExpanded?: boolean;
   children: ReactNode;
 }
 
 /**
  * ComponentExample
  *
- * Renders an interactive component example alongside the exact, concise code snippet
- * used to create it (with side-by-side split screen IDE syntax highlighting).
+ * Renders an interactive component example with a collapsible code snippet above it
+ * (closed by default).
  */
 export function ComponentExample({
   title,
   description,
   code,
   language = 'tsx',
-  defaultSplit = true,
+  defaultExpanded = false,
   children,
 }: ComponentExampleProps) {
   const { colors, tokens } = useTheme();
-  const [isSplit, setIsSplit] = useState(defaultSplit);
-  const [activeView, setActiveView] = useState<'preview' | 'code'>('preview');
+  const [isExpanded, setIsExpanded] = useState(defaultExpanded);
 
   return (
     <Card padding="normal">
@@ -50,7 +49,7 @@ export function ComponentExample({
                 {title}
               </Heading>
               <Badge intent="neutral" size="sm">
-                Live Snippet
+                Snippet
               </Badge>
             </Stack>
             {description && (
@@ -60,107 +59,59 @@ export function ComponentExample({
             )}
           </div>
 
-          <Stack direction="row" align="center" gap={2}>
-            {/* Split Screen / Toggle button */}
-            <Button
-              variant={isSplit ? 'solid' : 'outline'}
-              intent={isSplit ? 'primary' : 'neutral'}
-              size="sm"
-              onClick={() => setIsSplit(!isSplit)}
-            >
-              {isSplit ? '✕ Close Split' : '◫ Split Screen'}
-            </Button>
-
-            {!isSplit && (
-              <Button
-                variant="ghost"
-                intent="neutral"
-                size="sm"
-                onClick={() => setActiveView(activeView === 'preview' ? 'code' : 'preview')}
-              >
-                {activeView === 'preview' ? '<> View Code' : '👁️ View Preview'}
-              </Button>
-            )}
-          </Stack>
+          <Button
+            variant={isExpanded ? 'solid' : 'outline'}
+            intent={isExpanded ? 'primary' : 'neutral'}
+            size="sm"
+            onClick={() => setIsExpanded(!isExpanded)}
+          >
+            {isExpanded ? '▲ Hide Code' : '<> View Code'}
+          </Button>
         </div>
 
-        {/* Body content */}
-        {isSplit ? (
-          /* Side-by-side Split View */
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
-              gap: tokens.spacing[4],
-              alignItems: 'stretch',
-            }}
-          >
-            {/* Left: Component Preview Surface */}
+        {/* Collapsible Snippet Above Preview */}
+        {isExpanded && (
+          <div style={{ minWidth: 0 }}>
             <div
               style={{
-                backgroundColor: colors.bg.canvas,
-                border: `1px solid ${colors.border.subtle}`,
-                borderRadius: tokens.radii.md,
-                padding: tokens.spacing[4],
-                minWidth: 0,
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'center',
+                fontSize: '11px',
+                fontWeight: 600,
+                color: colors.text.muted,
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+                marginBottom: tokens.spacing[2],
               }}
             >
-              <div
-                style={{
-                  fontSize: '11px',
-                  fontWeight: 600,
-                  color: colors.text.muted,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.05em',
-                  marginBottom: tokens.spacing[3],
-                }}
-              >
-                Preview
-              </div>
-              {children}
+              Code Snippet
             </div>
-
-            {/* Right: Live Code Snippet */}
-            <div style={{ minWidth: 0 }}>
-              <div
-                style={{
-                  fontSize: '11px',
-                  fontWeight: 600,
-                  color: colors.text.muted,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.05em',
-                  marginBottom: tokens.spacing[3],
-                }}
-              >
-                Code Snippet
-              </div>
-              <CodeBlock code={code.trim()} language={language} maxHeight="420px" />
-            </div>
-          </div>
-        ) : (
-          /* Single View (Preview or Code) */
-          <div>
-            {activeView === 'preview' ? (
-              <div
-                style={{
-                  backgroundColor: colors.bg.canvas,
-                  border: `1px solid ${colors.border.subtle}`,
-                  borderRadius: tokens.radii.md,
-                  padding: tokens.spacing[4],
-                }}
-              >
-                {children}
-              </div>
-            ) : (
-              <div>
-                <CodeBlock code={code.trim()} language={language} maxHeight="420px" />
-              </div>
-            )}
+            <CodeBlock code={code.trim()} language={language} maxHeight="360px" />
           </div>
         )}
+
+        {/* Component Preview Surface Below Snippet */}
+        <div
+          style={{
+            backgroundColor: colors.bg.canvas,
+            border: `1px solid ${colors.border.subtle}`,
+            borderRadius: tokens.radii.md,
+            padding: tokens.spacing[4],
+            minWidth: 0,
+          }}
+        >
+          <div
+            style={{
+              fontSize: '11px',
+              fontWeight: 600,
+              color: colors.text.muted,
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              marginBottom: tokens.spacing[3],
+            }}
+          >
+            Preview
+          </div>
+          {children}
+        </div>
       </Stack>
     </Card>
   );

@@ -181,7 +181,7 @@ export const Dropdown = forwardRef<HTMLSelectElement, DropdownProps>(function Dr
     fontSize: sizeStyles.fontSize,
     paddingLeft: sizeStyles.paddingLeft,
     paddingRight: sizeStyles.paddingRight,
-    paddingTop: label && !isDense ? '14px' : '0',
+    paddingTop: '0',
     paddingBottom: '0',
     margin: 0,
     boxSizing: 'border-box',

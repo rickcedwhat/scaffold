@@ -229,7 +229,7 @@ export function App() {
                   title="Interactive isDirty Modification Feedback"
                   description="Displays a 4px left accent indicator and subtle tint when the value diverges from initial state."
                   code={SNIPPETS.textInput.isDirty}
-                  defaultSplit
+                  defaultExpanded={false}
                 >
                   <Stack gap={3}>
                     <TextInput
@@ -262,7 +262,7 @@ export function App() {
                   title="Size Scale (Medium & Small)"
                   description="size='medium' (56px) for standard comfortable forms; size='small' (32px) for toolbars, filters, and dense tables."
                   code={SNIPPETS.textInput.sizes}
-                  defaultSplit
+                  defaultExpanded={false}
                 >
                   <Stack gap={3}>
                     <TextInput
@@ -282,7 +282,7 @@ export function App() {
                   title="Validation & Disabled States"
                   description="Built-in error states with helper text and accessible disabled styling."
                   code={SNIPPETS.textInput.states}
-                  defaultSplit
+                  defaultExpanded={false}
                 >
                   <Stack gap={3}>
                     <TextInput
@@ -318,7 +318,7 @@ export function App() {
                   title="Controlled Select with isDirty"
                   description="Tracks modifications against initial option value with an accent indicator."
                   code={SNIPPETS.dropdown.isDirty}
-                  defaultSplit
+                  defaultExpanded={false}
                 >
                   <Dropdown
                     label="Location Origin"
@@ -338,7 +338,7 @@ export function App() {
                   title="Placeholder Empty State"
                   description="Initial unselected state with prompt placeholder text."
                   code={SNIPPETS.dropdown.placeholder}
-                  defaultSplit
+                  defaultExpanded={false}
                 >
                   <Dropdown
                     label="Order Type"
@@ -353,7 +353,7 @@ export function App() {
                   title="Error & Disabled States"
                   description="Required selection validation and disabled select styling."
                   code={SNIPPETS.dropdown.states}
-                  defaultSplit
+                  defaultExpanded={false}
                 >
                   <Stack gap={3}>
                     <Dropdown
@@ -393,7 +393,7 @@ export function App() {
                   title="Color Intents"
                   description="Semantic intent colors: primary, secondary, neutral, success, danger."
                   code={SNIPPETS.button.intents}
-                  defaultSplit
+                  defaultExpanded={false}
                 >
                   <Stack direction="row" align="center" gap={3} wrap>
                     <Button intent="primary">Primary</Button>
@@ -408,7 +408,7 @@ export function App() {
                   title="Size Scale (sm, md, lg)"
                   description="Standard heights: sm (36px), md (44px default), and lg (52px)."
                   code={SNIPPETS.button.sizes}
-                  defaultSplit
+                  defaultExpanded={false}
                 >
                   <Stack direction="row" align="center" gap={3} wrap>
                     <Button size="sm">Small (36px)</Button>
@@ -421,7 +421,7 @@ export function App() {
                   title="Visual Variants & States"
                   description="solid, outline, ghost, disabled, and loading states."
                   code={SNIPPETS.button.variants}
-                  defaultSplit
+                  defaultExpanded={false}
                 >
                   <Stack direction="row" align="center" gap={3} wrap>
                     <Button variant="solid">Solid</Button>
@@ -450,7 +450,7 @@ export function App() {
                   title="Navigation Hierarchy"
                   description="SidebarHeader, SidebarNav, SidebarSection, SidebarItem with active pills, and SidebarFooter."
                   code={SNIPPETS.sidebar.nav}
-                  defaultSplit
+                  defaultExpanded={false}
                 >
                   <div
                     style={{
@@ -539,7 +539,7 @@ export function App() {
                   title="Card Surfaces"
                   description="Surface vs subtle card variants for content hierarchy."
                   code={SNIPPETS.cards.cards}
-                  defaultSplit
+                  defaultExpanded={false}
                 >
                   <Grid minItemWidth={240} gap={4}>
                     <Card variant="surface" padding="normal">
@@ -584,7 +584,7 @@ export function App() {
                   title="Badge Intents"
                   description="Semantic status badges accepting intent tokens."
                   code={SNIPPETS.badges.badges}
-                  defaultSplit
+                  defaultExpanded={false}
                 >
                   <Stack direction="row" align="center" gap={2} wrap>
                     {intents.map((i) => (
@@ -599,7 +599,7 @@ export function App() {
                   title="Avatars"
                   description="Avatars with size scales (sm, md, lg) and shapes (square, circle)."
                   code={SNIPPETS.badges.avatars}
-                  defaultSplit
+                  defaultExpanded={false}
                 >
                   <Stack direction="row" align="center" gap={3} wrap>
                     <Avatar fallback="SC" size="sm" intent="primary" />
@@ -628,7 +628,7 @@ export function App() {
                   title="Responsive CSS Grid"
                   description="Auto-fitting grid based on minimum item width."
                   code={SNIPPETS.stack.grid}
-                  defaultSplit
+                  defaultExpanded={false}
                 >
                   <Grid minItemWidth={160} gap={3}>
                     <Card padding="compact">
@@ -661,7 +661,7 @@ export function App() {
                   title="Headings & Body Scales"
                   description="Semantic headings and body text using rem units."
                   code={SNIPPETS.typography.headings}
-                  defaultSplit
+                  defaultExpanded={false}
                 >
                   <Stack gap={3}>
                     <Heading level={1}>Heading 1 (1.5rem / 24px)</Heading>
@@ -697,7 +697,7 @@ export function App() {
                   description="Resolved token values for intents in the current theme mode."
                   code={JSON.stringify(colors.intent, null, 2)}
                   language="json"
-                  defaultSplit
+                  defaultExpanded={false}
                 >
                   <Grid minItemWidth={200} gap={3}>
                     {Object.entries(colors.intent).map(([name, intentToken]) => (

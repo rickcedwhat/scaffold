@@ -194,7 +194,7 @@ export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(function T
     fontSize: sizeStyles.fontSize,
     paddingLeft: prefixSlot ? tokens.spacing[2] : sizeStyles.paddingX,
     paddingRight: suffixSlot ? tokens.spacing[2] : sizeStyles.paddingX,
-    paddingTop: label && !isDense ? '14px' : '0',
+    paddingTop: '0',
     paddingBottom: '0',
     margin: 0,
     boxSizing: 'border-box',
