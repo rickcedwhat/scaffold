@@ -1,17 +1,19 @@
 import React, { type ButtonHTMLAttributes, type ReactNode } from 'react';
 import { useTheme } from '../../theme/ThemeContext';
 
-export type ButtonVariant = 'solid' | 'outline' | 'ghost' | 'subtle';
+export type ButtonVariant = 'solid' | 'outline' | 'ghost';
 export type ButtonIntent = 'primary' | 'secondary' | 'neutral' | 'danger' | 'success';
 export type ButtonSize = 'sm' | 'md' | 'lg';
 
 /**
  * Design System Button
- * 
+ *
+ * Controlled component that only accepts design system tokens.
  * Public interface strictly omits 'className' and 'style' to enforce
  * design system guardrails and prevent styling drift.
  */
-export interface ButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'style' | 'className'> {
+export interface ButtonProps
+  extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'style' | 'className'> {
   intent?: ButtonIntent;
   variant?: ButtonVariant;
   size?: ButtonSize;
@@ -36,21 +38,21 @@ export function Button({
 
   const sizeStyles = {
     sm: {
-      padding: `${tokens.spacing[1]} ${tokens.spacing[3]}`,
-      fontSize: tokens.typography.fontSize.xs,
-      height: '32px',
+      padding: `${tokens.spacing[2]} ${tokens.spacing[4]}`,
+      fontSize: tokens.typography.fontSize.sm,
+      height: '36px',
       gap: tokens.spacing[2],
     },
     md: {
-      padding: `${tokens.spacing[2]} ${tokens.spacing[4]}`,
-      fontSize: tokens.typography.fontSize.sm,
-      height: '40px',
+      padding: `${tokens.spacing[3]} ${tokens.spacing[6]}`,
+      fontSize: tokens.typography.fontSize.base,
+      height: '44px',
       gap: tokens.spacing[2],
     },
     lg: {
-      padding: `${tokens.spacing[3]} ${tokens.spacing[6]}`,
-      fontSize: tokens.typography.fontSize.base,
-      height: '48px',
+      padding: `${tokens.spacing[4]} ${tokens.spacing[8]}`,
+      fontSize: tokens.typography.fontSize.lg,
+      height: '52px',
       gap: tokens.spacing[3],
     },
   }[size];
@@ -61,28 +63,27 @@ export function Button({
         return {
           backgroundColor: intentColors.main,
           color: intentColors.text,
-          border: '1px solid transparent',
+          border: 'none',
+          hoverBg: intentColors.hover,
         };
       case 'outline':
         return {
           backgroundColor: 'transparent',
           color: intentColors.main,
-          border: `1px solid ${intentColors.main}`,
-        };
-      case 'subtle':
-        return {
-          backgroundColor: intentColors.subtle,
-          color: intentColors.main,
-          border: '1px solid transparent',
+          border: `2px solid ${intentColors.main}`,
+          hoverBg: intentColors.subtle,
         };
       case 'ghost':
         return {
           backgroundColor: 'transparent',
-          color: intentColors.main,
-          border: '1px solid transparent',
+          color: colors.text.secondary,
+          border: 'none',
+          hoverBg: colors.bg.subtle,
         };
     }
   };
+
+  const variantStyles = getVariantStyles();
 
   const computedStyles: React.CSSProperties = {
     display: fullWidth ? 'flex' : 'inline-flex',
@@ -99,8 +100,11 @@ export function Button({
     boxSizing: 'border-box',
     textDecoration: 'none',
     outline: 'none',
+    userSelect: 'none',
     ...sizeStyles,
-    ...getVariantStyles(),
+    backgroundColor: variantStyles.backgroundColor,
+    color: variantStyles.color,
+    border: variantStyles.border,
   };
 
   return (
@@ -108,6 +112,16 @@ export function Button({
       type={type}
       disabled={disabled || loading}
       style={computedStyles}
+      onMouseEnter={(e) => {
+        if (!disabled && !loading) {
+          e.currentTarget.style.backgroundColor = variantStyles.hoverBg;
+        }
+      }}
+      onMouseLeave={(e) => {
+        if (!disabled && !loading) {
+          e.currentTarget.style.backgroundColor = variantStyles.backgroundColor;
+        }
+      }}
       {...props}
     >
       {loading && (

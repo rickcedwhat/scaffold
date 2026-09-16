@@ -1,54 +1,92 @@
 import React, {
   forwardRef,
+  useId,
   useRef,
   useState,
   type InputHTMLAttributes,
   type ReactNode,
-  type MouseEvent,
   type FocusEvent,
+  type ChangeEvent,
 } from 'react';
 import { useTheme } from '../../theme/ThemeContext';
 
-export type InputSize = 'sm' | 'md' | 'lg';
-export type InputIntent = 'neutral' | 'primary' | 'danger' | 'success';
+export type TextInputSize = 'small' | 'medium';
+export type TextInputVariant = 'default' | 'filled' | 'ghost';
 
 /**
- * Design System Input
+ * Design System TextInput
  *
- * Public interface strictly omits 'className' and 'style' to enforce
- * design system guardrails and prevent styling drift.
+ * Controlled / uncontrolled input with built-in floating outlined label,
+ * isDirty modification feedback, and tokenized error states.
+ * Strictly omits 'className' and 'style' props to preserve design boundaries.
  */
-export interface InputProps
+export interface TextInputProps
   extends Omit<InputHTMLAttributes<HTMLInputElement>, 'className' | 'style' | 'size'> {
-  size?: InputSize;
-  intent?: InputIntent;
+  /** Floating outlined label */
+  label?: string;
+  /** Helper text or error message displayed below field */
+  helperText?: ReactNode;
+  /** Error state */
+  error?: boolean;
+  /** Alias for error */
   hasError?: boolean;
+  /** Dirty state - field has been modified from initial value */
+  isDirty?: boolean;
+  /** Control size: 'small' (32px dense) or 'medium' (56px default comfortable) */
+  size?: TextInputSize;
+  /** Visual variant */
+  inputVariant?: TextInputVariant;
+  /** Full width container (default: true) */
   fullWidth?: boolean;
+  /** Optional prefix adornment */
   prefixSlot?: ReactNode;
+  /** Optional suffix adornment */
   suffixSlot?: ReactNode;
 }
 
-export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
+export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(function TextInput(
   {
-    size = 'md',
-    intent = 'primary',
-    hasError = false,
-    fullWidth = false,
+    label,
+    helperText,
+    error: errorProp,
+    hasError: hasErrorProp,
+    isDirty = false,
+    size = 'medium',
+    inputVariant = 'default',
+    fullWidth = true,
     prefixSlot,
     suffixSlot,
+    id: explicitId,
     disabled = false,
+    value,
+    defaultValue,
+    placeholder,
     onFocus,
     onBlur,
-    onMouseEnter,
-    onMouseLeave,
+    onChange,
     type = 'text',
     ...props
   },
   forwardedRef
 ) {
   const { tokens, colors } = useTheme();
+  const generatedId = useId();
+  const inputId = explicitId || `input-${generatedId}`;
+  const helperId = `${inputId}-helper`;
+
+  const isError = Boolean(errorProp || hasErrorProp);
   const [isFocused, setIsFocused] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const [internalValue, setInternalValue] = useState(defaultValue ?? '');
+
+  const isControlled = value !== undefined;
+  const currentValue = isControlled ? value : internalValue;
+  const hasContent = String(currentValue ?? '').length > 0;
+  const isDense = size === 'small';
+
+  // Floating label shrinks when focused, has content, or when in dense mode
+  const shouldShrink = Boolean(isFocused || hasContent || isDense || placeholder);
+
   const innerRef = useRef<HTMLInputElement | null>(null);
 
   const setRefs = (node: HTMLInputElement | null) => {
@@ -57,12 +95,6 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
       forwardedRef(node);
     } else if (forwardedRef) {
       (forwardedRef as React.MutableRefObject<HTMLInputElement | null>).current = node;
-    }
-  };
-
-  const handleContainerClick = (e: MouseEvent<HTMLDivElement>) => {
-    if (e.target !== innerRef.current && !disabled) {
-      innerRef.current?.focus();
     }
   };
 
@@ -76,53 +108,77 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
     onBlur?.(e);
   };
 
-  const sizeConfig = {
-    sm: {
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
+    if (!isControlled) {
+      setInternalValue(e.target.value);
+    }
+    onChange?.(e);
+  };
+
+  const sizeStyles = {
+    small: {
       height: '32px',
       fontSize: tokens.typography.fontSize.xs,
-      paddingX: tokens.spacing[2],
-      gap: tokens.spacing[1],
-    },
-    md: {
-      height: '40px',
-      fontSize: tokens.typography.fontSize.sm,
       paddingX: tokens.spacing[3],
-      gap: tokens.spacing[2],
+      paddingY: '0',
+      radius: tokens.radii.sm,
+      labelRestY: '7px',
+      labelShrinkY: '-9px',
     },
-    lg: {
-      height: '48px',
+    medium: {
+      height: '56px',
       fontSize: tokens.typography.fontSize.base,
       paddingX: tokens.spacing[4],
-      gap: tokens.spacing[3],
+      paddingY: '14px',
+      radius: tokens.radii.md,
+      labelRestY: '17px',
+      labelShrinkY: '-10px',
     },
   }[size];
 
-  const activeIntentColor = hasError ? colors.intent.danger : colors.intent[intent];
-
   const getBorderColor = () => {
     if (disabled) return colors.border.subtle;
-    if (hasError) return colors.intent.danger.main;
-    if (isFocused) return activeIntentColor.main;
+    if (isError) return colors.intent.danger.main;
+    if (isFocused) return colors.intent.primary.main;
+    if (isDirty) return colors.intent.primary.main;
     if (isHovered) return colors.border.strong;
+    if (inputVariant === 'ghost') return 'transparent';
     return colors.border.default;
+  };
+
+  const getBackgroundColor = () => {
+    if (disabled) return colors.bg.subtle;
+    if (isDirty && !isError) return colors.intent.primary.subtle;
+    if (inputVariant === 'filled') return colors.bg.subtle;
+    return colors.bg.surface;
   };
 
   const containerStyles: React.CSSProperties = {
     display: fullWidth ? 'flex' : 'inline-flex',
+    flexDirection: 'column',
     width: fullWidth ? '100%' : 'auto',
-    alignItems: 'center',
     boxSizing: 'border-box',
-    borderRadius: tokens.radii.md,
-    backgroundColor: disabled ? colors.bg.subtle : colors.bg.surface,
+    gap: tokens.spacing[1],
+  };
+
+  const fieldWrapperStyles: React.CSSProperties = {
+    position: 'relative',
+    display: 'flex',
+    alignItems: 'center',
+    width: '100%',
+    height: sizeStyles.height,
+    boxSizing: 'border-box',
+    borderRadius: sizeStyles.radius,
+    backgroundColor: getBackgroundColor(),
     border: `1px solid ${getBorderColor()}`,
-    boxShadow: isFocused && !disabled ? `0 0 0 3px ${activeIntentColor.subtle}` : 'none',
+    borderLeftWidth: isDirty && !isError ? '4px' : '1px',
+    borderLeftColor: isDirty && !isError ? colors.intent.primary.main : getBorderColor(),
+    boxShadow: isFocused && !disabled
+      ? `0 0 0 3px ${isError ? colors.intent.danger.subtle : colors.intent.primary.subtle}`
+      : 'none',
     transition: 'border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease',
     opacity: disabled ? 0.6 : 1,
     cursor: disabled ? 'not-allowed' : 'text',
-    height: sizeConfig.height,
-    paddingLeft: prefixSlot ? sizeConfig.paddingX : '0',
-    paddingRight: suffixSlot ? sizeConfig.paddingX : '0',
-    gap: sizeConfig.gap,
   };
 
   const inputStyles: React.CSSProperties = {
@@ -135,16 +191,42 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
     background: 'transparent',
     color: colors.text.primary,
     fontFamily: tokens.typography.fontFamily.sans,
-    fontSize: sizeConfig.fontSize,
-    lineHeight: tokens.typography.lineHeight.normal,
-    paddingLeft: prefixSlot ? 0 : sizeConfig.paddingX,
-    paddingRight: suffixSlot ? 0 : sizeConfig.paddingX,
-    paddingTop: 0,
-    paddingBottom: 0,
+    fontSize: sizeStyles.fontSize,
+    paddingLeft: prefixSlot ? tokens.spacing[2] : sizeStyles.paddingX,
+    paddingRight: suffixSlot ? tokens.spacing[2] : sizeStyles.paddingX,
+    paddingTop: label && !isDense ? '14px' : '0',
+    paddingBottom: '0',
     margin: 0,
     boxSizing: 'border-box',
     cursor: disabled ? 'not-allowed' : 'text',
     WebkitAppearance: 'none',
+  };
+
+  const labelStyles: React.CSSProperties = {
+    position: 'absolute',
+    left: prefixSlot ? `calc(${sizeStyles.paddingX} + 1.25rem)` : sizeStyles.paddingX,
+    top: '0',
+    transform: shouldShrink
+      ? `translate(0, ${sizeStyles.labelShrinkY}) scale(0.75)`
+      : `translate(0, ${sizeStyles.labelRestY}) scale(1)`,
+    transformOrigin: 'top left',
+    transition: 'transform 0.15s ease, color 0.15s ease',
+    color: isError
+      ? colors.intent.danger.main
+      : isFocused || (isDirty && !isError)
+      ? colors.intent.primary.main
+      : colors.text.secondary,
+    fontFamily: tokens.typography.fontFamily.sans,
+    fontSize: sizeStyles.fontSize,
+    fontWeight: shouldShrink
+      ? tokens.typography.fontWeight.semibold
+      : tokens.typography.fontWeight.medium,
+    pointerEvents: 'none',
+    userSelect: 'none',
+    backgroundColor: shouldShrink ? colors.bg.surface : 'transparent',
+    padding: shouldShrink ? '0 4px' : '0',
+    zIndex: 1,
+    lineHeight: 1,
   };
 
   const slotStyles: React.CSSProperties = {
@@ -153,34 +235,69 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
     justifyContent: 'center',
     color: colors.text.secondary,
     flexShrink: 0,
-    fontSize: sizeConfig.fontSize,
+    paddingLeft: prefixSlot ? sizeStyles.paddingX : '0',
+    paddingRight: suffixSlot ? sizeStyles.paddingX : '0',
+    fontSize: sizeStyles.fontSize,
+    zIndex: 2,
   };
 
   return (
-    <div
-      style={containerStyles}
-      onClick={handleContainerClick}
-      onMouseEnter={(e) => {
-        setIsHovered(true);
-        onMouseEnter?.(e as any);
-      }}
-      onMouseLeave={(e) => {
-        setIsHovered(false);
-        onMouseLeave?.(e as any);
-      }}
-    >
-      {prefixSlot && <span style={slotStyles}>{prefixSlot}</span>}
-      <input
-        ref={setRefs}
-        type={type}
-        disabled={disabled}
-        aria-invalid={hasError || props['aria-invalid']}
-        style={inputStyles}
-        onFocus={handleFocus}
-        onBlur={handleBlur}
-        {...props}
-      />
-      {suffixSlot && <span style={slotStyles}>{suffixSlot}</span>}
+    <div style={containerStyles}>
+      <div
+        style={fieldWrapperStyles}
+        onClick={() => !disabled && innerRef.current?.focus()}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
+        {label && (
+          <label htmlFor={inputId} style={labelStyles}>
+            {label}
+            {props.required && (
+              <span style={{ color: colors.intent.danger.main, marginLeft: '2px' }}>*</span>
+            )}
+          </label>
+        )}
+
+        {prefixSlot && <span style={slotStyles}>{prefixSlot}</span>}
+
+        <input
+          ref={setRefs}
+          id={inputId}
+          type={type}
+          value={value}
+          defaultValue={defaultValue}
+          disabled={disabled}
+          placeholder={isFocused || shouldShrink || !label ? placeholder : undefined}
+          aria-invalid={isError}
+          aria-describedby={helperText ? helperId : undefined}
+          style={inputStyles}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
+          onChange={handleChange}
+          {...props}
+        />
+
+        {suffixSlot && <span style={slotStyles}>{suffixSlot}</span>}
+      </div>
+
+      {helperText && (
+        <span
+          id={helperId}
+          role={isError ? 'alert' : undefined}
+          style={{
+            fontSize: tokens.typography.fontSize.xs,
+            color: isError ? colors.intent.danger.main : colors.text.secondary,
+            fontFamily: tokens.typography.fontFamily.sans,
+            marginLeft: tokens.spacing[2],
+          }}
+        >
+          {helperText}
+        </span>
+      )}
     </div>
   );
 });
+
+// Alias Input to TextInput for backwards compatibility
+export const Input = TextInput;
+export type InputProps = TextInputProps;

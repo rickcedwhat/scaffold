@@ -12,10 +12,8 @@ import {
   Section,
   Avatar,
   Badge,
-  Input,
-  Textarea,
-  Select,
-  FormField,
+  TextInput,
+  Dropdown,
   Sidebar,
   SidebarHeader,
   SidebarNav,
@@ -27,49 +25,66 @@ import {
   type ButtonVariant,
   type ButtonSize,
 } from '@scaffold/ui';
-import { CodeInspector } from './components/CodeInspector';
-import { CODE_REGISTRY } from './codeRegistry';
+import { ComponentPlayground } from './components/ComponentPlayground';
+import { COMPONENT_SOURCES } from './codeRegistry';
 
 export type WorkbenchTab =
-  | 'buttons'
-  | 'forms'
+  | 'button'
+  | 'textInput'
+  | 'dropdown'
+  | 'badges'
   | 'sidebar'
   | 'stack'
   | 'cards'
-  | 'badges'
   | 'typography'
   | 'tokens';
 
 export function App() {
   const { mode, toggleMode, colors, tokens } = useTheme();
-  const [activeTab, setActiveTab] = useState<WorkbenchTab>('buttons');
-  const [isCodeOpen, setIsCodeOpen] = useState(false);
-  const [formValues, setFormValues] = useState({ name: '', email: '', role: 'developer', bio: '' });
-  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
-  const [formSuccess, setFormSuccess] = useState(false);
+  const [activeTab, setActiveTab] = useState<WorkbenchTab>('textInput');
 
-  const activeCodeInfo = CODE_REGISTRY[activeTab] || CODE_REGISTRY.buttons;
+  // isDirty interactive demo state (matching cedrickcatalan.com)
+  const initialUsername = 'John Doe';
+  const [username, setUsername] = useState(initialUsername);
+  const isUsernameDirty = username !== initialUsername;
+
+  // Dropdown interactive demo state
+  const initialOrigin = 'downtown';
+  const [origin, setOrigin] = useState(initialOrigin);
+  const [orderType, setOrderType] = useState('');
+
+  const originOptions = [
+    { value: 'downtown', label: 'Downtown HQ' },
+    { value: 'midtown', label: 'Midtown Office' },
+    { value: 'riverside', label: 'Riverside Hub' },
+  ];
+
+  const orderTypeOptions = [
+    { value: 'delivery', label: 'Priority Delivery' },
+    { value: 'pickup', label: 'In-Store Pickup' },
+  ];
 
   const tabTitles: Record<WorkbenchTab, string> = {
-    buttons: 'Button Primitives',
-    forms: 'Form Controls & FormField',
-    sidebar: 'Sidebar Navigation Suite',
-    stack: 'Stack & Grid Layout',
-    cards: 'Card Surfaces',
+    button: 'Button',
+    textInput: 'TextInput',
+    dropdown: 'Dropdown',
     badges: 'Badges & Avatars',
-    typography: 'Typography Scales',
-    tokens: 'Semantic Design Tokens',
+    sidebar: 'Sidebar Nav',
+    stack: 'Stack & Grid',
+    cards: 'Cards',
+    typography: 'Typography',
+    tokens: 'Design Tokens',
   };
 
   const intents: ButtonIntent[] = ['primary', 'secondary', 'neutral', 'success', 'danger'];
-  const variants: ButtonVariant[] = ['solid', 'outline', 'subtle', 'ghost'];
+  const variants: ButtonVariant[] = ['solid', 'outline', 'ghost'];
   const sizes: ButtonSize[] = ['sm', 'md', 'lg'];
 
   return (
     <PageShell>
       <div style={{ display: 'flex', minHeight: '100vh', width: '100%' }}>
         {/* Left Sidebar Navigation */}
-        <Sidebar width={260}>
+        <Sidebar width={250}>
           <SidebarHeader>
             <Stack direction="row" align="center" gap={3}>
               <Avatar fallback="SC" size="md" intent="primary" shape="rounded" />
@@ -85,20 +100,27 @@ export function App() {
           </SidebarHeader>
 
           <SidebarNav>
-            <SidebarSection title="Primitives">
-              <SidebarItem
-                icon="🔘"
-                active={activeTab === 'buttons'}
-                onClick={() => setActiveTab('buttons')}
-              >
-                Buttons
-              </SidebarItem>
+            <SidebarSection title="Components">
               <SidebarItem
                 icon="📝"
-                active={activeTab === 'forms'}
-                onClick={() => setActiveTab('forms')}
+                active={activeTab === 'textInput'}
+                onClick={() => setActiveTab('textInput')}
               >
-                Forms &amp; Inputs
+                TextInput
+              </SidebarItem>
+              <SidebarItem
+                icon="🔽"
+                active={activeTab === 'dropdown'}
+                onClick={() => setActiveTab('dropdown')}
+              >
+                Dropdown
+              </SidebarItem>
+              <SidebarItem
+                icon="🔘"
+                active={activeTab === 'button'}
+                onClick={() => setActiveTab('button')}
+              >
+                Button
               </SidebarItem>
               <SidebarItem
                 icon="🏷️"
@@ -152,13 +174,15 @@ export function App() {
           </SidebarNav>
 
           <SidebarFooter>
-            <div style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Button
-                variant="ghost"
-                intent="neutral"
-                size="sm"
-                onClick={toggleMode}
-              >
+            <div
+              style={{
+                display: 'flex',
+                width: '100%',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <Button variant="ghost" intent="neutral" size="sm" onClick={toggleMode}>
                 {mode === 'light' ? '🌙 Dark' : '☀️ Light'}
               </Button>
               <Badge intent="neutral" size="sm">
@@ -174,7 +198,7 @@ export function App() {
             <Stack direction="row" align="center" justify="between">
               <Stack direction="row" align="center" gap={2}>
                 <Text size="sm" color="secondary">
-                  Workbench &rsaquo;
+                  Components &rsaquo;
                 </Text>
                 <Heading level={2} size="base">
                   {tabTitles[activeTab]}
@@ -182,20 +206,7 @@ export function App() {
               </Stack>
 
               <Stack direction="row" align="center" gap={2}>
-                <Button
-                  variant={isCodeOpen ? 'solid' : 'outline'}
-                  intent={isCodeOpen ? 'primary' : 'neutral'}
-                  size="sm"
-                  onClick={() => setIsCodeOpen(!isCodeOpen)}
-                >
-                  {isCodeOpen ? '✕ Close Code' : '<> View Live Code'}
-                </Button>
-                <Button
-                  variant="outline"
-                  intent="neutral"
-                  size="sm"
-                  onClick={toggleMode}
-                >
+                <Button variant="outline" intent="neutral" size="sm" onClick={toggleMode}>
                   {mode === 'light' ? '🌙 Dark' : '☀️ Light'}
                 </Button>
               </Stack>
@@ -204,578 +215,482 @@ export function App() {
 
           {/* Main Container */}
           <Container maxWidth="xl">
-        {activeTab === 'buttons' && (
-          <Stack gap={8}>
-            <Section
-              title="Button Intents & Variants"
-              description="Every button variant strictly derives from theme tokens. No arbitrary classes or custom hex codes allowed."
-            >
-              <Grid minItemWidth={280} gap={6}>
-                {variants.map((v) => (
-                  <Card key={v} padding="normal">
-                    <Stack gap={4}>
-                      <Heading level={3} size="base" color="primary">
-                        Variant: {v}
-                      </Heading>
-                      <Stack gap={3}>
-                        {intents.map((i) => (
-                          <Button key={i} variant={v} intent={i}>
-                            {i.charAt(0).toUpperCase() + i.slice(1)} ({v})
-                          </Button>
-                        ))}
-                      </Stack>
-                    </Stack>
-                  </Card>
-                ))}
-              </Grid>
-            </Section>
-
-            <Section
-              title="Button Sizes & States"
-              description="Standard button scales and interactive feedback states."
-            >
-              <Card padding="normal">
-                <Stack gap={5}>
-                  <Stack gap={2}>
-                    <Text weight="semibold">Sizes (sm, md, lg)</Text>
-                    <Stack direction="row" align="center" gap={3}>
-                      {sizes.map((s) => (
-                        <Button key={s} size={s}>
-                          Size {s.toUpperCase()}
-                        </Button>
-                      ))}
-                    </Stack>
-                  </Stack>
-
-                  <Stack gap={2}>
-                    <Text weight="semibold">States (Disabled, Loading)</Text>
-                    <Stack direction="row" align="center" gap={3}>
-                      <Button disabled>Disabled Solid</Button>
-                      <Button variant="outline" disabled>Disabled Outline</Button>
-                      <Button loading>Loading State</Button>
-                      <Button variant="subtle" intent="success" loading>Saving...</Button>
-                    </Stack>
-                  </Stack>
-                </Stack>
-              </Card>
-            </Section>
-          </Stack>
-        )}
-
-        {activeTab === 'forms' && (
-          <Stack gap={6}>
-            <Section
-              title="Interactive Form & Validation"
-              description="Form controls wrapped in FormField with auto-wired accessibility (htmlFor, aria-describedby, aria-invalid) and schema validation."
-            >
-              <Card padding="normal">
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    const errors: Record<string, string> = {};
-                    if (!formValues.name.trim()) {
-                      errors.name = 'Full name is required.';
-                    }
-                    if (!formValues.email.trim()) {
-                      errors.email = 'Email address is required.';
-                    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formValues.email)) {
-                      errors.email = 'Please provide a valid email address.';
-                    }
-                    if (!formValues.bio.trim()) {
-                      errors.bio = 'Please provide a brief bio.';
-                    }
-                    setFormErrors(errors);
-                    if (Object.keys(errors).length === 0) {
-                      setFormSuccess(true);
-                      setTimeout(() => setFormSuccess(false), 4000);
-                    }
-                  }}
+            {/* TextInput Tab */}
+            {activeTab === 'textInput' && (
+              <Stack gap={6}>
+                <ComponentPlayground
+                  title="TextInput"
+                  description="Outlined text field with floating label, isDirty modification feedback, and compact small (32px) vs default medium (56px) sizes."
+                  sourceCode={COMPONENT_SOURCES.textInput}
+                  defaultSplit
                 >
-                  <Stack gap={4}>
-                    {formSuccess && (
-                      <Card variant="subtle" padding="compact">
-                        <Stack direction="row" align="center" gap={2}>
-                          <Badge intent="success" size="sm">Success</Badge>
-                          <Text size="sm">Form submitted successfully with valid data!</Text>
-                        </Stack>
-                      </Card>
-                    )}
-
-                    <Grid minItemWidth={280} gap={4}>
-                      <FormField
-                        label="Full Name"
-                        required
-                        helperText="Your legal or preferred name."
-                        errorMessage={formErrors.name}
-                      >
-                        <Input
-                          placeholder="e.g. Alex Chen"
-                          value={formValues.name}
-                          onChange={(e) =>
-                            setFormValues((prev) => ({ ...prev, name: e.target.value }))
-                          }
-                        />
-                      </FormField>
-
-                      <FormField
-                        label="Email Address"
-                        required
-                        helperText="Used for authentication and notifications."
-                        errorMessage={formErrors.email}
-                      >
-                        <Input
-                          type="email"
-                          placeholder="alex@company.com"
-                          prefixSlot={<Text size="xs" color="muted">@</Text>}
-                          value={formValues.email}
-                          onChange={(e) =>
-                            setFormValues((prev) => ({ ...prev, email: e.target.value }))
-                          }
-                        />
-                      </FormField>
-                    </Grid>
-
-                    <FormField
-                      label="Engineering Role"
-                      helperText="Select your primary specialty."
-                    >
-                      <Select
-                        value={formValues.role}
-                        onChange={(e) =>
-                          setFormValues((prev) => ({ ...prev, role: e.target.value }))
-                        }
-                        options={[
-                          { label: 'Software Engineer', value: 'developer' },
-                          { label: 'Product Designer', value: 'designer' },
-                          { label: 'Product Manager', value: 'product' },
-                          { label: 'Infrastructure / DevOps', value: 'devops' },
-                        ]}
-                      />
-                    </FormField>
-
-                    <FormField
-                      label="Biography"
-                      required
-                      helperText="Brief summary of your background."
-                      errorMessage={formErrors.bio}
-                    >
-                      <Textarea
-                        placeholder="Tell us a little bit about what you are building..."
-                        rows={3}
-                        value={formValues.bio}
-                        onChange={(e) =>
-                          setFormValues((prev) => ({ ...prev, bio: e.target.value }))
-                        }
-                      />
-                    </FormField>
-
-                    <Stack direction="row" align="center" gap={3}>
-                      <Button type="submit" intent="primary" size="md">
-                        Save Profile
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        intent="neutral"
-                        size="md"
-                        onClick={() => {
-                          setFormValues({ name: '', email: '', role: 'developer', bio: '' });
-                          setFormErrors({});
-                          setFormSuccess(false);
-                        }}
-                      >
-                        Reset
-                      </Button>
+                  <Stack gap={5}>
+                    {/* isDirty Live Interactive Feedback */}
+                    <Stack gap={1}>
+                      <Text weight="semibold" size="sm">
+                        Live Modification Feedback (isDirty)
+                      </Text>
+                      <Text size="xs" color="secondary">
+                        Modify the field below to see the 4px left accent border and dirty feedback.
+                      </Text>
                     </Stack>
-                  </Stack>
-                </form>
-              </Card>
-            </Section>
-
-            <Section
-              title="Form Control Primitives & Scales"
-              description="Input, Select, and Textarea scales with slots, error states, and strict styling encapsulation."
-            >
-              <Grid minItemWidth={320} gap={4}>
-                <Card padding="normal">
-                  <Stack gap={4}>
-                    <Heading level={4} size="base">Input Sizes</Heading>
-                    <Stack gap={3}>
-                      <Input size="sm" placeholder="Size sm (32px)" />
-                      <Input size="md" placeholder="Size md (40px)" />
-                      <Input size="lg" placeholder="Size lg (48px)" />
-                    </Stack>
-                  </Stack>
-                </Card>
-
-                <Card padding="normal">
-                  <Stack gap={4}>
-                    <Heading level={4} size="base">Slots &amp; States</Heading>
-                    <Stack gap={3}>
-                      <Input
-                        placeholder="Search projects..."
-                        prefixSlot={
-                          <span style={{ fontSize: '13px' }}>🔍</span>
-                        }
-                        suffixSlot={
-                          <Badge size="sm" intent="neutral">ESC</Badge>
-                        }
-                      />
-                      <Input
-                        placeholder="Price amount"
-                        prefixSlot={<Text size="sm" color="muted">$</Text>}
-                        suffixSlot={<Text size="xs" color="muted">USD</Text>}
-                        defaultValue="99.00"
-                      />
-                      <Input
-                        hasError
-                        defaultValue="invalid.payload@"
-                      />
-                      <Input
-                        disabled
-                        defaultValue="Disabled input field"
-                      />
-                    </Stack>
-                  </Stack>
-                </Card>
-
-                <Card padding="normal">
-                  <Stack gap={4}>
-                    <Heading level={4} size="base">Select Controls</Heading>
-                    <Stack gap={3}>
-                      <Select
-                        size="sm"
-                        options={[
-                          { label: 'Small select option', value: 'sm' },
-                        ]}
-                      />
-                      <Select
-                        size="md"
-                        options={[
-                          { label: 'Medium select option', value: 'md' },
-                        ]}
-                      />
-                      <Select
-                        size="lg"
-                        options={[
-                          { label: 'Large select option', value: 'lg' },
-                        ]}
-                      />
-                      <Select
-                        hasError
-                        options={[
-                          { label: 'Error state select', value: 'err' },
-                        ]}
-                      />
-                      <Select
-                        disabled
-                        options={[
-                          { label: 'Disabled select', value: 'dis' },
-                        ]}
-                      />
-                    </Stack>
-                  </Stack>
-                </Card>
-
-                <Card padding="normal">
-                  <Stack gap={4}>
-                    <Heading level={4} size="base">Textarea Controls</Heading>
-                    <Stack gap={3}>
-                      <Textarea size="sm" placeholder="Small textarea" rows={2} />
-                      <Textarea size="md" placeholder="Medium textarea (default)" rows={3} />
-                      <Textarea hasError placeholder="Textarea with error state" rows={2} />
-                      <Textarea disabled placeholder="Disabled textarea" rows={2} />
-                    </Stack>
-                  </Stack>
-                </Card>
-              </Grid>
-            </Section>
-          </Stack>
-        )}
-
-        {activeTab === 'stack' && (
-          <Section
-            title="Stack & Grid Primitives"
-            description="Governs layouts with strict design token spacing, eliminating the need for AI to guess margins or paddings."
-          >
-            <Card padding="spacious">
-              <Stack gap={4}>
-                <Text weight="semibold">Horizontal Row with Wrap (gap=3)</Text>
-                <Stack direction="row" align="center" gap={3} wrap>
-                  {[1, 2, 3, 4, 5, 6].map((item) => (
-                    <Card key={item} variant="subtle" padding="compact">
-                      <Text size="sm">Stack Block {item}</Text>
-                    </Card>
-                  ))}
-                </Stack>
-              </Stack>
-            </Card>
-          </Section>
-        )}
-
-        {activeTab === 'cards' && (
-          <Section
-            title="Card Variants & Paddings"
-            description="Structured surface blocks providing elevation and grouping without arbitrary CSS styling."
-          >
-            <Grid minItemWidth={300} gap={6}>
-              <Card variant="surface" padding="normal">
-                <Stack gap={2}>
-                  <Heading level={4} size="base">Surface Card (Normal)</Heading>
-                  <Text size="sm" color="secondary">
-                    Standard elevated surface with subtle border.
-                  </Text>
-                </Stack>
-              </Card>
-
-              <Card variant="subtle" padding="normal">
-                <Stack gap={2}>
-                  <Heading level={4} size="base">Subtle Card (Normal)</Heading>
-                  <Text size="sm" color="secondary">
-                    Muted background surface for secondary content.
-                  </Text>
-                </Stack>
-              </Card>
-
-              <Card variant="outline" padding="normal">
-                <Stack gap={2}>
-                  <Heading level={4} size="base">Outline Card (Normal)</Heading>
-                  <Text size="sm" color="secondary">
-                    Transparent background with default border.
-                  </Text>
-                </Stack>
-              </Card>
-            </Grid>
-          </Section>
-        )}
-
-        {activeTab === 'badges' && (
-          <Stack gap={6}>
-            <Section
-              title="Badges & Avatars"
-              description="Status indicators, tags, and identity markers using strict design tokens."
-            >
-              <Grid minItemWidth={300} gap={6}>
-                <Card padding="normal">
-                  <Stack gap={4}>
-                    <Heading level={4} size="base">Badges by Intent</Heading>
-                    <Stack direction="row" align="center" gap={2} wrap>
-                      {intents.map((i) => (
-                        <Badge key={i} intent={i} variant="subtle">
-                          {i}
-                        </Badge>
-                      ))}
-                    </Stack>
-                    <Stack direction="row" align="center" gap={2} wrap>
-                      {intents.map((i) => (
-                        <Badge key={i} intent={i} variant="solid">
-                          {i}
-                        </Badge>
-                      ))}
-                    </Stack>
-                  </Stack>
-                </Card>
-
-                <Card padding="normal">
-                  <Stack gap={4}>
-                    <Heading level={4} size="base">Avatars (Sizes & Shapes)</Heading>
-                    <Stack direction="row" align="center" gap={3}>
-                      <Avatar fallback="SC" size="sm" intent="primary" />
-                      <Avatar fallback="SC" size="md" intent="primary" />
-                      <Avatar fallback="SC" size="lg" intent="primary" />
-                      <Avatar fallback="JD" size="lg" intent="success" shape="circle" />
-                      <Avatar fallback="AI" size="lg" intent="danger" shape="circle" />
-                    </Stack>
-                  </Stack>
-                </Card>
-              </Grid>
-            </Section>
-          </Stack>
-        )}
-
-        {activeTab === 'typography' && (
-          <Stack gap={6}>
-            <Section
-              title="Heading & Text Primitives"
-              description="Type primitives with zero user-agent margin quirks, strict token scales, and semantic elements."
-            >
-              <Card padding="normal">
-                <Stack gap={5}>
-                  <Stack gap={2}>
-                    <Heading level={1}>Heading 1 (2xl scale)</Heading>
-                    <Heading level={2}>Heading 2 (xl scale)</Heading>
-                    <Heading level={3}>Heading 3 (lg scale)</Heading>
-                    <Heading level={4}>Heading 4 (base scale)</Heading>
-                  </Stack>
-
-                  <Stack gap={2}>
-                    <Text size="lg">Large body paragraph text.</Text>
-                    <Text size="base">Base body paragraph text with normal weight.</Text>
-                    <Text size="sm" color="secondary">Small secondary muted text description.</Text>
-                    <Text size="xs" color="muted">Extra small helper caption text.</Text>
                     <div>
-                      <Text as="code">git checkout -b feat/component</Text>
+                      <TextInput
+                        label="Username"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                        isDirty={isUsernameDirty}
+                        helperText={
+                          isUsernameDirty
+                            ? 'This field has been modified'
+                            : `Original: "${initialUsername}"`
+                        }
+                      />
+                      {isUsernameDirty && (
+                        <div style={{ marginTop: '10px' }}>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            intent="neutral"
+                            onClick={() => setUsername(initialUsername)}
+                          >
+                            Reset to Original
+                          </Button>
+                        </div>
+                      )}
                     </div>
-                  </Stack>
-                </Stack>
-              </Card>
-            </Section>
-          </Stack>
-        )}
 
-        {activeTab === 'sidebar' && (
-          <Stack gap={6}>
-            <Section
-              title="Sidebar Navigation Suite"
-              description="A structural navigation component strictly encapsulating style tokens, with support for semantic sections, active indicator pills, and icon/badge slots."
-            >
-              <Grid minItemWidth={340} gap={4}>
-                <Card padding="normal">
-                  <Stack gap={3}>
-                    <Heading level={4} size="base">
-                      Embedded Sidebar Preview
-                    </Heading>
-                    <div
-                      style={{
-                        height: '380px',
-                        border: `1px solid ${colors.border.default}`,
-                        borderRadius: tokens.radii.md,
-                        overflow: 'hidden',
-                        display: 'flex',
-                      }}
-                    >
-                      <Sidebar width={240}>
-                        <SidebarHeader>
-                          <Stack direction="row" align="center" gap={2}>
-                            <Avatar fallback="EX" size="sm" intent="primary" />
-                            <Text size="sm" weight="semibold">
-                              Sample Workspace
-                            </Text>
-                          </Stack>
-                        </SidebarHeader>
-
-                        <SidebarNav>
-                          <SidebarSection title="Main">
-                            <SidebarItem icon="🏠" active>
-                              Dashboard
-                            </SidebarItem>
-                            <SidebarItem icon="📊" badge={<Badge size="sm" intent="primary">Live</Badge>}>
-                              Analytics
-                            </SidebarItem>
-                            <SidebarItem icon="📁">
-                              Documents
-                            </SidebarItem>
-                          </SidebarSection>
-
-                          <SidebarSection title="Settings">
-                            <SidebarItem icon="👤">
-                              Profile
-                            </SidebarItem>
-                            <SidebarItem icon="🔒" disabled>
-                              Security (Locked)
-                            </SidebarItem>
-                          </SidebarSection>
-                        </SidebarNav>
-
-                        <SidebarFooter>
-                          <Text size="xs" color="muted">
-                            Sidebar footer slot
-                          </Text>
-                        </SidebarFooter>
-                      </Sidebar>
-
-                      <div
-                        style={{
-                          flex: 1,
-                          backgroundColor: colors.bg.canvas,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          padding: tokens.spacing[4],
-                        }}
-                      >
-                        <Text size="sm" color="secondary">
-                          Main content viewport
+                    {/* Sizing: Small vs Medium */}
+                    <div>
+                      <div style={{ marginBottom: '8px' }}>
+                        <Text weight="semibold" size="sm">
+                          Sizes: Medium (56px default) &bull; Small (32px dense)
                         </Text>
                       </div>
+                      <Stack gap={3}>
+                        <TextInput
+                          size="medium"
+                          label="Medium Field"
+                          placeholder="Default comfortable form field"
+                        />
+                        <TextInput
+                          size="small"
+                          label="Small Field"
+                          placeholder="Dense 32px for toolbars/tables"
+                        />
+                      </Stack>
+                    </div>
+
+                    {/* Error & Disabled States */}
+                    <div>
+                      <div style={{ marginBottom: '8px' }}>
+                        <Text weight="semibold" size="sm">
+                          Error &amp; Disabled States
+                        </Text>
+                      </div>
+                      <Stack gap={3}>
+                        <TextInput
+                          label="Email Address"
+                          error
+                          defaultValue="invalid-email@"
+                          helperText="Please enter a valid email address."
+                        />
+                        <TextInput
+                          label="Locked Field"
+                          disabled
+                          defaultValue="system_generated_key_8849"
+                          helperText="This field is read-only."
+                        />
+                      </Stack>
                     </div>
                   </Stack>
-                </Card>
+                </ComponentPlayground>
+              </Stack>
+            )}
 
-                <Card padding="normal">
-                  <Stack gap={4}>
-                    <Heading level={4} size="base">
-                      Sidebar Component Features
-                    </Heading>
-                    <Stack gap={3}>
-                      <Stack gap={1}>
+            {/* Dropdown Tab */}
+            {activeTab === 'dropdown' && (
+              <Stack gap={6}>
+                <ComponentPlayground
+                  title="Dropdown"
+                  description="Floating-label select sharing TextInput chrome. Supports options data, isDirty, placeholder empty state, and size scales."
+                  sourceCode={COMPONENT_SOURCES.dropdown}
+                  defaultSplit
+                >
+                  <Stack gap={5}>
+                    {/* isDirty Dropdown Demo */}
+                    <div>
+                      <div style={{ marginBottom: '8px' }}>
                         <Text weight="semibold" size="sm">
-                          Polymorphic Routing
+                          Controlled Select with isDirty
                         </Text>
-                        <Text size="sm" color="secondary">
-                          SidebarItem automatically renders as an accessible anchor link (<code>&lt;a href="..."&gt;</code>) when <code>href</code> is passed, or as a <code>&lt;button&gt;</code> for in-app state switching.
-                        </Text>
-                      </Stack>
+                      </div>
+                      <Dropdown
+                        label="Location Origin"
+                        value={origin}
+                        options={originOptions}
+                        isDirty={origin !== initialOrigin}
+                        onChange={(e) => setOrigin(e.target.value)}
+                        helperText={
+                          origin !== initialOrigin
+                            ? 'Selection has changed'
+                            : 'Choose an operating office'
+                        }
+                      />
+                    </div>
 
-                      <Stack gap={1}>
+                    {/* Placeholder empty state */}
+                    <div>
+                      <div style={{ marginBottom: '8px' }}>
                         <Text weight="semibold" size="sm">
-                          Active Pill Indicator &amp; ARIA
+                          Placeholder Empty State
                         </Text>
-                        <Text size="sm" color="secondary">
-                          Active items display a tokenized vertical indicator pill and apply <code>aria-current="page"</code> for assistive technologies.
-                        </Text>
-                      </Stack>
+                      </div>
+                      <Dropdown
+                        label="Order Type"
+                        placeholder="Select an option"
+                        value={orderType}
+                        options={orderTypeOptions}
+                        onChange={(e) => setOrderType(e.target.value)}
+                      />
+                    </div>
 
-                      <Stack gap={1}>
+                    {/* Error & Disabled */}
+                    <div>
+                      <div style={{ marginBottom: '8px' }}>
                         <Text weight="semibold" size="sm">
-                          Component Guardrails
+                          Error &amp; Disabled
                         </Text>
-                        <Text size="sm" color="secondary">
-                          All sidebar sub-components strictly omit <code>className</code> and <code>style</code> props, preventing style leakage and layout drift.
-                        </Text>
+                      </div>
+                      <Stack gap={3}>
+                        <Dropdown
+                          label="Drawer"
+                          error
+                          placeholder="Select drawer"
+                          options={[
+                            { value: 'front', label: 'Front Counter' },
+                            { value: 'drive', label: 'Drive-Thru' },
+                          ]}
+                          helperText="Drawer selection is mandatory."
+                        />
+                        <Dropdown
+                          label="Locked Regional Gateway"
+                          disabled
+                          defaultValue="downtown"
+                          options={originOptions}
+                        />
                       </Stack>
-                    </Stack>
+                    </div>
                   </Stack>
-                </Card>
-              </Grid>
-            </Section>
-          </Stack>
-        )}
+                </ComponentPlayground>
+              </Stack>
+            )}
 
-        {activeTab === 'tokens' && (
-          <Section
-            title={`Semantic Color Tokens (${mode} mode)`}
-            description="Centralized color palette driving all component variants and surfaces."
-          >
-            <Grid minItemWidth={220} gap={4}>
-              {Object.entries(colors.intent).map(([name, intentToken]) => (
-                <Card key={name} padding="normal">
-                  <Stack direction="row" align="center" gap={3}>
-                    <Avatar fallback={name} size="md" intent={name as ButtonIntent} shape="rounded" />
-                    <Stack gap={1}>
-                      <Text weight="bold" transform="capitalize">
-                        {name}
+            {/* Button Tab */}
+            {activeTab === 'button' && (
+              <Stack gap={6}>
+                <ComponentPlayground
+                  title="Button"
+                  description="Controlled component strictly accepting design tokens. Heights: sm (36px), md (44px default), lg (52px)."
+                  sourceCode={COMPONENT_SOURCES.button}
+                  defaultSplit
+                >
+                  <Stack gap={5}>
+                    <div>
+                      <div style={{ marginBottom: '8px' }}>
+                        <Text weight="semibold" size="sm">
+                          Color Variants
+                        </Text>
+                      </div>
+                      <Stack direction="row" align="center" gap={3}>
+                        <Button intent="primary">Primary</Button>
+                        <Button intent="secondary">Secondary</Button>
+                        <Button intent="neutral">Neutral</Button>
+                        <Button intent="success">Success</Button>
+                        <Button intent="danger">Danger</Button>
+                      </Stack>
+                    </div>
+
+                    <div>
+                      <div style={{ marginBottom: '8px' }}>
+                        <Text weight="semibold" size="sm">
+                          Size Variants (sm: 36px &bull; md: 44px &bull; lg: 52px)
+                        </Text>
+                      </div>
+                      <Stack direction="row" align="center" gap={3}>
+                        <Button size="sm">Small (36px)</Button>
+                        <Button size="md">Medium (44px)</Button>
+                        <Button size="lg">Large (52px)</Button>
+                      </Stack>
+                    </div>
+
+                    <div>
+                      <div style={{ marginBottom: '8px' }}>
+                        <Text weight="semibold" size="sm">
+                          Visual Variants
+                        </Text>
+                      </div>
+                      <Stack direction="row" align="center" gap={3}>
+                        <Button variant="solid">Solid</Button>
+                        <Button variant="outline">Outline</Button>
+                        <Button variant="ghost">Ghost</Button>
+                        <Button disabled>Disabled</Button>
+                        <Button loading>Loading</Button>
+                      </Stack>
+                    </div>
+                  </Stack>
+                </ComponentPlayground>
+              </Stack>
+            )}
+
+            {/* Sidebar Nav Tab */}
+            {activeTab === 'sidebar' && (
+              <Stack gap={6}>
+                <ComponentPlayground
+                  title="Sidebar"
+                  description="Structural navigation component supporting sections, active indicator pills, and icon/badge slots."
+                  sourceCode={COMPONENT_SOURCES.sidebar}
+                  defaultSplit
+                >
+                  <div
+                    style={{
+                      height: '380px',
+                      border: `1px solid ${colors.border.default}`,
+                      borderRadius: tokens.radii.md,
+                      overflow: 'hidden',
+                      display: 'flex',
+                    }}
+                  >
+                    <Sidebar width={220}>
+                      <SidebarHeader>
+                        <Stack direction="row" align="center" gap={2}>
+                          <Avatar fallback="EX" size="sm" intent="primary" />
+                          <Text size="sm" weight="semibold">
+                            Sample Workspace
+                          </Text>
+                        </Stack>
+                      </SidebarHeader>
+
+                      <SidebarNav>
+                        <SidebarSection title="Main">
+                          <SidebarItem icon="🏠" active>
+                            Dashboard
+                          </SidebarItem>
+                          <SidebarItem
+                            icon="📊"
+                            badge={
+                              <Badge size="sm" intent="primary">
+                                Live
+                              </Badge>
+                            }
+                          >
+                            Analytics
+                          </SidebarItem>
+                          <SidebarItem icon="📁">Documents</SidebarItem>
+                        </SidebarSection>
+
+                        <SidebarSection title="Settings">
+                          <SidebarItem icon="👤">Profile</SidebarItem>
+                          <SidebarItem icon="🔒" disabled>
+                            Security
+                          </SidebarItem>
+                        </SidebarSection>
+                      </SidebarNav>
+
+                      <SidebarFooter>
+                        <Text size="xs" color="muted">
+                          Sidebar footer slot
+                        </Text>
+                      </SidebarFooter>
+                    </Sidebar>
+
+                    <div
+                      style={{
+                        flex: 1,
+                        backgroundColor: colors.bg.canvas,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: tokens.spacing[4],
+                      }}
+                    >
+                      <Text size="sm" color="secondary">
+                        Main viewport area
                       </Text>
-                      <Badge intent={name as ButtonIntent} size="sm">
-                        {intentToken.main}
-                      </Badge>
-                    </Stack>
+                    </div>
+                  </div>
+                </ComponentPlayground>
+              </Stack>
+            )}
+
+            {/* Cards Tab */}
+            {activeTab === 'cards' && (
+              <Stack gap={6}>
+                <ComponentPlayground
+                  title="Card"
+                  description="Cards contain content and actions about a single subject. Uses tokenized padding and surfaces."
+                  sourceCode={COMPONENT_SOURCES.card}
+                  defaultSplit
+                >
+                  <Grid minItemWidth={240} gap={4}>
+                    <Card variant="surface" padding="normal">
+                      <Stack gap={2}>
+                        <Heading level={4} size="base">
+                          Surface Card
+                        </Heading>
+                        <Text size="sm" color="secondary">
+                          Standard surface card with default border and padding.
+                        </Text>
+                      </Stack>
+                    </Card>
+
+                    <Card variant="subtle" padding="normal">
+                      <Stack gap={2}>
+                        <Heading level={4} size="base">
+                          Subtle Card
+                        </Heading>
+                        <Text size="sm" color="secondary">
+                          Subtle card for nested content or elevated sections.
+                        </Text>
+                      </Stack>
+                    </Card>
+                  </Grid>
+                </ComponentPlayground>
+              </Stack>
+            )}
+
+            {/* Badges & Avatars Tab */}
+            {activeTab === 'badges' && (
+              <Stack gap={6}>
+                <ComponentPlayground
+                  title="Badge"
+                  description="Badges and Avatars for visual metadata and user representation."
+                  sourceCode={COMPONENT_SOURCES.badge}
+                  defaultSplit
+                >
+                  <Stack gap={4}>
+                    <div>
+                      <div style={{ marginBottom: '8px' }}>
+                        <Text weight="semibold" size="sm">
+                          Badge Intents
+                        </Text>
+                      </div>
+                      <Stack direction="row" align="center" gap={2}>
+                        {intents.map((i) => (
+                          <Badge key={i} intent={i} size="md">
+                            {i}
+                          </Badge>
+                        ))}
+                      </Stack>
+                    </div>
+
+                    <div>
+                      <div style={{ marginBottom: '8px' }}>
+                        <Text weight="semibold" size="sm">
+                          Avatars
+                        </Text>
+                      </div>
+                      <Stack direction="row" align="center" gap={3}>
+                        <Avatar fallback="SC" size="sm" intent="primary" />
+                        <Avatar fallback="SC" size="md" intent="primary" />
+                        <Avatar fallback="SC" size="lg" intent="primary" />
+                        <Avatar fallback="CC" size="lg" intent="success" shape="circle" />
+                        <Avatar fallback="AI" size="lg" intent="danger" shape="circle" />
+                      </Stack>
+                    </div>
                   </Stack>
-                </Card>
-              ))}
-            </Grid>
-          </Section>
-        )}
+                </ComponentPlayground>
+              </Stack>
+            )}
+
+            {/* Stack & Grid Tab */}
+            {activeTab === 'stack' && (
+              <Stack gap={6}>
+                <ComponentPlayground
+                  title="Stack"
+                  description="Flexbox and CSS Grid layout primitives enforcing token spacing."
+                  sourceCode={COMPONENT_SOURCES.stack}
+                  defaultSplit
+                >
+                  <Stack gap={4}>
+                    <Grid minItemWidth={160} gap={3}>
+                      <Card padding="compact">
+                        <Text size="sm">Grid Item 1</Text>
+                      </Card>
+                      <Card padding="compact">
+                        <Text size="sm">Grid Item 2</Text>
+                      </Card>
+                      <Card padding="compact">
+                        <Text size="sm">Grid Item 3</Text>
+                      </Card>
+                    </Grid>
+                  </Stack>
+                </ComponentPlayground>
+              </Stack>
+            )}
+
+            {/* Typography Tab */}
+            {activeTab === 'typography' && (
+              <Stack gap={6}>
+                <ComponentPlayground
+                  title="Text"
+                  description="Typography primitives with strict rem scales, semantic elements, and zero user-agent margin quirks."
+                  sourceCode={COMPONENT_SOURCES.text}
+                  defaultSplit
+                >
+                  <Stack gap={3}>
+                    <Heading level={1}>Heading 1 (1.5rem / 24px)</Heading>
+                    <Heading level={2}>Heading 2 (1.25rem / 20px)</Heading>
+                    <Heading level={3}>Heading 3 (1.125rem / 18px)</Heading>
+                    <Text size="lg">Large body text (1.125rem / 18px)</Text>
+                    <Text size="base">Base body text (1rem / 16px)</Text>
+                    <Text size="sm" color="secondary">
+                      Small muted text (0.875rem / 14px)
+                    </Text>
+                    <Text size="xs" color="muted">
+                      Caption text (0.75rem / 12px)
+                    </Text>
+                  </Stack>
+                </ComponentPlayground>
+              </Stack>
+            )}
+
+            {/* Tokens Tab */}
+            {activeTab === 'tokens' && (
+              <Stack gap={6}>
+                <ComponentPlayground
+                  title="tokens"
+                  description={`Semantic design tokens (${mode} mode) driving the entire system.`}
+                  sourceCode={COMPONENT_SOURCES.tokens}
+                  defaultSplit
+                >
+                  <Grid minItemWidth={200} gap={3}>
+                    {Object.entries(colors.intent).map(([name, intentToken]) => (
+                      <Card key={name} padding="compact">
+                        <Stack direction="row" align="center" gap={2}>
+                          <Avatar
+                            fallback={name}
+                            size="sm"
+                            intent={name as ButtonIntent}
+                            shape="rounded"
+                          />
+                          <Stack gap={1}>
+                            <Text weight="bold" size="sm" transform="capitalize">
+                              {name}
+                            </Text>
+                            <Badge intent={name as ButtonIntent} size="sm">
+                              {intentToken.main}
+                            </Badge>
+                          </Stack>
+                        </Stack>
+                      </Card>
+                    ))}
+                  </Grid>
+                </ComponentPlayground>
+              </Stack>
+            )}
           </Container>
         </div>
-
-        {/* Live IDE Code Inspector Panel */}
-        <CodeInspector
-          title={activeCodeInfo.title}
-          files={activeCodeInfo.files}
-          isOpen={isCodeOpen}
-          onClose={() => setIsCodeOpen(false)}
-        />
       </div>
     </PageShell>
   );
