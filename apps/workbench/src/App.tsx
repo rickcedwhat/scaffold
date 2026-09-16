@@ -16,18 +16,50 @@ import {
   Textarea,
   Select,
   FormField,
+  Sidebar,
+  SidebarHeader,
+  SidebarNav,
+  SidebarSection,
+  SidebarItem,
+  SidebarFooter,
   useTheme,
   type ButtonIntent,
   type ButtonVariant,
   type ButtonSize,
 } from '@scaffold/ui';
+import { CodeInspector } from './components/CodeInspector';
+import { CODE_REGISTRY } from './codeRegistry';
+
+export type WorkbenchTab =
+  | 'buttons'
+  | 'forms'
+  | 'sidebar'
+  | 'stack'
+  | 'cards'
+  | 'badges'
+  | 'typography'
+  | 'tokens';
 
 export function App() {
   const { mode, toggleMode, colors, tokens } = useTheme();
-  const [activeTab, setActiveTab] = useState<'buttons' | 'forms' | 'stack' | 'cards' | 'typography' | 'badges' | 'tokens'>('forms');
+  const [activeTab, setActiveTab] = useState<WorkbenchTab>('buttons');
+  const [isCodeOpen, setIsCodeOpen] = useState(false);
   const [formValues, setFormValues] = useState({ name: '', email: '', role: 'developer', bio: '' });
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [formSuccess, setFormSuccess] = useState(false);
+
+  const activeCodeInfo = CODE_REGISTRY[activeTab] || CODE_REGISTRY.buttons;
+
+  const tabTitles: Record<WorkbenchTab, string> = {
+    buttons: 'Button Primitives',
+    forms: 'Form Controls & FormField',
+    sidebar: 'Sidebar Navigation Suite',
+    stack: 'Stack & Grid Layout',
+    cards: 'Card Surfaces',
+    badges: 'Badges & Avatars',
+    typography: 'Typography Scales',
+    tokens: 'Semantic Design Tokens',
+  };
 
   const intents: ButtonIntent[] = ['primary', 'secondary', 'neutral', 'success', 'danger'];
   const variants: ButtonVariant[] = ['solid', 'outline', 'subtle', 'ghost'];
@@ -35,92 +67,143 @@ export function App() {
 
   return (
     <PageShell>
-      {/* Structural Header */}
-      <Header sticky>
-        <Stack direction="row" align="center" justify="between">
-          <Stack direction="row" align="center" gap={3}>
-            <Avatar fallback="SC" size="md" intent="primary" shape="rounded" />
-            <div>
-              <Heading level={1} size="base">
-                Scaffold Workbench
-              </Heading>
-              <Text as="span" size="xs" color="secondary">
-                Port 5500 &bull; Strict Design System Preview
-              </Text>
+      <div style={{ display: 'flex', minHeight: '100vh', width: '100%' }}>
+        {/* Left Sidebar Navigation */}
+        <Sidebar width={260}>
+          <SidebarHeader>
+            <Stack direction="row" align="center" gap={3}>
+              <Avatar fallback="SC" size="md" intent="primary" shape="rounded" />
+              <div>
+                <Heading level={1} size="base">
+                  Scaffold
+                </Heading>
+                <Text as="span" size="xs" color="secondary">
+                  UI Workbench
+                </Text>
+              </div>
+            </Stack>
+          </SidebarHeader>
+
+          <SidebarNav>
+            <SidebarSection title="Primitives">
+              <SidebarItem
+                icon="🔘"
+                active={activeTab === 'buttons'}
+                onClick={() => setActiveTab('buttons')}
+              >
+                Buttons
+              </SidebarItem>
+              <SidebarItem
+                icon="📝"
+                active={activeTab === 'forms'}
+                onClick={() => setActiveTab('forms')}
+              >
+                Forms &amp; Inputs
+              </SidebarItem>
+              <SidebarItem
+                icon="🏷️"
+                active={activeTab === 'badges'}
+                onClick={() => setActiveTab('badges')}
+              >
+                Badges &amp; Avatars
+              </SidebarItem>
+              <SidebarItem
+                icon="🔲"
+                active={activeTab === 'sidebar'}
+                onClick={() => setActiveTab('sidebar')}
+              >
+                Sidebar Nav
+              </SidebarItem>
+            </SidebarSection>
+
+            <SidebarSection title="Structure & Layout">
+              <SidebarItem
+                icon="📐"
+                active={activeTab === 'stack'}
+                onClick={() => setActiveTab('stack')}
+              >
+                Stack &amp; Grid
+              </SidebarItem>
+              <SidebarItem
+                icon="🃏"
+                active={activeTab === 'cards'}
+                onClick={() => setActiveTab('cards')}
+              >
+                Cards
+              </SidebarItem>
+            </SidebarSection>
+
+            <SidebarSection title="Foundations">
+              <SidebarItem
+                icon="✍️"
+                active={activeTab === 'typography'}
+                onClick={() => setActiveTab('typography')}
+              >
+                Typography
+              </SidebarItem>
+              <SidebarItem
+                icon="🎨"
+                active={activeTab === 'tokens'}
+                onClick={() => setActiveTab('tokens')}
+              >
+                Design Tokens
+              </SidebarItem>
+            </SidebarSection>
+          </SidebarNav>
+
+          <SidebarFooter>
+            <div style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Button
+                variant="ghost"
+                intent="neutral"
+                size="sm"
+                onClick={toggleMode}
+              >
+                {mode === 'light' ? '🌙 Dark' : '☀️ Light'}
+              </Button>
+              <Badge intent="neutral" size="sm">
+                v0.1.0
+              </Badge>
             </div>
-          </Stack>
+          </SidebarFooter>
+        </Sidebar>
 
-          <Stack direction="row" align="center" gap={2}>
-            <Button
-              variant={activeTab === 'buttons' ? 'solid' : 'ghost'}
-              intent={activeTab === 'buttons' ? 'primary' : 'neutral'}
-              size="sm"
-              onClick={() => setActiveTab('buttons')}
-            >
-              Buttons
-            </Button>
-            <Button
-              variant={activeTab === 'forms' ? 'solid' : 'ghost'}
-              intent={activeTab === 'forms' ? 'primary' : 'neutral'}
-              size="sm"
-              onClick={() => setActiveTab('forms')}
-            >
-              Forms
-            </Button>
-            <Button
-              variant={activeTab === 'stack' ? 'solid' : 'ghost'}
-              intent={activeTab === 'stack' ? 'primary' : 'neutral'}
-              size="sm"
-              onClick={() => setActiveTab('stack')}
-            >
-              Stack &amp; Grid
-            </Button>
-            <Button
-              variant={activeTab === 'cards' ? 'solid' : 'ghost'}
-              intent={activeTab === 'cards' ? 'primary' : 'neutral'}
-              size="sm"
-              onClick={() => setActiveTab('cards')}
-            >
-              Cards
-            </Button>
-            <Button
-              variant={activeTab === 'badges' ? 'solid' : 'ghost'}
-              intent={activeTab === 'badges' ? 'primary' : 'neutral'}
-              size="sm"
-              onClick={() => setActiveTab('badges')}
-            >
-              Badges &amp; Avatars
-            </Button>
-            <Button
-              variant={activeTab === 'typography' ? 'solid' : 'ghost'}
-              intent={activeTab === 'typography' ? 'primary' : 'neutral'}
-              size="sm"
-              onClick={() => setActiveTab('typography')}
-            >
-              Typography
-            </Button>
-            <Button
-              variant={activeTab === 'tokens' ? 'solid' : 'ghost'}
-              intent={activeTab === 'tokens' ? 'primary' : 'neutral'}
-              size="sm"
-              onClick={() => setActiveTab('tokens')}
-            >
-              Tokens
-            </Button>
-            <Button
-              variant="outline"
-              intent="neutral"
-              size="sm"
-              onClick={toggleMode}
-            >
-              {mode === 'light' ? '🌙 Dark' : '☀️ Light'}
-            </Button>
-          </Stack>
-        </Stack>
-      </Header>
+        {/* Main Workspace Area */}
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
+          <Header sticky>
+            <Stack direction="row" align="center" justify="between">
+              <Stack direction="row" align="center" gap={2}>
+                <Text size="sm" color="secondary">
+                  Workbench &rsaquo;
+                </Text>
+                <Heading level={2} size="base">
+                  {tabTitles[activeTab]}
+                </Heading>
+              </Stack>
 
-      {/* Main Container */}
-      <Container maxWidth="xl">
+              <Stack direction="row" align="center" gap={2}>
+                <Button
+                  variant={isCodeOpen ? 'solid' : 'outline'}
+                  intent={isCodeOpen ? 'primary' : 'neutral'}
+                  size="sm"
+                  onClick={() => setIsCodeOpen(!isCodeOpen)}
+                >
+                  {isCodeOpen ? '✕ Close Code' : '<> View Live Code'}
+                </Button>
+                <Button
+                  variant="outline"
+                  intent="neutral"
+                  size="sm"
+                  onClick={toggleMode}
+                >
+                  {mode === 'light' ? '🌙 Dark' : '☀️ Light'}
+                </Button>
+              </Stack>
+            </Stack>
+          </Header>
+
+          {/* Main Container */}
+          <Container maxWidth="xl">
         {activeTab === 'buttons' && (
           <Stack gap={8}>
             <Section
@@ -540,6 +623,125 @@ export function App() {
           </Stack>
         )}
 
+        {activeTab === 'sidebar' && (
+          <Stack gap={6}>
+            <Section
+              title="Sidebar Navigation Suite"
+              description="A structural navigation component strictly encapsulating style tokens, with support for semantic sections, active indicator pills, and icon/badge slots."
+            >
+              <Grid minItemWidth={340} gap={4}>
+                <Card padding="normal">
+                  <Stack gap={3}>
+                    <Heading level={4} size="base">
+                      Embedded Sidebar Preview
+                    </Heading>
+                    <div
+                      style={{
+                        height: '380px',
+                        border: `1px solid ${colors.border.default}`,
+                        borderRadius: tokens.radii.md,
+                        overflow: 'hidden',
+                        display: 'flex',
+                      }}
+                    >
+                      <Sidebar width={240}>
+                        <SidebarHeader>
+                          <Stack direction="row" align="center" gap={2}>
+                            <Avatar fallback="EX" size="sm" intent="primary" />
+                            <Text size="sm" weight="semibold">
+                              Sample Workspace
+                            </Text>
+                          </Stack>
+                        </SidebarHeader>
+
+                        <SidebarNav>
+                          <SidebarSection title="Main">
+                            <SidebarItem icon="🏠" active>
+                              Dashboard
+                            </SidebarItem>
+                            <SidebarItem icon="📊" badge={<Badge size="sm" intent="primary">Live</Badge>}>
+                              Analytics
+                            </SidebarItem>
+                            <SidebarItem icon="📁">
+                              Documents
+                            </SidebarItem>
+                          </SidebarSection>
+
+                          <SidebarSection title="Settings">
+                            <SidebarItem icon="👤">
+                              Profile
+                            </SidebarItem>
+                            <SidebarItem icon="🔒" disabled>
+                              Security (Locked)
+                            </SidebarItem>
+                          </SidebarSection>
+                        </SidebarNav>
+
+                        <SidebarFooter>
+                          <Text size="xs" color="muted">
+                            Sidebar footer slot
+                          </Text>
+                        </SidebarFooter>
+                      </Sidebar>
+
+                      <div
+                        style={{
+                          flex: 1,
+                          backgroundColor: colors.bg.canvas,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          padding: tokens.spacing[4],
+                        }}
+                      >
+                        <Text size="sm" color="secondary">
+                          Main content viewport
+                        </Text>
+                      </div>
+                    </div>
+                  </Stack>
+                </Card>
+
+                <Card padding="normal">
+                  <Stack gap={4}>
+                    <Heading level={4} size="base">
+                      Sidebar Component Features
+                    </Heading>
+                    <Stack gap={3}>
+                      <Stack gap={1}>
+                        <Text weight="semibold" size="sm">
+                          Polymorphic Routing
+                        </Text>
+                        <Text size="sm" color="secondary">
+                          SidebarItem automatically renders as an accessible anchor link (<code>&lt;a href="..."&gt;</code>) when <code>href</code> is passed, or as a <code>&lt;button&gt;</code> for in-app state switching.
+                        </Text>
+                      </Stack>
+
+                      <Stack gap={1}>
+                        <Text weight="semibold" size="sm">
+                          Active Pill Indicator &amp; ARIA
+                        </Text>
+                        <Text size="sm" color="secondary">
+                          Active items display a tokenized vertical indicator pill and apply <code>aria-current="page"</code> for assistive technologies.
+                        </Text>
+                      </Stack>
+
+                      <Stack gap={1}>
+                        <Text weight="semibold" size="sm">
+                          Component Guardrails
+                        </Text>
+                        <Text size="sm" color="secondary">
+                          All sidebar sub-components strictly omit <code>className</code> and <code>style</code> props, preventing style leakage and layout drift.
+                        </Text>
+                      </Stack>
+                    </Stack>
+                  </Stack>
+                </Card>
+              </Grid>
+            </Section>
+          </Stack>
+        )}
+
         {activeTab === 'tokens' && (
           <Section
             title={`Semantic Color Tokens (${mode} mode)`}
@@ -564,7 +766,17 @@ export function App() {
             </Grid>
           </Section>
         )}
-      </Container>
+          </Container>
+        </div>
+
+        {/* Live IDE Code Inspector Panel */}
+        <CodeInspector
+          title={activeCodeInfo.title}
+          files={activeCodeInfo.files}
+          isOpen={isCodeOpen}
+          onClose={() => setIsCodeOpen(false)}
+        />
+      </div>
     </PageShell>
   );
 }
