@@ -1,11 +1,11 @@
 import React, {
   forwardRef,
   useId,
+  useRef,
   useState,
-  type SelectHTMLAttributes,
+  useEffect,
   type ReactNode,
-  type FocusEvent,
-  type ChangeEvent,
+  type KeyboardEvent,
 } from 'react';
 import { useTheme } from '../../theme/ThemeContext';
 
@@ -21,12 +21,12 @@ export interface DropdownOption {
 /**
  * Design System Dropdown / Select
  *
- * Outlined select with integrated floating label, isDirty modification feedback,
- * and custom styled chevron indicator.
- * Strictly omits 'className' and 'style' props.
+ * Custom themed dropdown with integrated floating label, isDirty modification feedback,
+ * fully styled popover menu with keyboard navigation, and hidden form-compatible select.
+ * Looks completely identical and polished across macOS, Windows, Linux, iOS, and Android.
+ * Strictly omits 'className' and 'style' props to protect design boundaries.
  */
-export interface DropdownProps
-  extends Omit<SelectHTMLAttributes<HTMLSelectElement>, 'className' | 'style' | 'size'> {
+export interface DropdownProps {
   label?: string;
   helperText?: ReactNode;
   error?: boolean;
@@ -37,6 +37,16 @@ export interface DropdownProps
   fullWidth?: boolean;
   options?: DropdownOption[];
   placeholder?: string;
+  disabled?: boolean;
+  required?: boolean;
+  id?: string;
+  name?: string;
+  value?: string | number;
+  defaultValue?: string | number;
+  onChange?: (e: { target: { value: string; name?: string } }) => void;
+  onFocus?: () => void;
+  onBlur?: () => void;
+  'data-testid'?: string;
   children?: ReactNode;
 }
 
@@ -49,18 +59,20 @@ export const Dropdown = forwardRef<HTMLSelectElement, DropdownProps>(function Dr
     isDirty = false,
     size = 'medium',
     inputVariant = 'default',
-    fullWidth = true,
-    options,
+    fullWidth = false,
+    options: optionsProp,
     placeholder,
     children,
     disabled = false,
+    required = false,
     id: explicitId,
+    name,
     value,
     defaultValue,
+    onChange,
     onFocus,
     onBlur,
-    onChange,
-    ...props
+    'data-testid': testId,
   },
   ref
 ) {
@@ -69,34 +81,133 @@ export const Dropdown = forwardRef<HTMLSelectElement, DropdownProps>(function Dr
   const selectId = explicitId || `select-${generatedId}`;
   const helperId = `${selectId}-helper`;
 
+  // Parse options from either `options` prop or `children` (<option> tags)
+  const options: DropdownOption[] = React.useMemo(() => {
+    if (optionsProp) return optionsProp;
+    const extracted: DropdownOption[] = [];
+    React.Children.forEach(children, (child) => {
+      if (React.isValidElement(child) && child.type === 'option') {
+        const props = child.props as { value?: string | number; disabled?: boolean; children?: ReactNode };
+        extracted.push({
+          value: props.value ?? '',
+          label: String(props.children ?? props.value ?? ''),
+          disabled: props.disabled,
+        });
+      }
+    });
+    return extracted;
+  }, [optionsProp, children]);
+
   const isError = Boolean(errorProp || hasErrorProp);
+  const [isOpen, setIsOpen] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
-  const [internalValue, setInternalValue] = useState(defaultValue ?? '');
+  const [highlightedIndex, setHighlightedIndex] = useState<number>(-1);
+
+  const [internalValue, setInternalValue] = useState<string | number>(() => {
+    if (defaultValue !== undefined) return defaultValue;
+    return '';
+  });
 
   const isControlled = value !== undefined;
   const currentValue = isControlled ? value : internalValue;
-  const hasContent = String(currentValue ?? '').length > 0;
+  const selectedOption = options.find((opt) => String(opt.value) === String(currentValue));
+
+  const hasContent = Boolean(selectedOption && String(selectedOption.value) !== '');
   const isDense = size === 'small';
+  const shouldShrink = Boolean(isFocused || isOpen || hasContent || isDense);
 
-  // Label shrinks on focus, content, or in dense mode
-  const shouldShrink = Boolean(isFocused || hasContent || isDense);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const hiddenSelectRef = useRef<HTMLSelectElement | null>(null);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const menuRef = useRef<HTMLUListElement | null>(null);
 
-  const handleFocus = (e: FocusEvent<HTMLSelectElement>) => {
-    setIsFocused(true);
-    onFocus?.(e);
-  };
-
-  const handleBlur = (e: FocusEvent<HTMLSelectElement>) => {
-    setIsFocused(false);
-    onBlur?.(e);
-  };
-
-  const handleChange = (e: ChangeEvent<HTMLSelectElement>) => {
-    if (!isControlled) {
-      setInternalValue(e.target.value);
+  // Sync forwardRef with hidden select
+  const setRefs = (node: HTMLSelectElement | null) => {
+    hiddenSelectRef.current = node;
+    if (typeof ref === 'function') {
+      ref(node);
+    } else if (ref) {
+      (ref as React.MutableRefObject<HTMLSelectElement | null>).current = node;
     }
-    onChange?.(e);
+  };
+
+  // Close when clicking outside
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleClickOutside = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+        setIsFocused(false);
+        onBlur?.();
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isOpen, onBlur]);
+
+  const handleSelectOption = (opt: DropdownOption) => {
+    if (opt.disabled || disabled) return;
+
+    const newValue = String(opt.value);
+    if (!isControlled) {
+      setInternalValue(opt.value);
+    }
+
+    if (hiddenSelectRef.current) {
+      hiddenSelectRef.current.value = newValue;
+    }
+
+    onChange?.({ target: { value: newValue, name } });
+    setIsOpen(false);
+    triggerRef.current?.focus();
+  };
+
+  const handleTriggerKeyDown = (e: KeyboardEvent<HTMLButtonElement>) => {
+    if (disabled) return;
+
+    if (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      if (!isOpen) {
+        setIsOpen(true);
+        const currentIdx = options.findIndex((opt) => String(opt.value) === String(currentValue));
+        setHighlightedIndex(currentIdx >= 0 ? currentIdx : 0);
+      }
+    } else if (e.key === 'Escape') {
+      setIsOpen(false);
+    }
+  };
+
+  const handleMenuKeyDown = (e: KeyboardEvent<HTMLUListElement>) => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setHighlightedIndex((prev) => {
+        let next = prev + 1;
+        while (next < options.length && options[next]?.disabled) {
+          next++;
+        }
+        return next < options.length ? next : prev;
+      });
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setHighlightedIndex((prev) => {
+        let next = prev - 1;
+        while (next >= 0 && options[next]?.disabled) {
+          next--;
+        }
+        return next >= 0 ? next : prev;
+      });
+    } else if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      if (highlightedIndex >= 0 && options[highlightedIndex]) {
+        handleSelectOption(options[highlightedIndex]);
+      }
+    } else if (e.key === 'Escape' || e.key === 'Tab') {
+      setIsOpen(false);
+      triggerRef.current?.focus();
+    }
   };
 
   const sizeStyles = {
@@ -109,6 +220,7 @@ export const Dropdown = forwardRef<HTMLSelectElement, DropdownProps>(function Dr
       labelRestY: '7px',
       labelShrinkY: '-9px',
       chevronRight: tokens.spacing[2],
+      menuItemPadding: `${tokens.spacing[1]} ${tokens.spacing[3]}`,
     },
     medium: {
       height: '56px',
@@ -119,13 +231,14 @@ export const Dropdown = forwardRef<HTMLSelectElement, DropdownProps>(function Dr
       labelRestY: '17px',
       labelShrinkY: '-10px',
       chevronRight: tokens.spacing[3],
+      menuItemPadding: `${tokens.spacing[2]} ${tokens.spacing[4]}`,
     },
   }[size];
 
   const getBorderColor = () => {
     if (disabled) return colors.border.subtle;
     if (isError) return colors.intent.danger.main;
-    if (isFocused) return colors.intent.primary.main;
+    if (isFocused || isOpen) return colors.intent.primary.main;
     if (isDirty) return colors.intent.primary.main;
     if (isHovered) return colors.border.strong;
     if (inputVariant === 'ghost') return 'transparent';
@@ -140,9 +253,11 @@ export const Dropdown = forwardRef<HTMLSelectElement, DropdownProps>(function Dr
   };
 
   const containerStyles: React.CSSProperties = {
+    position: 'relative',
     display: fullWidth ? 'flex' : 'inline-flex',
     flexDirection: 'column',
-    width: fullWidth ? '100%' : 'auto',
+    width: fullWidth ? '100%' : '320px',
+    maxWidth: '100%',
     boxSizing: 'border-box',
     gap: tokens.spacing[1],
   };
@@ -159,24 +274,25 @@ export const Dropdown = forwardRef<HTMLSelectElement, DropdownProps>(function Dr
     border: `1px solid ${getBorderColor()}`,
     borderLeftWidth: isDirty && !isError ? '4px' : '1px',
     borderLeftColor: isDirty && !isError ? colors.intent.primary.main : getBorderColor(),
-    boxShadow: isFocused && !disabled
-      ? `0 0 0 3px ${isError ? colors.intent.danger.subtle : colors.intent.primary.subtle}`
-      : 'none',
+    boxShadow:
+      (isFocused || isOpen) && !disabled
+        ? `0 0 0 3px ${isError ? colors.intent.danger.subtle : colors.intent.primary.subtle}`
+        : 'none',
     transition: 'border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease',
     opacity: disabled ? 0.6 : 1,
     cursor: disabled ? 'not-allowed' : 'pointer',
+    userSelect: 'none',
   };
 
-  const selectStyles: React.CSSProperties = {
+  const triggerButtonStyles: React.CSSProperties = {
     appearance: 'none',
     WebkitAppearance: 'none',
-    MozAppearance: 'none',
     width: '100%',
     height: '100%',
     border: 'none',
     outline: 'none',
     background: 'transparent',
-    color: colors.text.primary,
+    color: selectedOption ? colors.text.primary : colors.text.muted,
     fontFamily: tokens.typography.fontFamily.sans,
     fontSize: sizeStyles.fontSize,
     paddingLeft: sizeStyles.paddingLeft,
@@ -186,6 +302,12 @@ export const Dropdown = forwardRef<HTMLSelectElement, DropdownProps>(function Dr
     margin: 0,
     boxSizing: 'border-box',
     cursor: disabled ? 'not-allowed' : 'pointer',
+    textAlign: 'left',
+    display: 'flex',
+    alignItems: 'center',
+    whiteSpace: 'nowrap',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
   };
 
   const labelStyles: React.CSSProperties = {
@@ -199,7 +321,7 @@ export const Dropdown = forwardRef<HTMLSelectElement, DropdownProps>(function Dr
     transition: 'transform 0.15s ease, color 0.15s ease',
     color: isError
       ? colors.intent.danger.main
-      : isFocused || (isDirty && !isError)
+      : isFocused || isOpen || (isDirty && !isError)
       ? colors.intent.primary.main
       : colors.text.secondary,
     fontFamily: tokens.typography.fontFamily.sans,
@@ -227,11 +349,32 @@ export const Dropdown = forwardRef<HTMLSelectElement, DropdownProps>(function Dr
       : isDirty
       ? colors.intent.primary.main
       : colors.text.secondary,
+    transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+    transition: 'transform 0.2s ease',
     zIndex: 2,
   };
 
+  const menuStyles: React.CSSProperties = {
+    position: 'absolute',
+    top: `calc(${sizeStyles.height} + 4px)`,
+    left: 0,
+    right: 0,
+    zIndex: 50,
+    backgroundColor: colors.bg.surface,
+    border: `1px solid ${colors.border.default}`,
+    borderRadius: tokens.radii.md,
+    boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.15)',
+    padding: tokens.spacing[1],
+    margin: 0,
+    listStyle: 'none',
+    maxHeight: '260px',
+    overflowY: 'auto',
+    outline: 'none',
+    boxSizing: 'border-box',
+  };
+
   return (
-    <div style={containerStyles}>
+    <div ref={containerRef} style={containerStyles}>
       <div
         style={fieldWrapperStyles}
         onMouseEnter={() => setIsHovered(true)}
@@ -240,38 +383,82 @@ export const Dropdown = forwardRef<HTMLSelectElement, DropdownProps>(function Dr
         {label && (
           <label htmlFor={selectId} style={labelStyles}>
             {label}
-            {props.required && (
+            {required && (
               <span style={{ color: colors.intent.danger.main, marginLeft: '2px' }}>*</span>
             )}
           </label>
         )}
 
-        <select
-          ref={ref}
-          id={selectId}
-          value={value}
-          defaultValue={defaultValue}
-          disabled={disabled}
+        {/* Custom polished trigger button */}
+        <button
+          ref={triggerRef}
+          id={`${selectId}-trigger`}
+          type="button"
+          role="combobox"
+          aria-haspopup="listbox"
+          aria-expanded={isOpen}
+          aria-controls={`${selectId}-menu`}
+          aria-labelledby={label ? selectId : undefined}
           aria-invalid={isError}
           aria-describedby={helperText ? helperId : undefined}
-          style={selectStyles}
-          onFocus={handleFocus}
-          onBlur={handleBlur}
-          onChange={handleChange}
-          {...props}
+          disabled={disabled}
+          style={triggerButtonStyles}
+          onClick={() => {
+            if (!disabled) {
+              setIsOpen(!isOpen);
+              setIsFocused(true);
+              onFocus?.();
+            }
+          }}
+          onFocus={() => {
+            setIsFocused(true);
+            onFocus?.();
+          }}
+          onBlur={() => {
+            if (!isOpen) {
+              setIsFocused(false);
+              onBlur?.();
+            }
+          }}
+          onKeyDown={handleTriggerKeyDown}
+        >
+          {selectedOption?.label || (placeholder ? placeholder : '')}
+        </button>
+
+        {/* Hidden native select for form submit */}
+        <select
+          ref={setRefs}
+          id={selectId}
+          name={name}
+          value={currentValue}
+          disabled={disabled}
+          required={required}
+          aria-hidden="true"
+          tabIndex={-1}
+          data-testid={testId}
+          style={{
+            position: 'absolute',
+            opacity: 0,
+            pointerEvents: 'none',
+            width: '1px',
+            height: '1px',
+            top: 0,
+            left: 0,
+          }}
+          onChange={(e) => {
+            handleSelectOption({ value: e.target.value, label: e.target.value });
+          }}
         >
           {placeholder && (
-            <option value="" disabled hidden={Boolean(props.required)}>
+            <option value="" disabled hidden={required}>
               {placeholder}
             </option>
           )}
-          {options
-            ? options.map((opt) => (
-                <option key={opt.value} value={opt.value} disabled={opt.disabled}>
-                  {opt.label}
-                </option>
-              ))
-            : children}
+          {options.map((opt) => (
+            <option key={opt.value} value={opt.value} disabled={opt.disabled}>
+              {opt.label}
+            </option>
+          ))}
         </select>
 
         <span style={chevronStyles} aria-hidden="true">
@@ -286,6 +473,86 @@ export const Dropdown = forwardRef<HTMLSelectElement, DropdownProps>(function Dr
           </svg>
         </span>
       </div>
+
+      {/* Themed Custom Dropdown Popover Menu */}
+      {isOpen && (
+        <ul
+          ref={menuRef}
+          id={`${selectId}-menu`}
+          role="listbox"
+          tabIndex={-1}
+          style={menuStyles}
+          onKeyDown={handleMenuKeyDown}
+        >
+          {placeholder && (
+            <li
+              role="option"
+              aria-selected={!selectedOption}
+              style={{
+                padding: sizeStyles.menuItemPadding,
+                fontSize: sizeStyles.fontSize,
+                fontFamily: tokens.typography.fontFamily.sans,
+                color: colors.text.muted,
+                borderRadius: tokens.radii.sm,
+                cursor: 'pointer',
+                userSelect: 'none',
+              }}
+              onClick={() => handleSelectOption({ value: '', label: placeholder })}
+            >
+              {placeholder}
+            </li>
+          )}
+
+          {options.map((opt, idx) => {
+            const isSelected = String(opt.value) === String(currentValue);
+            const isHighlighted = idx === highlightedIndex;
+
+            return (
+              <li
+                key={opt.value}
+                role="option"
+                aria-selected={isSelected}
+                aria-disabled={opt.disabled}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: sizeStyles.menuItemPadding,
+                  fontSize: sizeStyles.fontSize,
+                  fontFamily: tokens.typography.fontFamily.sans,
+                  borderRadius: tokens.radii.sm,
+                  backgroundColor: isSelected
+                    ? colors.intent.primary.subtle
+                    : isHighlighted
+                    ? colors.bg.subtle
+                    : 'transparent',
+                  color: opt.disabled
+                    ? colors.text.muted
+                    : isSelected
+                    ? colors.intent.primary.main
+                    : colors.text.primary,
+                  fontWeight: isSelected
+                    ? tokens.typography.fontWeight.semibold
+                    : tokens.typography.fontWeight.normal,
+                  cursor: opt.disabled ? 'not-allowed' : 'pointer',
+                  userSelect: 'none',
+                  opacity: opt.disabled ? 0.5 : 1,
+                  transition: 'background-color 0.1s ease',
+                }}
+                onMouseEnter={() => !opt.disabled && setHighlightedIndex(idx)}
+                onClick={() => handleSelectOption(opt)}
+              >
+                <span>{opt.label}</span>
+                {isSelected && (
+                  <span style={{ color: colors.intent.primary.main, fontSize: '12px' }}>
+                    ✓
+                  </span>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      )}
 
       {helperText && (
         <span

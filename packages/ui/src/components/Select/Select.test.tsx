@@ -21,9 +21,13 @@ describe('Dropdown / Select', () => {
     );
     expect(screen.getByText('Select Item')).toBeInTheDocument();
     expect(screen.getByText('Choose an option')).toBeInTheDocument();
-    expect(screen.getByRole('combobox')).toBeInTheDocument();
+    const combobox = screen.getByRole('combobox');
+    expect(combobox).toBeInTheDocument();
+
+    // Open dropdown menu
+    fireEvent.click(combobox);
     expect(screen.getByRole('option', { name: 'Option 1' })).toBeInTheDocument();
-    expect(screen.getByRole('option', { name: 'Option 3' })).toBeDisabled();
+    expect(screen.getByRole('option', { name: 'Option 3' })).toHaveAttribute('aria-disabled', 'true');
   });
 
   it('renders select with children options', () => {
@@ -33,16 +37,26 @@ describe('Dropdown / Select', () => {
         <option value="b">B</option>
       </Dropdown>
     );
+    const combobox = screen.getByRole('combobox');
+    fireEvent.click(combobox);
     expect(screen.getByRole('option', { name: 'A' })).toBeInTheDocument();
     expect(screen.getByRole('option', { name: 'B' })).toBeInTheDocument();
   });
 
-  it('handles value changes', () => {
+  it('handles value changes when an option is selected', () => {
     const handleChange = vi.fn();
     render(<Dropdown options={options} onChange={handleChange} />);
-    const select = screen.getByRole('combobox');
-    fireEvent.change(select, { target: { value: '2' } });
+    const combobox = screen.getByRole('combobox');
+    fireEvent.click(combobox);
+
+    const option2 = screen.getByRole('option', { name: 'Option 2' });
+    fireEvent.click(option2);
+
     expect(handleChange).toHaveBeenCalledTimes(1);
+    expect(handleChange).toHaveBeenCalledWith({
+      target: { value: '2', name: undefined },
+    });
+    expect(combobox).toHaveTextContent('Option 2');
   });
 
   it('forwards ref to HTMLSelectElement', () => {
@@ -62,8 +76,18 @@ describe('Dropdown / Select', () => {
     expect(screen.getByRole('alert')).toHaveTextContent('Field required');
   });
 
-  it('supports isDirty modification state', () => {
+  it('supports isDirty modification state and displays defaultValue label', () => {
     render(<Dropdown options={options} isDirty defaultValue="1" />);
-    expect(screen.getByRole('combobox')).toHaveValue('1');
+    expect(screen.getByRole('combobox')).toHaveTextContent('Option 1');
+  });
+
+  it('defaults to fullWidth = false with 320px width', () => {
+    const { container } = render(<Dropdown options={options} />);
+    expect(container.firstElementChild).toHaveStyle({ width: '320px' });
+  });
+
+  it('supports fullWidth = true with 100% width', () => {
+    const { container } = render(<Dropdown options={options} fullWidth />);
+    expect(container.firstElementChild).toHaveStyle({ width: '100%' });
   });
 });

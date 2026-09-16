@@ -64,4 +64,14 @@ describe('TextInput / Input', () => {
     expect(screen.getByTestId('prefix-icon')).toBeInTheDocument();
     expect(screen.getByTestId('suffix-icon')).toBeInTheDocument();
   });
+
+  it('defaults to fullWidth = false with 320px container width', () => {
+    const { container } = render(<TextInput placeholder="Test" />);
+    expect(container.firstElementChild).toHaveStyle({ width: '320px' });
+  });
+
+  it('supports fullWidth = true with 100% container width', () => {
+    const { container } = render(<TextInput placeholder="Test" fullWidth />);
+    expect(container.firstElementChild).toHaveStyle({ width: '100%' });
+  });
 });

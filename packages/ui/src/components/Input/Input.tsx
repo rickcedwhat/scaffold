@@ -36,7 +36,7 @@ export interface TextInputProps
   size?: TextInputSize;
   /** Visual variant */
   inputVariant?: TextInputVariant;
-  /** Full width container (default: true) */
+  /** Full width container (default: false) */
   fullWidth?: boolean;
   /** Optional prefix adornment */
   prefixSlot?: ReactNode;
@@ -53,7 +53,7 @@ export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(function T
     isDirty = false,
     size = 'medium',
     inputVariant = 'default',
-    fullWidth = true,
+    fullWidth = false,
     prefixSlot,
     suffixSlot,
     id: explicitId,
@@ -156,7 +156,8 @@ export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(function T
   const containerStyles: React.CSSProperties = {
     display: fullWidth ? 'flex' : 'inline-flex',
     flexDirection: 'column',
-    width: fullWidth ? '100%' : 'auto',
+    width: fullWidth ? '100%' : '320px',
+    maxWidth: '100%',
     boxSizing: 'border-box',
     gap: tokens.spacing[1],
   };
