@@ -151,6 +151,10 @@ export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(function T
     return colors.bg.surface;
   };
 
+  const isBorderThick = Boolean(isFocused && !disabled);
+  const borderWidth = isBorderThick ? '2px' : '1px';
+  const borderColor = getBorderColor();
+
   const containerStyles: React.CSSProperties = {
     display: fullWidth ? 'flex' : 'inline-flex',
     flexDirection: 'column',
@@ -169,13 +173,17 @@ export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(function T
     boxSizing: 'border-box',
     borderRadius: sizeStyles.radius,
     backgroundColor: getBackgroundColor(),
-    border: `1px solid ${getBorderColor()}`,
-    borderLeftWidth: isDirty && !isError ? '4px' : '1px',
-    borderLeftColor: isDirty && !isError ? colors.intent.primary.main : getBorderColor(),
-    boxShadow: isFocused && !disabled
-      ? `0 0 0 3px ${isError ? colors.intent.danger.subtle : colors.intent.primary.subtle}`
-      : 'none',
-    transition: 'border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease',
+    borderStyle: 'solid',
+    borderTopWidth: borderWidth,
+    borderRightWidth: borderWidth,
+    borderBottomWidth: borderWidth,
+    borderLeftWidth: isDirty && !isError ? '4px' : borderWidth,
+    borderTopColor: borderColor,
+    borderRightColor: borderColor,
+    borderBottomColor: borderColor,
+    borderLeftColor: isDirty && !isError ? colors.intent.primary.main : borderColor,
+    boxShadow: 'none',
+    transition: 'border-color 0.15s ease, border-width 0.15s ease, background-color 0.15s ease',
     opacity: disabled ? 0.6 : 1,
     cursor: disabled ? 'not-allowed' : 'text',
   };
@@ -204,7 +212,7 @@ export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(function T
   const labelStyles: React.CSSProperties = {
     position: 'absolute',
     left: prefixSlot ? `calc(${sizeStyles.paddingX} + 1.25rem - 4px)` : `calc(${sizeStyles.paddingX} - 4px)`,
-    top: shouldShrink ? '-0.5px' : '50%',
+    top: shouldShrink ? (isBorderThick ? '-1px' : '-0.5px') : '50%',
     transform: shouldShrink
       ? 'translateY(-50%) scale(0.75)'
       : 'translateY(-50%) scale(1)',
