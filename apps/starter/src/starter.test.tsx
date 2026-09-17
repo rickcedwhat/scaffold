@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import React from 'react';
 import { ThemeProvider } from '@scaffold/ui';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
