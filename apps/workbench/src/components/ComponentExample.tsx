@@ -1,5 +1,6 @@
 import React, { useState, type ReactNode } from 'react';
 import { Card, Stack, Heading, Text, Button, Badge, useTheme } from '@scaffold/ui';
+import { Code, ChevronUp } from 'lucide-react';
 import { CodeBlock } from './CodeBlock';
 
 export interface ComponentExampleProps {
@@ -65,7 +66,19 @@ export function ComponentExample({
             size="sm"
             onClick={() => setIsExpanded(!isExpanded)}
           >
-            {isExpanded ? '▲ Hide Code' : '<> View Code'}
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+              {isExpanded ? (
+                <>
+                  <ChevronUp size={14} />
+                  <span>Hide Code</span>
+                </>
+              ) : (
+                <>
+                  <Code size={14} />
+                  <span>View Code</span>
+                </>
+              )}
+            </span>
           </Button>
         </div>
 

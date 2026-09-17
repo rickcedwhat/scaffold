@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { Copy, Check } from 'lucide-react';
 
 export interface CodeBlockProps {
   code: string;
@@ -56,7 +57,7 @@ export function CodeBlock({
             style={{
               display: 'inline-flex',
               alignItems: 'center',
-              gap: '4px',
+              gap: '6px',
               color: copied ? '#4ade80' : '#a1a1aa',
               backgroundColor: copied ? 'rgba(34, 197, 94, 0.15)' : '#27272a',
               border: '1px solid #3f3f46',
@@ -69,7 +70,17 @@ export function CodeBlock({
               transition: 'background-color 0.15s ease, color 0.15s ease',
             }}
           >
-            {copied ? '✓ Copied' : '⧉ Copy'}
+            {copied ? (
+              <>
+                <Check size={13} />
+                <span>Copied</span>
+              </>
+            ) : (
+              <>
+                <Copy size={13} />
+                <span>Copy</span>
+              </>
+            )}
           </button>
         </div>
       )}

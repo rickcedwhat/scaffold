@@ -27,6 +27,24 @@ import {
 } from '@scaffold/ui';
 import { ComponentExample } from './components/ComponentExample';
 import { SNIPPETS } from './snippets';
+import {
+  FormInput,
+  ChevronsUpDown,
+  MousePointerClick,
+  Tag,
+  PanelLeft,
+  LayoutGrid,
+  CreditCard,
+  Type,
+  Palette,
+  Moon,
+  Sun,
+  Home,
+  BarChart3,
+  Folder,
+  User,
+  Lock,
+} from 'lucide-react';
 
 export type WorkbenchTab =
   | 'button'
@@ -100,35 +118,35 @@ export function App() {
           <SidebarNav>
             <SidebarSection title="Components">
               <SidebarItem
-                icon="📝"
+                icon={<FormInput size={16} />}
                 active={activeTab === 'textInput'}
                 onClick={() => setActiveTab('textInput')}
               >
                 TextInput
               </SidebarItem>
               <SidebarItem
-                icon="🔽"
+                icon={<ChevronsUpDown size={16} />}
                 active={activeTab === 'dropdown'}
                 onClick={() => setActiveTab('dropdown')}
               >
                 Dropdown
               </SidebarItem>
               <SidebarItem
-                icon="🔘"
+                icon={<MousePointerClick size={16} />}
                 active={activeTab === 'button'}
                 onClick={() => setActiveTab('button')}
               >
                 Button
               </SidebarItem>
               <SidebarItem
-                icon="🏷️"
+                icon={<Tag size={16} />}
                 active={activeTab === 'badges'}
                 onClick={() => setActiveTab('badges')}
               >
                 Badges &amp; Avatars
               </SidebarItem>
               <SidebarItem
-                icon="🔲"
+                icon={<PanelLeft size={16} />}
                 active={activeTab === 'sidebar'}
                 onClick={() => setActiveTab('sidebar')}
               >
@@ -138,14 +156,14 @@ export function App() {
 
             <SidebarSection title="Structure & Layout">
               <SidebarItem
-                icon="📐"
+                icon={<LayoutGrid size={16} />}
                 active={activeTab === 'stack'}
                 onClick={() => setActiveTab('stack')}
               >
                 Stack &amp; Grid
               </SidebarItem>
               <SidebarItem
-                icon="🃏"
+                icon={<CreditCard size={16} />}
                 active={activeTab === 'cards'}
                 onClick={() => setActiveTab('cards')}
               >
@@ -155,14 +173,14 @@ export function App() {
 
             <SidebarSection title="Foundations">
               <SidebarItem
-                icon="✍️"
+                icon={<Type size={16} />}
                 active={activeTab === 'typography'}
                 onClick={() => setActiveTab('typography')}
               >
                 Typography
               </SidebarItem>
               <SidebarItem
-                icon="🎨"
+                icon={<Palette size={16} />}
                 active={activeTab === 'tokens'}
                 onClick={() => setActiveTab('tokens')}
               >
@@ -181,7 +199,10 @@ export function App() {
               }}
             >
               <Button variant="ghost" intent="neutral" size="sm" onClick={toggleMode}>
-                {mode === 'light' ? '🌙 Dark' : '☀️ Light'}
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                  {mode === 'light' ? <Moon size={14} /> : <Sun size={14} />}
+                  <span>{mode === 'light' ? 'Dark' : 'Light'}</span>
+                </span>
               </Button>
               <Badge intent="neutral" size="sm">
                 v0.1.0
@@ -205,7 +226,10 @@ export function App() {
 
               <Stack direction="row" align="center" gap={2}>
                 <Button variant="outline" intent="neutral" size="sm" onClick={toggleMode}>
-                  {mode === 'light' ? '🌙 Dark' : '☀️ Light'}
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                    {mode === 'light' ? <Moon size={14} /> : <Sun size={14} />}
+                    <span>{mode === 'light' ? 'Dark' : 'Light'}</span>
+                  </span>
                 </Button>
               </Stack>
             </Stack>
@@ -473,11 +497,11 @@ export function App() {
 
                       <SidebarNav>
                         <SidebarSection title="Main">
-                          <SidebarItem icon="🏠" active>
+                          <SidebarItem icon={<Home size={16} />} active>
                             Dashboard
                           </SidebarItem>
                           <SidebarItem
-                            icon="📊"
+                            icon={<BarChart3 size={16} />}
                             badge={
                               <Badge size="sm" intent="primary">
                                 Live
@@ -486,12 +510,12 @@ export function App() {
                           >
                             Analytics
                           </SidebarItem>
-                          <SidebarItem icon="📁">Documents</SidebarItem>
+                          <SidebarItem icon={<Folder size={16} />}>Documents</SidebarItem>
                         </SidebarSection>
 
                         <SidebarSection title="Settings">
-                          <SidebarItem icon="👤">Profile</SidebarItem>
-                          <SidebarItem icon="🔒" disabled>
+                          <SidebarItem icon={<User size={16} />}>Profile</SidebarItem>
+                          <SidebarItem icon={<Lock size={16} />} disabled>
                             Security
                           </SidebarItem>
                         </SidebarSection>
