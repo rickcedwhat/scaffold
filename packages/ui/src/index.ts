@@ -18,3 +18,4 @@ export * from './components/Input/Input';
 export * from './components/Textarea/Textarea';
 export * from './components/Select/Select';
 export * from './components/FormField/FormField';
+export * from './components/Sidebar/Sidebar';
