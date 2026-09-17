@@ -11,16 +11,46 @@ interface ThemeContextValue {
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
+const DEFAULT_STORAGE_KEY = 'scaffold-theme-mode';
+
 export interface ThemeProviderProps {
   children: ReactNode;
   defaultMode?: ThemeMode;
+  storageKey?: string;
 }
 
-export function ThemeProvider({ children, defaultMode = 'light' }: ThemeProviderProps) {
-  const [mode, setMode] = useState<ThemeMode>(defaultMode);
+export function ThemeProvider({
+  children,
+  defaultMode = 'light',
+  storageKey = DEFAULT_STORAGE_KEY,
+}: ThemeProviderProps) {
+  const [mode, setModeState] = useState<ThemeMode>(() => {
+    if (typeof window !== 'undefined' && 'localStorage' in window && storageKey) {
+      try {
+        const stored = window.localStorage.getItem(storageKey);
+        if (stored === 'light' || stored === 'dark') {
+          return stored;
+        }
+      } catch {
+        // Fall back to defaultMode if localStorage is restricted
+      }
+    }
+    return defaultMode;
+  });
+
+  const setMode = (newMode: ThemeMode) => {
+    setModeState(newMode);
+    if (typeof window !== 'undefined' && 'localStorage' in window && storageKey) {
+      try {
+        window.localStorage.setItem(storageKey, newMode);
+      } catch {
+        // Ignore localStorage errors
+      }
+    }
+  };
 
   const toggleMode = () => {
-    setMode((prev) => (prev === 'light' ? 'dark' : 'light'));
+    setMode(mode === 'light' ? 'dark' : 'light');
   };
 
   const value = useMemo<ThemeContextValue>(() => ({
