@@ -283,7 +283,7 @@ export const Dropdown = forwardRef<HTMLSelectElement, DropdownProps>(function Dr
     borderBottomColor: borderColor,
     borderLeftColor: isDirty && !isError ? colors.intent.primary.main : borderColor,
     boxShadow: 'none',
-    transition: 'border-color 0.15s ease, border-width 0.15s ease, background-color 0.15s ease',
+    transition: 'background-color 0.15s ease',
     opacity: disabled ? 0.6 : 1,
     cursor: disabled ? 'not-allowed' : 'pointer',
     userSelect: 'none',
@@ -318,7 +318,7 @@ export const Dropdown = forwardRef<HTMLSelectElement, DropdownProps>(function Dr
   const labelStyles: React.CSSProperties = {
     position: 'absolute',
     left: `calc(${sizeStyles.paddingLeft} - 4px)`,
-    top: shouldShrink ? (isBorderThick ? '-1px' : '-0.5px') : '50%',
+    top: shouldShrink ? '-1px' : '50%',
     transform: shouldShrink
       ? 'translateY(-50%) scale(0.75)'
       : 'translateY(-50%) scale(1)',
