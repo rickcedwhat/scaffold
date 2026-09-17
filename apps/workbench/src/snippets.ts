@@ -123,16 +123,16 @@ const [origin, setOrigin] = useState('downtown');
 
   <SidebarNav>
     <SidebarSection title="Main">
-      <SidebarItem icon="🏠" active>Dashboard</SidebarItem>
-      <SidebarItem icon="📊" badge={<Badge size="sm" intent="primary">Live</Badge>}>
+      <SidebarItem icon={<Home size={16} />} active>Dashboard</SidebarItem>
+      <SidebarItem icon={<BarChart3 size={16} />} badge={<Badge size="sm" intent="primary">Live</Badge>}>
         Analytics
       </SidebarItem>
-      <SidebarItem icon="📁">Documents</SidebarItem>
+      <SidebarItem icon={<Folder size={16} />}>Documents</SidebarItem>
     </SidebarSection>
 
     <SidebarSection title="Settings">
-      <SidebarItem icon="👤">Profile</SidebarItem>
-      <SidebarItem icon="🔒" disabled>Security</SidebarItem>
+      <SidebarItem icon={<User size={16} />}>Profile</SidebarItem>
+      <SidebarItem icon={<Lock size={16} />} disabled>Security</SidebarItem>
     </SidebarSection>
   </SidebarNav>
 
