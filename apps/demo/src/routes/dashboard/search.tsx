@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import { createFileRoute, useNavigate, useLocation } from '@tanstack/react-router';
 import {
   Stack,
   Heading,
@@ -91,6 +91,7 @@ const mockIndex = [
 function SearchComponent() {
   const { q = '', scope = 'all' } = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
+  const location = useLocation();
   const { colors } = useTheme();
 
   const handleSearchChange = (val: string) => {
@@ -171,7 +172,7 @@ function SearchComponent() {
           Showing {results.length} results {q ? `for "${q}"` : ''}
         </Text>
         <Badge intent="neutral" size="sm">
-          URL: ?q={q || 'empty'}&amp;scope={scope}
+          URL: {location.searchStr ? location.searchStr : '?q=&scope=all'}
         </Badge>
       </div>
 

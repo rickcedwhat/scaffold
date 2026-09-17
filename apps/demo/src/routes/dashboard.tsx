@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet, useNavigate, useLocation, Link } from '@tanstack/react-router';
+import { createFileRoute, Outlet, useNavigate, useLocation } from '@tanstack/react-router';
 import {
   Sidebar,
   SidebarHeader,
@@ -141,14 +141,17 @@ function DashboardLayout() {
                 borderTop: `1px solid ${colors.border.subtle}`,
               }}
             >
-              <Link to="/">
-                <Button variant="ghost" size="sm" aria-label="Back to Home">
-                  <Stack direction="row" gap={1} align="center">
-                    <Home size={14} />
-                    <span>Home</span>
-                  </Stack>
-                </Button>
-              </Link>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate({ to: '/' })}
+                aria-label="Back to Home"
+              >
+                <Stack direction="row" gap={1} align="center">
+                  <Home size={14} />
+                  <span>Home</span>
+                </Stack>
+              </Button>
 
               <Button
                 variant="ghost"

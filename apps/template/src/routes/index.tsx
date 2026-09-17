@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from '@tanstack/react-router';
+import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import {
   PageShell,
   Container,
@@ -27,6 +27,7 @@ export const Route = createFileRoute('/')({
 
 function TemplateHome() {
   const { mode, toggleMode, colors } = useTheme();
+  const navigate = useNavigate();
 
   return (
     <PageShell>
@@ -63,11 +64,14 @@ function TemplateHome() {
             >
               {mode === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
             </Button>
-            <Link to="/app">
-              <Button variant="solid" intent="primary" size="sm">
-                Open App
-              </Button>
-            </Link>
+            <Button
+              variant="solid"
+              intent="primary"
+              size="sm"
+              onClick={() => navigate({ to: '/app' })}
+            >
+              Open App
+            </Button>
           </Stack>
         </div>
       </Header>
@@ -102,14 +106,17 @@ function TemplateHome() {
               </div>
 
               <div style={{ marginTop: '12px' }}>
-                <Link to="/app">
-                  <Button variant="solid" intent="primary" size="lg">
-                    <Stack direction="row" gap={2} align="center">
-                      <span>Launch App</span>
-                      <ArrowRight size={18} />
-                    </Stack>
-                  </Button>
-                </Link>
+                <Button
+                  variant="solid"
+                  intent="primary"
+                  size="lg"
+                  onClick={() => navigate({ to: '/app' })}
+                >
+                  <Stack direction="row" gap={2} align="center">
+                    <span>Launch App</span>
+                    <ArrowRight size={18} />
+                  </Stack>
+                </Button>
               </div>
             </Stack>
           </div>

@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from '@tanstack/react-router';
+import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import {
   Stack,
   Heading,
@@ -24,6 +24,7 @@ export const Route = createFileRoute('/dashboard/')({
 
 function DashboardOverview() {
   const { colors } = useTheme();
+  const navigate = useNavigate();
 
   return (
     <Stack direction="column" gap={6}>
@@ -33,6 +34,8 @@ function DashboardOverview() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '16px',
         }}
       >
         <Stack direction="column" gap={1}>
@@ -44,14 +47,17 @@ function DashboardOverview() {
           </Text>
         </Stack>
 
-        <Link to="/dashboard/projects">
-          <Button variant="solid" intent="primary" size="sm">
-            <Stack direction="row" gap={1} align="center">
-              <Plus size={16} />
-              <span>New Project</span>
-            </Stack>
-          </Button>
-        </Link>
+        <Button
+          variant="solid"
+          intent="primary"
+          size="sm"
+          onClick={() => navigate({ to: '/dashboard/projects' })}
+        >
+          <Stack direction="row" gap={1} align="center">
+            <Plus size={16} />
+            <span>New Project</span>
+          </Stack>
+        </Button>
       </div>
 
       {/* KPI Metric Cards */}
@@ -136,14 +142,16 @@ function DashboardOverview() {
             <Heading level={3} size="lg">
               Recent Deployment Activity
             </Heading>
-            <Link to="/dashboard/projects">
-              <Button variant="ghost" size="sm">
-                <Stack direction="row" gap={1} align="center">
-                  <span>View All</span>
-                  <ArrowUpRight size={14} />
-                </Stack>
-              </Button>
-            </Link>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate({ to: '/dashboard/projects' })}
+            >
+              <Stack direction="row" gap={1} align="center">
+                <span>View All</span>
+                <ArrowUpRight size={14} />
+              </Stack>
+            </Button>
           </div>
 
           <Stack direction="column" gap={3}>

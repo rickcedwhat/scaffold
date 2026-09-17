@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from '@tanstack/react-router';
+import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import {
   PageShell,
   Container,
@@ -27,6 +27,7 @@ export const Route = createFileRoute('/')({
 
 function HomeComponent() {
   const { mode, toggleMode, colors } = useTheme();
+  const navigate = useNavigate();
 
   return (
     <PageShell>
@@ -42,14 +43,14 @@ function HomeComponent() {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                color: '#ffffff',
+                color: '#fff',
                 fontWeight: 700,
-                fontSize: '16px',
+                fontSize: '15px',
               }}
             >
               S
             </div>
-            <Heading level={4}>
+            <Heading level={4} size="sm">
               Scaffold Starter
             </Heading>
           </Stack>
@@ -63,11 +64,14 @@ function HomeComponent() {
             >
               {mode === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
             </Button>
-            <Link to="/dashboard">
-              <Button variant="solid" intent="primary" size="sm">
-                Open Dashboard
-              </Button>
-            </Link>
+            <Button
+              variant="solid"
+              intent="primary"
+              size="sm"
+              onClick={() => navigate({ to: '/dashboard' })}
+            >
+              Open Dashboard
+            </Button>
           </Stack>
         </div>
       </Header>
@@ -104,20 +108,26 @@ function HomeComponent() {
 
               <div style={{ marginTop: '16px' }}>
                 <Stack direction="row" gap={3} align="center">
-                  <Link to="/dashboard">
-                    <Button variant="solid" intent="primary" size="lg">
-                      <Stack direction="row" gap={2} align="center">
-                        <span>Launch Dashboard</span>
-                        <ArrowRight size={18} />
-                      </Stack>
-                    </Button>
-                  </Link>
+                  <Button
+                    variant="solid"
+                    intent="primary"
+                    size="lg"
+                    onClick={() => navigate({ to: '/dashboard' })}
+                  >
+                    <Stack direction="row" gap={2} align="center">
+                      <span>Launch Dashboard</span>
+                      <ArrowRight size={18} />
+                    </Stack>
+                  </Button>
 
-                  <Link to="/dashboard/projects">
-                    <Button variant="outline" intent="secondary" size="lg">
-                      Explore Projects
-                    </Button>
-                  </Link>
+                  <Button
+                    variant="outline"
+                    intent="secondary"
+                    size="lg"
+                    onClick={() => navigate({ to: '/dashboard/projects' })}
+                  >
+                    Explore Projects
+                  </Button>
                 </Stack>
               </div>
             </Stack>

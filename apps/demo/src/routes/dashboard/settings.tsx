@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useState, useRef, useEffect, type FormEvent } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
 import {
   Stack,
@@ -48,6 +48,16 @@ function SettingsComponent() {
   const [submitError, setSubmitError] = useState(false);
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const nameIsDirty = name !== savedValues.name;
   const emailIsDirty = email !== savedValues.email;
   const orgIsDirty = org !== savedValues.org;
@@ -93,11 +103,17 @@ function SettingsComponent() {
       return;
     }
 
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
     setSubmitError(false);
     setSavedValues({ name, email, org, role, timezone });
     setTouched({});
     setSaved(true);
-    setTimeout(() => setSaved(false), 2500);
+    saveTimeoutRef.current = setTimeout(() => {
+      setSaved(false);
+      saveTimeoutRef.current = null;
+    }, 2500);
   };
 
   return (
