@@ -9,7 +9,6 @@ import {
   Stack,
   Heading,
   Text,
-  Section,
   Avatar,
   Badge,
   TextInput,
@@ -22,8 +21,6 @@ import {
   SidebarFooter,
   useTheme,
   type ButtonIntent,
-  type ButtonVariant,
-  type ButtonSize,
 } from '@scaffold/ui';
 import { ComponentExample } from './components/ComponentExample';
 import { SNIPPETS } from './snippets';

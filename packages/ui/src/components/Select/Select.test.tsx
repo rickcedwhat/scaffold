@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import React, { createRef } from 'react';
-import { Dropdown, Select } from './Select';
+import { createRef } from 'react';
+import { Dropdown } from './Select';
 
 describe('Dropdown / Select', () => {
   const options = [
