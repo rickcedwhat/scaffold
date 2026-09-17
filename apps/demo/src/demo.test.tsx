@@ -75,6 +75,36 @@ describe('Scaffold Starter Application', () => {
     expect(await screen.findByText('Changes Saved!')).toBeInTheDocument();
   });
 
+  it('validates email field and activates design system error state', async () => {
+    renderApp('/dashboard/settings');
+
+    expect(await screen.findByText('Workspace Settings')).toBeInTheDocument();
+    const emailInput = screen.getByDisplayValue('alex@example.com');
+
+    // Type invalid email 'alex' and blur
+    fireEvent.change(emailInput, { target: { value: 'alex' } });
+    fireEvent.blur(emailInput);
+
+    // Error helper text should appear with role="alert"
+    const alertMessage = await screen.findByRole('alert');
+    expect(alertMessage).toHaveTextContent('Please enter a valid email address');
+    expect(emailInput).toHaveAttribute('aria-invalid', 'true');
+
+    // Trying to submit while invalid should prevent saving
+    const saveButton = screen.getByRole('button', { name: /save preferences/i });
+    fireEvent.click(saveButton);
+    expect(screen.queryByText('Changes Saved!')).not.toBeInTheDocument();
+
+    // Fix the email to valid
+    fireEvent.change(emailInput, { target: { value: 'alex@scaffold.dev' } });
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(emailInput).toHaveAttribute('aria-invalid', 'false');
+
+    // Save should succeed now
+    fireEvent.click(saveButton);
+    expect(await screen.findByText('Changes Saved!')).toBeInTheDocument();
+  });
+
   it('renders projects route with loader data and filters', async () => {
     renderApp('/dashboard/projects');
 
