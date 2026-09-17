@@ -386,7 +386,7 @@ export const Dropdown = forwardRef<HTMLSelectElement, DropdownProps>(function Dr
         onMouseLeave={() => setIsHovered(false)}
       >
         {label && (
-          <label htmlFor={selectId} style={labelStyles}>
+          <label id={`${selectId}-label`} htmlFor={selectId} style={labelStyles}>
             {label}
             {required && (
               <span style={{ color: colors.intent.danger.main, marginLeft: '2px' }}>*</span>
@@ -403,7 +403,7 @@ export const Dropdown = forwardRef<HTMLSelectElement, DropdownProps>(function Dr
           aria-haspopup="listbox"
           aria-expanded={isOpen}
           aria-controls={`${selectId}-menu`}
-          aria-labelledby={label ? selectId : undefined}
+          aria-labelledby={label ? `${selectId}-label` : undefined}
           aria-invalid={isError}
           aria-describedby={helperText ? helperId : undefined}
           disabled={disabled}

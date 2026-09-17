@@ -11,28 +11,48 @@ import {
   Button,
   useTheme,
 } from '@scaffold/ui';
-import { Check, Save, User, Mail, Building } from 'lucide-react';
+import { Check, Save, User, Mail, Building, AlertCircle } from 'lucide-react';
 
 export const Route = createFileRoute('/dashboard/settings')({
   component: SettingsComponent,
 });
 
-const INITIAL_VALUES = {
+interface SettingsValues {
+  name: string;
+  email: string;
+  org: string;
+  role: string;
+  timezone: string;
+}
+
+const INITIAL_SETTINGS: SettingsValues = {
   name: 'Alex Developer',
   email: 'alex@example.com',
   org: 'Acme Technologies',
+  role: 'admin',
+  timezone: 'utc',
 };
 
 function SettingsComponent() {
   const { colors } = useTheme();
 
-  const [name, setName] = useState(INITIAL_VALUES.name);
-  const [email, setEmail] = useState(INITIAL_VALUES.email);
-  const [org, setOrg] = useState(INITIAL_VALUES.org);
-  const [role, setRole] = useState('admin');
-  const [timezone, setTimezone] = useState('utc');
+  const [savedValues, setSavedValues] = useState<SettingsValues>(INITIAL_SETTINGS);
+
+  const [name, setName] = useState(savedValues.name);
+  const [email, setEmail] = useState(savedValues.email);
+  const [org, setOrg] = useState(savedValues.org);
+  const [role, setRole] = useState(savedValues.role);
+  const [timezone, setTimezone] = useState(savedValues.timezone);
+
   const [saved, setSaved] = useState(false);
+  const [submitError, setSubmitError] = useState(false);
   const [touched, setTouched] = useState<Record<string, boolean>>({});
+
+  const nameIsDirty = name !== savedValues.name;
+  const emailIsDirty = email !== savedValues.email;
+  const orgIsDirty = org !== savedValues.org;
+  const roleIsDirty = role !== savedValues.role;
+  const timezoneIsDirty = timezone !== savedValues.timezone;
 
   const validateEmail = (val: string) => {
     if (!val.trim()) return 'Email address is required.';
@@ -68,9 +88,14 @@ function SettingsComponent() {
     const currentOrgError = validateOrg(org);
 
     if (currentNameError || currentEmailError || currentOrgError) {
+      setSubmitError(true);
+      setSaved(false);
       return;
     }
 
+    setSubmitError(false);
+    setSavedValues({ name, email, org, role, timezone });
+    setTouched({});
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
   };
@@ -103,10 +128,13 @@ function SettingsComponent() {
                 label="Full Name"
                 placeholder="Enter your name"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={(e) => {
+                  setName(e.target.value);
+                  if (submitError) setSubmitError(false);
+                }}
                 onBlur={handleBlur('name')}
                 error={Boolean(nameError)}
-                isDirty={name !== INITIAL_VALUES.name}
+                isDirty={nameIsDirty}
                 prefixSlot={
                   <User
                     size={16}
@@ -122,10 +150,13 @@ function SettingsComponent() {
                 placeholder="Enter your email"
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (submitError) setSubmitError(false);
+                }}
                 onBlur={handleBlur('email')}
                 error={Boolean(emailError)}
-                isDirty={email !== INITIAL_VALUES.email}
+                isDirty={emailIsDirty}
                 prefixSlot={
                   <Mail
                     size={16}
@@ -142,10 +173,13 @@ function SettingsComponent() {
                 label="Organization"
                 placeholder="Enter organization"
                 value={org}
-                onChange={(e) => setOrg(e.target.value)}
+                onChange={(e) => {
+                  setOrg(e.target.value);
+                  if (submitError) setSubmitError(false);
+                }}
                 onBlur={handleBlur('org')}
                 error={Boolean(orgError)}
-                isDirty={org !== INITIAL_VALUES.org}
+                isDirty={orgIsDirty}
                 prefixSlot={
                   <Building
                     size={16}
@@ -171,7 +205,11 @@ function SettingsComponent() {
               <Dropdown
                 label="Default Project Role"
                 value={role}
-                onChange={(e) => setRole(e.target.value)}
+                onChange={(e) => {
+                  setRole(e.target.value);
+                  if (submitError) setSubmitError(false);
+                }}
+                isDirty={roleIsDirty}
                 options={[
                   { value: 'admin', label: 'Administrator (Full Access)' },
                   { value: 'editor', label: 'Editor (Can Edit & Deploy)' },
@@ -183,7 +221,11 @@ function SettingsComponent() {
               <Dropdown
                 label="Preferred Timezone"
                 value={timezone}
-                onChange={(e) => setTimezone(e.target.value)}
+                onChange={(e) => {
+                  setTimezone(e.target.value);
+                  if (submitError) setSubmitError(false);
+                }}
+                isDirty={timezoneIsDirty}
                 options={[
                   { value: 'utc', label: 'UTC (Coordinated Universal Time)' },
                   { value: 'est', label: 'EST (Eastern Standard Time, UTC-5)' },
@@ -198,16 +240,42 @@ function SettingsComponent() {
 
           {/* Save Action */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <Button variant="solid" intent="primary" size="md" type="submit">
+            <Button
+              variant="solid"
+              intent={submitError ? 'danger' : 'primary'}
+              size="md"
+              type="submit"
+            >
               <Stack direction="row" gap={2} align="center">
-                {saved ? <Check size={16} /> : <Save size={16} />}
-                <span>{saved ? 'Changes Saved!' : 'Save Preferences'}</span>
+                {saved ? (
+                  <Check size={16} />
+                ) : submitError ? (
+                  <AlertCircle size={16} />
+                ) : (
+                  <Save size={16} />
+                )}
+                <span>
+                  {saved
+                    ? 'Changes Saved!'
+                    : submitError
+                    ? 'Fix Errors to Save'
+                    : 'Save Preferences'}
+                </span>
               </Stack>
             </Button>
 
             {saved && (
               <Badge intent="success" size="sm">
                 Saved successfully
+              </Badge>
+            )}
+
+            {submitError && (
+              <Badge intent="danger" size="sm">
+                <Stack direction="row" gap={1} align="center">
+                  <AlertCircle size={14} />
+                  <span>Please resolve highlighted errors</span>
+                </Stack>
               </Badge>
             )}
           </div>

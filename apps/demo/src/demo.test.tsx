@@ -90,10 +90,12 @@ describe('Scaffold Starter Application', () => {
     expect(alertMessage).toHaveTextContent('Please enter a valid email address');
     expect(emailInput).toHaveAttribute('aria-invalid', 'true');
 
-    // Trying to submit while invalid should prevent saving
+    // Trying to submit while invalid should prevent saving and trigger error feedback
     const saveButton = screen.getByRole('button', { name: /save preferences/i });
     fireEvent.click(saveButton);
     expect(screen.queryByText('Changes Saved!')).not.toBeInTheDocument();
+    expect(screen.getByText('Fix Errors to Save')).toBeInTheDocument();
+    expect(screen.getByText('Please resolve highlighted errors')).toBeInTheDocument();
 
     // Fix the email to valid
     fireEvent.change(emailInput, { target: { value: 'alex@scaffold.dev' } });
@@ -101,8 +103,31 @@ describe('Scaffold Starter Application', () => {
     expect(emailInput).toHaveAttribute('aria-invalid', 'false');
 
     // Save should succeed now
-    fireEvent.click(saveButton);
+    const updatedSaveButton = screen.getByRole('button', { name: /save preferences/i });
+    fireEvent.click(updatedSaveButton);
     expect(await screen.findByText('Changes Saved!')).toBeInTheDocument();
+    expect(screen.getByText('Saved successfully')).toBeInTheDocument();
+  });
+
+  it('tracks isDirty on inputs and dropdowns, and resets dirty state on successful save', async () => {
+    renderApp('/dashboard/settings');
+
+    expect(await screen.findByText('Workspace Settings')).toBeInTheDocument();
+
+    // Change role dropdown
+    const roleTrigger = screen.getByRole('combobox', { name: /default project role/i });
+    fireEvent.click(roleTrigger);
+    const options = screen.getAllByRole('option', { name: /Editor/i });
+    fireEvent.click(options[options.length - 1]!);
+    expect(roleTrigger).toHaveTextContent('Editor (Can Edit & Deploy)');
+
+    // Save preferences
+    const saveButton = screen.getByRole('button', { name: /save preferences/i });
+    fireEvent.click(saveButton);
+
+    // Save should succeed and show feedback
+    expect(await screen.findByText('Changes Saved!')).toBeInTheDocument();
+    expect(screen.getByText('Saved successfully')).toBeInTheDocument();
   });
 
   it('renders projects route with loader data and filters', async () => {
