@@ -56,6 +56,7 @@ Contributions are partitioned cleanly between automated generation and human ove
 
 - An AI service account handles all automated branch creation, implementation commits, and pull requests.
 - Every PR opened by the AI account automatically triggers the CI test suite (typecheck, lint, Vitest, Playwright smoke tests) and requests review from the primary account.
+- Automated peer review (CodeRabbit) acts as an independent auditor on PRs, pre-checking logic, edge cases, accessibility, and guardrails before human review.
 - Merges to `main` and production deployments are executed strictly by the primary human account.
 
 ---

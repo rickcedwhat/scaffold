@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+language: "en-US"
+early_access: false
+
+reviews:
+  profile: "chill"
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: false
+  review_status: true
+  collapse_walkthrough: false
+  auto_review:
+    enabled: true
+    drafts: false
+
+  instructions: |
+    You are an architectural and quality reviewer for this Scaffold application.
+    Enforce these core engineering principles:
+
+    1. Component Boundaries:
+       - Use `@scaffold/ui` design system components (`Button`, `Card`, `Stack`, `Grid`, `TextInput`, `Dropdown`, `Header`, `PageShell`).
+       - Never pass arbitrary `className` or `style` props to `@scaffold/ui` components. Customization must use semantic design tokens and props.
+       - Layout must use structural layout primitives (`Stack`, `Grid`, `Card`) with tokenized spacing scales.
+
+    2. Architecture & Tech Stack:
+       - Routing: TanStack Router with file-based routing and type-safe search parameters.
+       - Server State: TanStack Query with standard query key factories.
+       - Route prefetching: Prefer `queryClient.ensureQueryData` in route loaders over fire-and-forget `useEffect` calls.
+       - Forms: Always suppress native browser validation bubbles with `<form noValidate>` and wire custom error/dirty states (`error`, `helperText`, `isDirty`).
+
+    3. Quality & Testing:
+       - Ensure new routes and stateful workflows include Vitest unit tests or Playwright smoke tests.
+       - Validate accessibility: ensure interactive elements have appropriate ARIA attributes, keyboard support, and visible focus treatments.
+
+  path_instructions:
+    - path: "src/routes/**"
+      instructions: |
+        Ensure TanStack Router routes use type-safe search parameters and route loaders.
+        Verify nested layout shells properly utilize `<Outlet />`.
+        Verify forms use `<form noValidate>` and connect custom validation feedback.
+
+    - path: "src/**/*.test.{ts,tsx}"
+      instructions: |
+        Verify tests focus on user behavior and accessible roles (e.g. `getByRole`) rather than implementation details.
+
+knowledge_base:
+  opt_out: false
+  web_search:
+    enabled: true
+  learnings:
+    scope: auto

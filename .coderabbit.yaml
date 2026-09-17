@@ -1,0 +1,67 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+language: "en-US"
+early_access: false
+
+reviews:
+  profile: "chill"
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: false
+  review_status: true
+  collapse_walkthrough: false
+  auto_review:
+    enabled: true
+    drafts: false
+
+  instructions: |
+    You are an architectural and quality reviewer for Scaffold, governed by `philosophy.md`.
+    Enforce these core engineering principles:
+
+    1. Component Boundaries (The Component Guardrail Principle):
+       - Never allow public interfaces of UI components to accept arbitrary `className` or `style` props.
+       - Styling must be encapsulated and driven exclusively by semantic design tokens and props (e.g. `variant`, `intent`, `size`, `density`).
+       - Layout must use structural primitives (`Stack`, `Grid`, `PageShell`, `Card`) with tokenized spacing scales.
+
+    2. Architecture & Tech Stack:
+       - Routing: TanStack Router with file-based routing and type-safe search parameters.
+       - Server State: TanStack Query with standard query key factories.
+       - Route prefetching: Prefer `queryClient.ensureQueryData` in route loaders over fire-and-forget `useEffect` calls.
+       - Forms: Always suppress native browser validation popups with `noValidate` on `<form>`, and wire design system error/dirty states (`error`, `helperText`, `isDirty`).
+       - Real-time: Clean listener lifecycles with unsubscribe cleanup.
+
+    3. Dual-Account Git Flow:
+       - The automated AI account (`rickcedwhat-ai`) opens feature PRs. Merging to `main` is reserved strictly for the human developer.
+       - Do not suggest merging directly to `main`.
+
+    4. Quality & Testing:
+       - Ensure new routes and stateful workflows include Vitest unit tests or Playwright smoke tests.
+       - Validate accessibility: ensure interactive elements have appropriate ARIA attributes, keyboard support, and visible focus treatments.
+
+  path_instructions:
+    - path: "packages/ui/**"
+      instructions: |
+        Strictly enforce zero `className` and zero `style` props in component interfaces.
+        Ensure colors, spacing, and typography consume the centralized theme tokens (`useTheme()`).
+        Validate accessibility (ARIA roles, keyboard event handlers, forwardRef).
+
+    - path: "apps/**/routes/**"
+      instructions: |
+        Ensure TanStack Router routes use type-safe search parameters and route loaders.
+        Verify nested layout shells properly utilize `<Outlet />`.
+        Verify forms use `<form noValidate>` and connect custom validation feedback.
+
+    - path: "**/*.test.{ts,tsx}"
+      instructions: |
+        Verify tests focus on user behavior and accessible roles (e.g. `getByRole`) rather than implementation details.
+
+knowledge_base:
+  opt_out: false
+  web_search:
+    enabled: true
+  learnings:
+    scope: auto
+  code_guidelines:
+    enabled: true
+    filePatterns:
+      - "philosophy.md"
+      - "AGENTS.md"
