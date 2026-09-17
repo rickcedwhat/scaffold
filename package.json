@@ -8,6 +8,8 @@
   ],
   "scripts": {
     "dev": "npm --workspace=apps/workbench run dev --",
+    "dev:demo": "npm --workspace=demo run dev --",
+    "dev:template": "npm --workspace=template run dev --",
     "build": "npm run build --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",

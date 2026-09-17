@@ -217,7 +217,8 @@ export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(function T
       ? 'translateY(-50%) scale(0.75)'
       : 'translateY(-50%) scale(1)',
     transformOrigin: '4px center',
-    transition: 'top 0.15s ease, transform 0.15s ease, color 0.15s ease',
+    transition:
+      'top 0.15s ease, transform 0.15s ease, color 0.15s ease, background-color 0.15s ease',
     color: isError
       ? colors.intent.danger.main
       : isFocused || (isDirty && !isError)
@@ -230,7 +231,8 @@ export const TextInput = forwardRef<HTMLInputElement, TextInputProps>(function T
       : tokens.typography.fontWeight.medium,
     pointerEvents: 'none',
     userSelect: 'none',
-    backgroundColor: shouldShrink ? colors.bg.surface : 'transparent',
+    backgroundColor: shouldShrink ? getBackgroundColor() : 'transparent',
+    borderRadius: shouldShrink ? tokens.radii.sm : '0',
     padding: '0 4px',
     zIndex: 1,
     lineHeight: 1,
