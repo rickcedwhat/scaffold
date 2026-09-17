@@ -2,8 +2,6 @@ import React, {
   useState,
   type ReactNode,
   type MouseEvent,
-  type AnchorHTMLAttributes,
-  type ButtonHTMLAttributes,
 } from 'react';
 import { useTheme } from '../../theme/ThemeContext';
 

@@ -1,6 +1,7 @@
 {
   "name": "scaffold-monorepo",
   "private": true,
+  "type": "module",
   "workspaces": [
     "packages/*",
     "apps/*"
@@ -9,10 +10,18 @@
     "dev": "npm --workspace=apps/workbench run dev --",
     "build": "npm run build --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
-    "test": "npm run test --workspaces --if-present"
+    "test": "npm run test --workspaces --if-present",
+    "prelint": "npm --workspace=@scaffold/eslint-plugin run build",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/node": "^22.13.4",
-    "typescript": "^5.7.3"
+    "@typescript-eslint/rule-tester": "^8.70.0",
+    "@typescript-eslint/utils": "^8.70.0",
+    "eslint": "^10.10.0",
+    "typescript": "^5.7.3",
+    "typescript-eslint": "^8.70.0"
   }
 }
