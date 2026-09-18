@@ -44,7 +44,7 @@ describe('Popover', () => {
           <button onClick={() => setOpen(!open)}>External Toggle</button>
           <Popover open={open} onOpenChange={setOpen}>
             <PopoverTrigger>
-              <span>Anchor</span>
+              <button type="button">Anchor</button>
             </PopoverTrigger>
             <PopoverContent>
               <div>Controlled Body</div>
