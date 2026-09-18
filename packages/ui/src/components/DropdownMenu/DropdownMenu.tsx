@@ -96,13 +96,17 @@ export function DropdownMenuItem({
   children,
   ...props
 }: DropdownMenuItemProps) {
-  const { colors, tokens } = useTheme();
+  const { colors, tokens, mode } = useTheme();
   const [isHovered, setIsHovered] = useState(false);
 
   const isDanger = intent === 'danger';
-  const defaultTextColor = isDanger ? colors.intent.danger.text : colors.text.primary;
+  const defaultTextColor = isDanger
+    ? (mode === 'dark' ? '#f87171' : colors.intent.danger.main)
+    : colors.text.primary;
   const hoverBg = isDanger ? colors.intent.danger.subtle : colors.bg.subtle;
-  const hoverTextColor = isDanger ? colors.intent.danger.text : colors.text.primary;
+  const hoverTextColor = isDanger
+    ? (mode === 'dark' ? '#fca5a5' : colors.intent.danger.hover)
+    : colors.text.primary;
 
   return (
     <RadixDropdownMenu.Item

@@ -108,6 +108,17 @@ export function useToast(): ToastStateValue {
 // ---------------------------------------------------------------------------
 // Low-level Radix Primitives
 // ---------------------------------------------------------------------------
+const toastStyles = `
+@keyframes scaffoldToastCountdown {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+`;
+
 export interface ToastProviderProps {
   swipeDirection?: 'right' | 'left' | 'up' | 'down';
   duration?: number;
@@ -121,6 +132,7 @@ export function ToastProvider({
 }: ToastProviderProps) {
   return (
     <RadixToast.Provider swipeDirection={swipeDirection} duration={duration}>
+      <style>{toastStyles}</style>
       {children}
     </RadixToast.Provider>
   );
@@ -144,7 +156,7 @@ export function ToastViewport({ position = 'bottom-right' }: ToastViewportProps)
         position: 'fixed',
         display: 'flex',
         flexDirection: 'column',
-        gap: '8px',
+        gap: '10px',
         width: '380px',
         maxWidth: 'calc(100vw - 32px)',
         margin: 0,
@@ -161,11 +173,20 @@ export function ToastViewport({ position = 'bottom-right' }: ToastViewportProps)
 export interface ToastProps
   extends Omit<ComponentPropsWithoutRef<typeof RadixToast.Root>, 'className' | 'style'> {
   intent?: ToastIntent;
+  duration?: number;
+  showProgress?: boolean;
   children: ReactNode;
 }
 
-export function Toast({ intent = 'neutral', children, ...props }: ToastProps) {
+export function Toast({
+  intent = 'neutral',
+  duration = 5000,
+  showProgress = true,
+  children,
+  ...props
+}: ToastProps) {
   const { colors, tokens } = useTheme();
+  const [isHovered, setIsHovered] = useState(false);
 
   const intentBorderColors: Record<ToastIntent, string> = {
     neutral: colors.border.default,
@@ -175,22 +196,27 @@ export function Toast({ intent = 'neutral', children, ...props }: ToastProps) {
     warning: '#f59e0b',
   };
 
+  const accentColor = intentBorderColors[intent];
+
   return (
     <RadixToast.Root
+      duration={duration}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
       style={{
+        position: 'relative',
         display: 'flex',
-        alignItems: 'flex-start',
-        justifyContent: 'space-between',
-        gap: tokens.spacing[3],
+        flexDirection: 'column',
         backgroundColor: colors.bg.surface,
         border: `1px solid ${colors.border.subtle}`,
-        borderLeft: `4px solid ${intentBorderColors[intent]}`,
+        borderLeft: `4px solid ${accentColor}`,
         borderRadius: tokens.radii.lg,
         boxShadow: tokens.shadows.lg,
-        padding: tokens.spacing[4],
         boxSizing: 'border-box',
         listStyle: 'none',
         outline: 'none',
+        overflow: 'hidden',
+        minWidth: '320px',
       }}
       {...props}
     >
@@ -199,11 +225,41 @@ export function Toast({ intent = 'neutral', children, ...props }: ToastProps) {
           display: 'flex',
           flexDirection: 'column',
           gap: tokens.spacing[1],
-          flex: 1,
+          padding: `${tokens.spacing[3]} ${tokens.spacing[4]}`,
+          paddingRight: tokens.spacing[8], // space for top-right close X
+          paddingBottom: showProgress && duration > 0 ? tokens.spacing[4] : tokens.spacing[3],
+          width: '100%',
+          boxSizing: 'border-box',
         }}
       >
         {children}
       </div>
+
+      {showProgress && duration > 0 && (
+        <div
+          style={{
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: '3px',
+            backgroundColor: `${accentColor}25`,
+            overflow: 'hidden',
+          }}
+        >
+          <div
+            data-testid="toast-progress"
+            style={{
+              height: '100%',
+              width: '100%',
+              backgroundColor: accentColor,
+              transformOrigin: 'left',
+              animation: `scaffoldToastCountdown ${duration}ms linear forwards`,
+              animationPlayState: isHovered ? 'paused' : 'running',
+            }}
+          />
+        </div>
+      )}
     </RadixToast.Root>
   );
 }
@@ -218,6 +274,7 @@ export function ToastTitle({ children, ...props }: ToastTitleProps) {
   return (
     <RadixToast.Title
       style={{
+        margin: 0,
         fontSize: tokens.typography.fontSize.sm,
         fontWeight: tokens.typography.fontWeight.semibold,
         color: colors.text.primary,
@@ -240,8 +297,9 @@ export function ToastDescription({ children, ...props }: ToastDescriptionProps) 
   return (
     <RadixToast.Description
       style={{
-        fontSize: tokens.typography.fontSize.xs,
-        color: colors.text.muted,
+        margin: 0,
+        fontSize: tokens.typography.fontSize.sm,
+        color: colors.text.secondary,
         lineHeight: tokens.typography.lineHeight.normal,
       }}
       {...props}
@@ -263,16 +321,24 @@ export function ToastAction({ altText, children, ...props }: ToastActionProps) {
     <RadixToast.Action
       altText={altText}
       style={{
+        marginTop: tokens.spacing[2],
         backgroundColor: colors.bg.subtle,
         color: colors.text.primary,
-        border: `1px solid ${colors.border.subtle}`,
+        border: `1px solid ${colors.border.default}`,
         borderRadius: tokens.radii.sm,
-        padding: `${tokens.spacing[1]} ${tokens.spacing[2]}`,
+        padding: `${tokens.spacing[1]} ${tokens.spacing[3]}`,
         fontSize: tokens.typography.fontSize.xs,
         fontWeight: tokens.typography.fontWeight.medium,
         cursor: 'pointer',
-        alignSelf: 'center',
+        alignSelf: 'flex-start',
         whiteSpace: 'nowrap',
+        transition: 'background-color 0.15s ease, border-color 0.15s ease',
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.backgroundColor = colors.border.subtle;
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.backgroundColor = colors.bg.subtle;
       }}
       {...props}
     >
@@ -291,6 +357,9 @@ export function ToastClose({ children }: ToastCloseProps) {
     <RadixToast.Close
       aria-label="Dismiss toast"
       style={{
+        position: 'absolute',
+        top: tokens.spacing[2],
+        right: tokens.spacing[2],
         backgroundColor: 'transparent',
         border: 'none',
         color: colors.text.muted,
@@ -300,17 +369,26 @@ export function ToastClose({ children }: ToastCloseProps) {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        alignSelf: 'flex-start',
+        zIndex: 10,
+        transition: 'color 0.15s ease, background-color 0.15s ease',
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.color = colors.text.primary;
+        e.currentTarget.style.backgroundColor = colors.bg.subtle;
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.color = colors.text.muted;
+        e.currentTarget.style.backgroundColor = 'transparent';
       }}
     >
       {children || (
         <svg
-          width="14"
-          height="14"
+          width="15"
+          height="15"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
-          strokeWidth="2"
+          strokeWidth="2.2"
           strokeLinecap="round"
           strokeLinejoin="round"
         >
@@ -343,7 +421,7 @@ export function Toaster({ position = 'bottom-right', duration = 5000 }: ToasterP
         <Toast
           key={item.id}
           intent={item.intent}
-          duration={item.duration}
+          duration={item.duration ?? duration}
           onOpenChange={(open) => {
             if (!open) {
               toastStore.remove(item.id);
