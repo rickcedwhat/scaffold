@@ -1,7 +1,11 @@
-import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
+import { render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { StatusIllustration } from './StatusIllustration';
+
+vi.mock('lottie-react', () => {
+  throw new Error('Failed to load lottie-react');
+});
 
 describe('StatusIllustration', () => {
   it('renders default empty preset with image role and aria-label', () => {
@@ -32,9 +36,26 @@ describe('StatusIllustration', () => {
   it('renders custom fallback element when provided', () => {
     render(
       <StatusIllustration
-        fallback={<div data-testid="custom-vector">Custom Graphic</div>}
+        fallback={<div>Custom Graphic</div>}
       />
     );
-    expect(screen.getByTestId('custom-vector')).toHaveTextContent('Custom Graphic');
+    expect(screen.getByText('Custom Graphic')).toBeInTheDocument();
+  });
+
+  it('renders fallback when lazy Lottie fails to load', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    render(
+      <StatusIllustration
+        animationData={{ v: '5.5.7' }}
+        fallback={<div>Animation Failed Fallback</div>}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Animation Failed Fallback')).toBeInTheDocument();
+    });
+
+    consoleSpy.mockRestore();
   });
 });

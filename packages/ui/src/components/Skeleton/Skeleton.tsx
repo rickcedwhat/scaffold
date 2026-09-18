@@ -32,7 +32,8 @@ function ensureSkeletonKeyframes() {
       60%, 100% { transform: translateX(100%); }
     }
     @media (prefers-reduced-motion: reduce) {
-      .scaffold-skeleton-animated {
+      .scaffold-skeleton-animated,
+      .scaffold-skeleton-animated * {
         animation: none !important;
       }
     }
@@ -71,14 +72,14 @@ export const Skeleton = forwardRef<HTMLDivElement, SkeletonProps>(
 
     const defaultHeight = {
       text: '1em',
-      circular: formatDimension(width) || '2.5rem',
-      rectangular: '100%',
-      rounded: '100%',
+      circular: formatDimension(width) || tokens.spacing[10],
+      rectangular: tokens.spacing[12],
+      rounded: tokens.spacing[12],
     }[variant];
 
     const defaultWidth = {
       text: '100%',
-      circular: formatDimension(height) || '2.5rem',
+      circular: formatDimension(height) || tokens.spacing[10],
       rectangular: '100%',
       rounded: '100%',
     }[variant];

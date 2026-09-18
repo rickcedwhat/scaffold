@@ -45,4 +45,20 @@ describe('Skeleton', () => {
     rerender(<Skeleton animation="none" aria-label="Static skeleton" />);
     expect(screen.getByRole('status')).toBeInTheDocument();
   });
+
+  it('renders rectangular and rounded variants with default token dimensions and supports overrides', () => {
+    const { rerender } = render(<Skeleton variant="rectangular" aria-label="Card skeleton" />);
+    const cardEl = screen.getByRole('status');
+    expect(cardEl).toHaveStyle({
+      height: '3rem',
+      borderRadius: '0px',
+    });
+
+    rerender(<Skeleton variant="rounded" height={120} aria-label="Banner skeleton" />);
+    const bannerEl = screen.getByRole('status');
+    expect(bannerEl).toHaveStyle({
+      height: '120px',
+      borderRadius: '12px',
+    });
+  });
 });

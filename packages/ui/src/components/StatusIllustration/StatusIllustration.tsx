@@ -281,9 +281,9 @@ export const StatusIllustration = forwardRef<HTMLDivElement, StatusIllustrationP
                   y="62"
                   textAnchor="middle"
                   fill={colors.intent.primary.main}
-                  fontSize="16"
-                  fontWeight="700"
-                  fontFamily="system-ui, sans-serif"
+                  fontSize={tokens.typography.fontSize.base}
+                  fontWeight={tokens.typography.fontWeight.bold}
+                  fontFamily={tokens.typography.fontFamily.sans}
                 >
                   404
                 </text>

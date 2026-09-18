@@ -39,16 +39,16 @@ describe('EmptyState', () => {
   it('supports custom illustration slot', () => {
     render(
       <EmptyState
-        illustration={<span data-testid="custom-art">Custom Art</span>}
+        illustration={<span>Custom Art</span>}
         title="Custom State"
       />
     );
 
-    expect(screen.getByTestId('custom-art')).toBeInTheDocument();
+    expect(screen.getByText('Custom Art')).toBeInTheDocument();
   });
 
   it('supports horizontal layout and bordered mode', () => {
-    const { container } = render(
+    render(
       <EmptyState
         layout="horizontal"
         bordered
@@ -57,9 +57,10 @@ describe('EmptyState', () => {
       />
     );
 
-    const region = container.firstElementChild as HTMLElement;
+    const region = screen.getByRole('region', { name: 'Compact Banner' });
     expect(region).toHaveStyle({
       flexDirection: 'row',
+      borderStyle: 'dashed',
     });
   });
 });
