@@ -212,4 +212,89 @@ const [origin, setOrigin] = useState('downtown');
   <Text size="xs" color="muted">Caption text (0.75rem / 12px)</Text>
 </Stack>`,
   },
+
+  overlays: {
+    dialog: `// Accessible Dialog / Modal with blur backdrop and token styling
+<Dialog>
+  <DialogTrigger>
+    <Button intent="primary">Open Dialog</Button>
+  </DialogTrigger>
+  <DialogContent size="md">
+    <DialogHeader>
+      <DialogTitle>Confirm Deployment</DialogTitle>
+      <DialogDescription>
+        This will immediately deploy the latest commit to production.
+      </DialogDescription>
+    </DialogHeader>
+    <Text size="sm">Please verify you have run all test suites locally.</Text>
+    <DialogFooter>
+      <DialogClose>
+        <Button variant="outline">Cancel</Button>
+      </DialogClose>
+      <DialogClose>
+        <Button intent="primary" onClick={() => alert('Deployed!')}>
+          Confirm Deploy
+        </Button>
+      </DialogClose>
+    </DialogFooter>
+  </DialogContent>
+</Dialog>`,
+    popover: `// Floating Popover card with anchor collision handling
+<Popover>
+  <PopoverTrigger>
+    <Button variant="outline">Filter Settings</Button>
+  </PopoverTrigger>
+  <PopoverContent showCloseButton side="bottom" align="start">
+    <Stack gap={3}>
+      <Text weight="semibold" size="sm">Quick Filters</Text>
+      <Text size="xs" color="muted">Select environment target</Text>
+      <Button size="sm" intent="primary">Save Filter</Button>
+    </Stack>
+  </PopoverContent>
+</Popover>`,
+    dropdownMenu: `// Keyboard-accessible DropdownMenu with semantic item intents
+<DropdownMenu>
+  <DropdownMenuTrigger>
+    <Button variant="outline">Project Actions</Button>
+  </DropdownMenuTrigger>
+  <DropdownMenuContent align="start">
+    <DropdownMenuLabel>Manage</DropdownMenuLabel>
+    <DropdownMenuItem onSelect={() => console.log('Edit')}>
+      Edit Details
+    </DropdownMenuItem>
+    <DropdownMenuItem onSelect={() => console.log('Duplicate')}>
+      Duplicate Project
+    </DropdownMenuItem>
+    <DropdownMenuSeparator />
+    <DropdownMenuItem intent="danger" onSelect={() => console.log('Delete')}>
+      Delete Project
+    </DropdownMenuItem>
+  </DropdownMenuContent>
+</DropdownMenu>`,
+    tooltip: `// Tooltip: Ergonomic single-prop wrapper or compound syntax
+<Tooltip content="Sync with GitHub (Cmd+S)">
+  <Button variant="outline" size="sm">Sync</Button>
+</Tooltip>`,
+  },
+
+  toasts: {
+    imperative: `// Trigger notifications imperatively from anywhere
+import { toast, Toaster } from '@scaffold/ui';
+
+// In root layout:
+<Toaster position="bottom-right" />
+
+// In event handlers:
+toast.success('Project deployed successfully!');
+toast.error('Network connection timeout');
+toast({
+  title: 'Backup Complete',
+  description: 'Saved 24 database snapshots to S3.',
+  intent: 'primary',
+  action: {
+    label: 'View',
+    onClick: () => console.log('View clicked'),
+  },
+});`,
+  },
 };

@@ -19,3 +19,10 @@ export * from './components/Textarea/Textarea';
 export * from './components/Select/Select';
 export * from './components/FormField/FormField';
 export * from './components/Sidebar/Sidebar';
+
+// Overlays & Feedback
+export * from './components/Dialog/Dialog';
+export * from './components/Popover/Popover';
+export * from './components/DropdownMenu/DropdownMenu';
+export * from './components/Tooltip/Tooltip';
+export * from './components/Toast/Toast';

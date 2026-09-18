@@ -20,6 +20,27 @@ import {
   SidebarItem,
   SidebarFooter,
   useTheme,
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogClose,
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+  PopoverClose,
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
+  Tooltip,
+  toast,
+  Toaster,
   type ButtonIntent,
 } from '@scaffold/ui';
 import { ComponentExample } from './components/ComponentExample';
@@ -41,12 +62,16 @@ import {
   Folder,
   User,
   Lock,
+  Layers,
+  Bell,
 } from 'lucide-react';
 
 export type WorkbenchTab =
   | 'button'
   | 'textInput'
   | 'dropdown'
+  | 'overlays'
+  | 'toasts'
   | 'badges'
   | 'sidebar'
   | 'stack'
@@ -83,6 +108,8 @@ export function App() {
     button: 'Button',
     textInput: 'TextInput',
     dropdown: 'Dropdown',
+    overlays: 'Overlays',
+    toasts: 'Toasts',
     badges: 'Badges & Avatars',
     sidebar: 'Sidebar Nav',
     stack: 'Stack & Grid',
@@ -148,6 +175,23 @@ export function App() {
                 onClick={() => setActiveTab('sidebar')}
               >
                 Sidebar Nav
+              </SidebarItem>
+            </SidebarSection>
+
+            <SidebarSection title="Overlays & Feedback">
+              <SidebarItem
+                icon={<Layers size={16} />}
+                active={activeTab === 'overlays'}
+                onClick={() => setActiveTab('overlays')}
+              >
+                Overlays
+              </SidebarItem>
+              <SidebarItem
+                icon={<Bell size={16} />}
+                active={activeTab === 'toasts'}
+                onClick={() => setActiveTab('toasts')}
+              >
+                Toasts
               </SidebarItem>
             </SidebarSection>
 
@@ -701,6 +745,224 @@ export function App() {
               </Stack>
             )}
 
+            {/* Overlays Tab */}
+            {activeTab === 'overlays' && (
+              <Stack gap={6}>
+                <div>
+                  <Heading level={3} size="lg">
+                    Overlay Primitives
+                  </Heading>
+                  <Text size="sm" color="secondary">
+                    Radix UI headless engines wrapped in strict design token styles with keyboard navigation, focus trapping, and zero styling leakage.
+                  </Text>
+                </div>
+
+                <ComponentExample
+                  title="Dialog / Modal"
+                  description="Accessible modal dialog with backdrop blur, focus trapping, and semantic layout."
+                  code={SNIPPETS.overlays.dialog}
+                  defaultExpanded={false}
+                >
+                  <Dialog>
+                    <DialogTrigger>
+                      <Button intent="primary">Open Deployment Dialog</Button>
+                    </DialogTrigger>
+                    <DialogContent size="md">
+                      <DialogHeader>
+                        <DialogTitle>Confirm Production Deployment</DialogTitle>
+                        <DialogDescription>
+                          This action will release version 2.4.0 to all active global regions.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <Stack gap={3}>
+                        <Card padding="compact" variant="subtle">
+                          <Text size="xs" color="muted">
+                            Pre-flight checklist: 19/19 test suites passed, 0 lint warnings.
+                          </Text>
+                        </Card>
+                        <TextInput label="Deployment Note" placeholder="Release notes or ticket ref" />
+                      </Stack>
+                      <DialogFooter>
+                        <DialogClose>
+                          <Button variant="outline">Cancel</Button>
+                        </DialogClose>
+                        <DialogClose>
+                          <Button
+                            intent="primary"
+                            onClick={() => toast.success('Deployment queued!')}
+                          >
+                            Confirm Deploy
+                          </Button>
+                        </DialogClose>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </ComponentExample>
+
+                <ComponentExample
+                  title="Popover"
+                  description="Floating card anchored to a trigger with collision detection and close button."
+                  code={SNIPPETS.overlays.popover}
+                  defaultExpanded={false}
+                >
+                  <Popover>
+                    <PopoverTrigger>
+                      <Button variant="outline">Filter Settings</Button>
+                    </PopoverTrigger>
+                    <PopoverContent showCloseButton side="bottom" align="start">
+                      <Stack gap={3}>
+                        <Text weight="semibold" size="sm">Quick Filters</Text>
+                        <Text size="xs" color="muted">Filter workspace projects</Text>
+                        <Dropdown
+                          label="Status"
+                          size="small"
+                          defaultValue="active"
+                          options={[
+                            { value: 'active', label: 'Active Projects' },
+                            { value: 'archived', label: 'Archived' },
+                          ]}
+                        />
+                        <PopoverClose>
+                          <Button size="sm" intent="primary" fullWidth>
+                            Apply Filters
+                          </Button>
+                        </PopoverClose>
+                      </Stack>
+                    </PopoverContent>
+                  </Popover>
+                </ComponentExample>
+
+                <ComponentExample
+                  title="DropdownMenu"
+                  description="Accessible context actions menu with keyboard arrows and danger intent."
+                  code={SNIPPETS.overlays.dropdownMenu}
+                  defaultExpanded={false}
+                >
+                  <DropdownMenu>
+                    <DropdownMenuTrigger>
+                      <Button variant="outline">Project Actions</Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start">
+                      <DropdownMenuLabel>Manage</DropdownMenuLabel>
+                      <DropdownMenuItem onSelect={() => toast.info('Opened project details')}>
+                        Edit Details
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onSelect={() => toast.success('Project duplicated')}>
+                        Duplicate Project
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        intent="danger"
+                        onSelect={() => toast.error('Project deleted')}
+                      >
+                        Delete Project
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </ComponentExample>
+
+                <ComponentExample
+                  title="Tooltip"
+                  description="High-contrast floating helper badge with customizable placement and delays."
+                  code={SNIPPETS.overlays.tooltip}
+                  defaultExpanded={false}
+                >
+                  <Stack direction="row" gap={3} align="center">
+                    <Tooltip content="Sync changes with remote repository (Cmd+S)">
+                      <Button variant="outline" size="sm">Sync Repository</Button>
+                    </Tooltip>
+                    <Tooltip content="Create a new workspace branch" side="bottom">
+                      <Button variant="ghost" size="sm">New Branch</Button>
+                    </Tooltip>
+                  </Stack>
+                </ComponentExample>
+              </Stack>
+            )}
+
+            {/* Toasts Tab */}
+            {activeTab === 'toasts' && (
+              <Stack gap={6}>
+                <div>
+                  <Heading level={3} size="lg">
+                    Toast Notifications
+                  </Heading>
+                  <Text size="sm" color="secondary">
+                    Imperative and declarative feedback notifications with semantic intents, swipe dismissal, and action buttons.
+                  </Text>
+                </div>
+
+                <ComponentExample
+                  title="Interactive Toast Triggers"
+                  description="Fire toasts from event handlers using toast(), toast.success(), toast.error(), or custom actions."
+                  code={SNIPPETS.toasts.imperative}
+                  defaultExpanded={false}
+                >
+                  <Stack gap={3}>
+                    <Text size="sm" color="muted">Click any button to trigger a live toast in the bottom-right corner:</Text>
+                    <Stack direction="row" gap={2} wrap>
+                      <Button
+                        intent="success"
+                        size="sm"
+                        onClick={() =>
+                          toast.success('Project Deployed', {
+                            description: 'Version 2.4.0 is now live.',
+                          })
+                        }
+                      >
+                        Success Toast
+                      </Button>
+                      <Button
+                        intent="danger"
+                        size="sm"
+                        onClick={() =>
+                          toast.error('Deployment Failed', {
+                            description: 'Check CI pipeline logs for stack trace.',
+                          })
+                        }
+                      >
+                        Error Toast
+                      </Button>
+                      <Button
+                        intent="primary"
+                        size="sm"
+                        onClick={() =>
+                          toast.info('Index Rebuilt', {
+                            description: '148 documents re-indexed.',
+                          })
+                        }
+                      >
+                        Info Toast
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() =>
+                          toast({
+                            title: 'Project Archived',
+                            description: 'Moved to workspace archive.',
+                            intent: 'warning',
+                            action: {
+                              label: 'Undo',
+                              onClick: () => toast.success('Archival undone!'),
+                            },
+                          })
+                        }
+                      >
+                        Toast with Action
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => toast.clear()}
+                      >
+                        Clear All
+                      </Button>
+                    </Stack>
+                  </Stack>
+                </ComponentExample>
+              </Stack>
+            )}
+
             {/* Tokens Tab */}
             {activeTab === 'tokens' && (
               <Stack gap={6}>
@@ -748,6 +1010,7 @@ export function App() {
           </Container>
         </div>
       </div>
+      <Toaster position="bottom-right" />
     </PageShell>
   );
 }
