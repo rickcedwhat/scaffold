@@ -287,14 +287,61 @@ import { toast, Toaster } from '@scaffold/ui';
 // In event handlers:
 toast.success('Project deployed successfully!');
 toast.error('Network connection timeout');
-toast({
-  title: 'Backup Complete',
-  description: 'Saved 24 database snapshots to S3.',
-  intent: 'primary',
-  action: {
-    label: 'View',
-    onClick: () => console.log('View clicked'),
+    toast({
+      title: 'Backup Complete',
+      description: 'Saved 24 database snapshots to S3.',
+      intent: 'primary',
+      action: {
+        label: 'View',
+        onClick: () => console.log('View clicked'),
+      },
+    });`,
   },
-});`,
+
+  emptyStates: {
+    presets: `// EmptyState with built-in presets: 'search' | 'empty' | 'not-found' | 'error' | 'success'
+<EmptyState
+  preset="search"
+  title="No matching records"
+  description="Try refining your search terms or clearing active filters."
+  action={<Button intent="primary">Clear Search</Button>}
+/>`,
+    bordered: `// Compact bordered empty state card
+<EmptyState
+  bordered
+  preset="empty"
+  size="sm"
+  title="No pending deployments"
+  description="Every branch is currently in sync with production."
+  action={<Button size="sm" intent="neutral">Trigger Manual Build</Button>}
+/>`,
+    illustration: `// Custom status illustration with action buttons
+<EmptyState
+  illustration={<StatusIllustration preset="success" size="lg" />}
+  title="Order Fulfilled"
+  description="All 14 items have been dispatched to the carrier."
+  action={<Button intent="primary">Track Shipment</Button>}
+  secondaryAction={<Button variant="ghost">Return to Orders</Button>}
+/>`,
+  },
+
+  skeletons: {
+    variants: `// Skeletons: text, circular (avatars), rectangular, and rounded
+<Stack gap={4}>
+  <Stack direction="row" align="center" gap={3}>
+    <Skeleton variant="circular" width={44} height={44} />
+    <Stack gap={2} style={{ flex: 1 }}>
+      <Skeleton variant="text" width="50%" height={16} />
+      <Skeleton variant="text" width="30%" height={12} />
+    </Stack>
+  </Stack>
+  <Skeleton variant="rounded" height={120} />
+</Stack>`,
+    multiline: `// Multi-line text paragraph with natural staggered widths
+<Skeleton variant="text" lines={4} height={16} />`,
+    animations: `// Animation options: 'pulse' (default), 'wave', or 'none'
+<Skeleton animation="pulse" height={36} />
+<Skeleton animation="wave" height={36} />
+<Skeleton animation="none" height={36} />`,
   },
 };
