@@ -96,6 +96,17 @@ export const tokens = {
   },
   layout: {
     dialogMaxHeight: 'calc(100vh - 4rem)',
+    illustrationSize: {
+      sm: '80px',
+      md: '120px',
+      lg: '160px',
+      xl: '220px',
+    },
+    emptyStateMaxWidth: {
+      sm: '360px',
+      md: '480px',
+      lg: '640px',
+    },
   },
   colors: {
     light: {

@@ -26,3 +26,7 @@ export * from './components/Popover/Popover';
 export * from './components/DropdownMenu/DropdownMenu';
 export * from './components/Tooltip/Tooltip';
 export * from './components/Toast/Toast';
+export * from './components/Skeleton/Skeleton';
+export * from './components/StatusIllustration/StatusIllustration';
+export * from './components/EmptyState/EmptyState';
+

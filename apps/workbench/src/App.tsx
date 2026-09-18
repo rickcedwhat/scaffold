@@ -41,7 +41,14 @@ import {
   Tooltip,
   toast,
   Toaster,
+  Skeleton,
+  EmptyState,
+  StatusIllustration,
   type ButtonIntent,
+  type IllustrationPreset,
+  type SkeletonAnimation,
+  type EmptyStateSize,
+  type EmptyStateLayout,
 } from '@scaffold/ui';
 import { ComponentExample } from './components/ComponentExample';
 import { SNIPPETS } from './snippets';
@@ -64,6 +71,8 @@ import {
   Lock,
   Layers,
   Bell,
+  Inbox,
+  Loader2,
 } from 'lucide-react';
 
 export type WorkbenchTab =
@@ -72,6 +81,8 @@ export type WorkbenchTab =
   | 'dropdown'
   | 'overlays'
   | 'toasts'
+  | 'emptyStates'
+  | 'skeletons'
   | 'badges'
   | 'sidebar'
   | 'stack'
@@ -104,12 +115,21 @@ export function App() {
     { value: 'pickup', label: 'In-Store Pickup' },
   ];
 
+  const [emptyPreset, setEmptyPreset] = useState<IllustrationPreset>('search');
+  const [emptySize, setEmptySize] = useState<EmptyStateSize>('md');
+  const [emptyLayout, setEmptyLayout] = useState<EmptyStateLayout>('vertical');
+  const [emptyBordered, setEmptyBordered] = useState(false);
+
+  const [skeletonAnimation, setSkeletonAnimation] = useState<SkeletonAnimation>('pulse');
+
   const tabTitles: Record<WorkbenchTab, string> = {
     button: 'Button',
     textInput: 'TextInput',
     dropdown: 'Dropdown',
     overlays: 'Overlays',
     toasts: 'Toasts',
+    emptyStates: 'Empty States',
+    skeletons: 'Skeletons',
     badges: 'Badges & Avatars',
     sidebar: 'Sidebar Nav',
     stack: 'Stack & Grid',
@@ -192,6 +212,20 @@ export function App() {
                 onClick={() => setActiveTab('toasts')}
               >
                 Toasts
+              </SidebarItem>
+              <SidebarItem
+                icon={<Inbox size={16} />}
+                active={activeTab === 'emptyStates'}
+                onClick={() => setActiveTab('emptyStates')}
+              >
+                Empty States
+              </SidebarItem>
+              <SidebarItem
+                icon={<Loader2 size={16} />}
+                active={activeTab === 'skeletons'}
+                onClick={() => setActiveTab('skeletons')}
+              >
+                Skeletons
               </SidebarItem>
             </SidebarSection>
 
@@ -959,6 +993,292 @@ export function App() {
                       </Button>
                     </Stack>
                   </Stack>
+                </ComponentExample>
+              </Stack>
+            )}
+
+            {/* Empty States Tab */}
+            {activeTab === 'emptyStates' && (
+              <Stack gap={6}>
+                <div>
+                  <Heading level={3} size="lg">
+                    Empty States &amp; Status Illustrations
+                  </Heading>
+                  <Text size="sm" color="secondary">
+                    Cohesive vector illustrations and empty state surfaces for zero data, search misses, 404 routes, and network feedback.
+                  </Text>
+                </div>
+
+                <ComponentExample
+                  title="Interactive EmptyState Sandbox"
+                  description="Toggle presets, sizes, layout orientation, and bordered containers."
+                  code={SNIPPETS.emptyStates.presets}
+                  defaultExpanded={false}
+                >
+                  <Stack gap={4}>
+                    <Stack direction="row" gap={3} wrap align="center">
+                      <Stack direction="row" gap={1} align="center">
+                        <Text size="xs" weight="medium" color="secondary">Preset:</Text>
+                        {(['search', 'empty', 'not-found', 'error', 'success'] as IllustrationPreset[]).map((p) => (
+                          <Button
+                            key={p}
+                            size="sm"
+                            variant={emptyPreset === p ? 'solid' : 'outline'}
+                            intent={emptyPreset === p ? 'primary' : 'neutral'}
+                            onClick={() => setEmptyPreset(p)}
+                          >
+                            {p}
+                          </Button>
+                        ))}
+                      </Stack>
+
+                      <Stack direction="row" gap={1} align="center">
+                        <Text size="xs" weight="medium" color="secondary">Size:</Text>
+                        {(['sm', 'md', 'lg'] as EmptyStateSize[]).map((s) => (
+                          <Button
+                            key={s}
+                            size="sm"
+                            variant={emptySize === s ? 'solid' : 'outline'}
+                            intent={emptySize === s ? 'primary' : 'neutral'}
+                            onClick={() => setEmptySize(s)}
+                          >
+                            {s}
+                          </Button>
+                        ))}
+                      </Stack>
+
+                      <Stack direction="row" gap={1} align="center">
+                        <Text size="xs" weight="medium" color="secondary">Layout:</Text>
+                        <Button
+                          size="sm"
+                          variant={emptyLayout === 'vertical' ? 'solid' : 'outline'}
+                          intent={emptyLayout === 'vertical' ? 'primary' : 'neutral'}
+                          onClick={() => setEmptyLayout('vertical')}
+                        >
+                          Vertical
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant={emptyLayout === 'horizontal' ? 'solid' : 'outline'}
+                          intent={emptyLayout === 'horizontal' ? 'primary' : 'neutral'}
+                          onClick={() => setEmptyLayout('horizontal')}
+                        >
+                          Horizontal
+                        </Button>
+                      </Stack>
+
+                      <Button
+                        size="sm"
+                        variant={emptyBordered ? 'solid' : 'outline'}
+                        intent={emptyBordered ? 'primary' : 'neutral'}
+                        onClick={() => setEmptyBordered(!emptyBordered)}
+                      >
+                        {emptyBordered ? 'Bordered: On' : 'Bordered: Off'}
+                      </Button>
+                    </Stack>
+
+                    <Card padding="normal" variant="subtle">
+                      <EmptyState
+                        preset={emptyPreset}
+                        size={emptySize}
+                        layout={emptyLayout}
+                        bordered={emptyBordered}
+                        title={
+                          emptyPreset === 'search'
+                            ? 'No matching results'
+                            : emptyPreset === 'not-found'
+                            ? 'Page not found'
+                            : emptyPreset === 'error'
+                            ? 'Connection failed'
+                            : emptyPreset === 'success'
+                            ? 'Action completed'
+                            : 'No records created yet'
+                        }
+                        description={
+                          emptyPreset === 'search'
+                            ? 'Check your keywords or remove search filters to expand queries.'
+                            : emptyPreset === 'not-found'
+                            ? 'The resource you were looking for has been moved or deleted.'
+                            : emptyPreset === 'error'
+                            ? 'Unable to communicate with the remote API server. Retrying...'
+                            : emptyPreset === 'success'
+                            ? 'All changes have been successfully persisted to storage.'
+                            : 'Get started by initializing your very first project item.'
+                        }
+                        action={
+                          <Button intent={emptyPreset === 'error' ? 'danger' : 'primary'} size={emptySize === 'sm' ? 'sm' : 'md'}>
+                            {emptyPreset === 'search'
+                              ? 'Clear Filters'
+                              : emptyPreset === 'error'
+                              ? 'Retry Connection'
+                              : emptyPreset === 'success'
+                              ? 'Continue'
+                              : 'Create New Item'}
+                          </Button>
+                        }
+                        secondaryAction={
+                          <Button variant="ghost" size={emptySize === 'sm' ? 'sm' : 'md'}>
+                            Documentation
+                          </Button>
+                        }
+                      />
+                    </Card>
+                  </Stack>
+                </ComponentExample>
+
+                <ComponentExample
+                  title="All Status Illustration Presets"
+                  description="Built-in vector illustrations styled with design system tokens and fluid motion."
+                  code={SNIPPETS.emptyStates.illustration}
+                  defaultExpanded={false}
+                >
+                  <Grid minItemWidth={180} gap={4}>
+                    {(['search', 'empty', 'not-found', 'error', 'success'] as IllustrationPreset[]).map((p) => (
+                      <Card key={p} padding="normal">
+                        <Stack align="center" gap={3}>
+                          <StatusIllustration preset={p} size="md" />
+                          <Text weight="medium" size="sm" transform="capitalize">
+                            {p}
+                          </Text>
+                        </Stack>
+                      </Card>
+                    ))}
+                  </Grid>
+                </ComponentExample>
+              </Stack>
+            )}
+
+            {/* Skeletons Tab */}
+            {activeTab === 'skeletons' && (
+              <Stack gap={6}>
+                <div>
+                  <Heading level={3} size="lg">
+                    Skeletons
+                  </Heading>
+                  <Text size="sm" color="secondary">
+                    Low-contrast placeholders that pulse or shine while asynchronous data loads, avoiding layout shift.
+                  </Text>
+                </div>
+
+                <ComponentExample
+                  title="Card &amp; Content Loading Patterns"
+                  description="Composed skeleton patterns for cards, profiles, and media blocks."
+                  code={SNIPPETS.skeletons.variants}
+                  defaultExpanded={false}
+                >
+                  <Stack gap={4}>
+                    <Stack direction="row" gap={2} align="center">
+                      <Text size="xs" weight="medium" color="secondary">Animation Mode:</Text>
+                      {(['pulse', 'wave', 'none'] as SkeletonAnimation[]).map((anim) => (
+                        <Button
+                          key={anim}
+                          size="sm"
+                          variant={skeletonAnimation === anim ? 'solid' : 'outline'}
+                          intent={skeletonAnimation === anim ? 'primary' : 'neutral'}
+                          onClick={() => setSkeletonAnimation(anim)}
+                        >
+                          {anim}
+                        </Button>
+                      ))}
+                    </Stack>
+
+                    <Grid minItemWidth={280} gap={4}>
+                      {/* Profile Card Skeleton */}
+                      <Card padding="normal">
+                        <Stack gap={4}>
+                          <Stack direction="row" align="center" gap={3}>
+                            <Skeleton
+                              variant="circular"
+                              width={48}
+                              height={48}
+                              animation={skeletonAnimation}
+                            />
+                            <div style={{ flex: 1 }}>
+                              <Stack gap={2}>
+                                <Skeleton
+                                  variant="text"
+                                  width="60%"
+                                  height={18}
+                                  animation={skeletonAnimation}
+                                />
+                                <Skeleton
+                                  variant="text"
+                                  width="40%"
+                                  height={14}
+                                  animation={skeletonAnimation}
+                                />
+                              </Stack>
+                            </div>
+                          </Stack>
+
+                          <Skeleton
+                            variant="text"
+                            lines={3}
+                            height={14}
+                            animation={skeletonAnimation}
+                          />
+
+                          <Stack direction="row" justify="between" align="center">
+                            <Skeleton
+                              variant="rounded"
+                              width={80}
+                              height={28}
+                              animation={skeletonAnimation}
+                            />
+                            <Skeleton
+                              variant="rounded"
+                              width={100}
+                              height={36}
+                              animation={skeletonAnimation}
+                            />
+                          </Stack>
+                        </Stack>
+                      </Card>
+
+                      {/* Media Card Skeleton */}
+                      <Card padding="normal">
+                        <Stack gap={3}>
+                          <Skeleton
+                            variant="rounded"
+                            height={140}
+                            animation={skeletonAnimation}
+                          />
+                          <Skeleton
+                            variant="text"
+                            width="75%"
+                            height={20}
+                            animation={skeletonAnimation}
+                          />
+                          <Skeleton
+                            variant="text"
+                            lines={2}
+                            height={14}
+                            animation={skeletonAnimation}
+                          />
+                          <Skeleton
+                            variant="rounded"
+                            width={110}
+                            height={36}
+                            animation={skeletonAnimation}
+                          />
+                        </Stack>
+                      </Card>
+                    </Grid>
+                  </Stack>
+                </ComponentExample>
+
+                <ComponentExample
+                  title="Multi-Line Paragraph Tapering"
+                  description="Text skeletons automatically taper the final line for natural typography rhythm."
+                  code={SNIPPETS.skeletons.multiline}
+                  defaultExpanded={false}
+                >
+                  <Card padding="normal" variant="subtle">
+                    <Stack gap={4}>
+                      <Skeleton variant="text" width="40%" height={24} animation={skeletonAnimation} />
+                      <Skeleton variant="text" lines={5} height={16} animation={skeletonAnimation} />
+                    </Stack>
+                  </Card>
                 </ComponentExample>
               </Stack>
             )}
