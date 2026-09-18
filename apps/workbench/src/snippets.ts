@@ -231,9 +231,11 @@ const [origin, setOrigin] = useState('downtown');
       <DialogClose>
         <Button variant="outline">Cancel</Button>
       </DialogClose>
-      <Button intent="primary" onClick={() => alert('Deployed!')}>
-        Confirm Deploy
-      </Button>
+      <DialogClose>
+        <Button intent="primary" onClick={() => alert('Deployed!')}>
+          Confirm Deploy
+        </Button>
+      </DialogClose>
     </DialogFooter>
   </DialogContent>
 </Dialog>`,

@@ -31,6 +31,9 @@ export interface ColorScheme {
     success: IntentColor;
     neutral: IntentColor;
   };
+  overlay: {
+    backdrop: string;
+  };
 }
 
 export const tokens = {
@@ -135,6 +138,9 @@ export const tokens = {
           subtle: '#f8fafc',
         },
       },
+      overlay: {
+        backdrop: 'rgba(0, 0, 0, 0.65)',
+      },
     },
     dark: {
       bg: {
@@ -184,6 +190,9 @@ export const tokens = {
           text: '#111827',
           subtle: '#1e293b',
         },
+      },
+      overlay: {
+        backdrop: 'rgba(0, 0, 0, 0.75)',
       },
     },
   } satisfies Record<ThemeMode, ColorScheme>,

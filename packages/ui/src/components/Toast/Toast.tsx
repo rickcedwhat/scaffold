@@ -1,8 +1,9 @@
 import React, {
+  forwardRef,
   useState,
   useEffect,
   type ReactNode,
-  type ComponentPropsWithoutRef,
+  type ComponentPropsWithRef,
 } from 'react';
 import * as RadixToast from '@radix-ui/react-toast';
 import { useTheme } from '../../theme/ThemeContext';
@@ -45,7 +46,8 @@ class ToastStore {
   add(toast: Omit<ToastItem, 'id'> & { id?: string }): string {
     const id = toast.id || Math.random().toString(36).substring(2, 9);
     const item: ToastItem = { ...toast, id };
-    this.toasts = [item, ...this.toasts].slice(0, 5); // Keep up to 5 concurrent toasts
+    // Filter out existing toast with same id before prepending, and retain 5-item limit
+    this.toasts = [item, ...this.toasts.filter((t) => t.id !== id)].slice(0, 5);
     this.notify();
     return id;
   }
@@ -70,14 +72,20 @@ export function toast(options: Omit<ToastItem, 'id'> & { id?: string }): string 
   return toastStore.add(options);
 }
 
-toast.success = (title: ReactNode, options?: Partial<Omit<ToastItem, 'id' | 'title'>>) =>
-  toastStore.add({ title, intent: 'success', ...options });
+toast.success = (
+  title: ReactNode,
+  options?: Partial<Omit<ToastItem, 'id' | 'title' | 'intent'>>
+) => toastStore.add({ ...options, title, intent: 'success' });
 
-toast.error = (title: ReactNode, options?: Partial<Omit<ToastItem, 'id' | 'title'>>) =>
-  toastStore.add({ title, intent: 'danger', ...options });
+toast.error = (
+  title: ReactNode,
+  options?: Partial<Omit<ToastItem, 'id' | 'title' | 'intent'>>
+) => toastStore.add({ ...options, title, intent: 'danger' });
 
-toast.info = (title: ReactNode, options?: Partial<Omit<ToastItem, 'id' | 'title'>>) =>
-  toastStore.add({ title, intent: 'primary', ...options });
+toast.info = (
+  title: ReactNode,
+  options?: Partial<Omit<ToastItem, 'id' | 'title' | 'intent'>>
+) => toastStore.add({ ...options, title, intent: 'primary' });
 
 toast.dismiss = (id: string) => toastStore.remove(id);
 toast.clear = () => toastStore.clear();
@@ -138,267 +146,298 @@ export function ToastProvider({
   );
 }
 
-export interface ToastViewportProps {
+export interface ToastViewportProps
+  extends Omit<ComponentPropsWithRef<typeof RadixToast.Viewport>, 'className' | 'style'> {
   position?: 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left';
 }
 
-export function ToastViewport({ position = 'bottom-right' }: ToastViewportProps) {
-  const positionStyles: Record<string, React.CSSProperties> = {
-    'top-right': { top: 16, right: 16 },
-    'top-left': { top: 16, left: 16 },
-    'bottom-right': { bottom: 16, right: 16 },
-    'bottom-left': { bottom: 16, left: 16 },
-  };
+export const ToastViewport = forwardRef<HTMLOListElement, ToastViewportProps>(
+  ({ position = 'bottom-right', ...props }, ref) => {
+    const positionStyles: Record<string, React.CSSProperties> = {
+      'top-right': { top: 16, right: 16 },
+      'top-left': { top: 16, left: 16 },
+      'bottom-right': { bottom: 16, right: 16 },
+      'bottom-left': { bottom: 16, left: 16 },
+    };
 
-  return (
-    <RadixToast.Viewport
-      style={{
-        position: 'fixed',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '10px',
-        width: '380px',
-        maxWidth: 'calc(100vw - 32px)',
-        margin: 0,
-        padding: 0,
-        listStyle: 'none',
-        zIndex: 200,
-        outline: 'none',
-        ...positionStyles[position],
-      }}
-    />
-  );
-}
+    return (
+      <RadixToast.Viewport
+        ref={ref}
+        style={{
+          position: 'fixed',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '10px',
+          width: '380px',
+          maxWidth: 'calc(100vw - 32px)',
+          margin: 0,
+          padding: 0,
+          listStyle: 'none',
+          zIndex: 200,
+          outline: 'none',
+          ...positionStyles[position],
+        }}
+        {...props}
+      />
+    );
+  }
+);
+ToastViewport.displayName = 'ToastViewport';
 
 export interface ToastProps
-  extends Omit<ComponentPropsWithoutRef<typeof RadixToast.Root>, 'className' | 'style'> {
+  extends Omit<ComponentPropsWithRef<typeof RadixToast.Root>, 'className' | 'style'> {
   intent?: ToastIntent;
   duration?: number;
   showProgress?: boolean;
   children: ReactNode;
 }
 
-export function Toast({
-  intent = 'neutral',
-  duration = 5000,
-  showProgress = true,
-  children,
-  ...props
-}: ToastProps) {
-  const { colors, tokens } = useTheme();
-  const [isHovered, setIsHovered] = useState(false);
+export const Toast = forwardRef<HTMLLIElement, ToastProps>(
+  (
+    {
+      intent = 'neutral',
+      duration = 5000,
+      showProgress = true,
+      children,
+      ...props
+    },
+    ref
+  ) => {
+    const { colors, tokens } = useTheme();
+    const [isHovered, setIsHovered] = useState(false);
 
-  const intentBorderColors: Record<ToastIntent, string> = {
-    neutral: colors.border.default,
-    primary: colors.intent.primary.main,
-    success: colors.intent.success.main,
-    danger: colors.intent.danger.main,
-    warning: '#f59e0b',
-  };
+    const intentBorderColors: Record<ToastIntent, string> = {
+      neutral: colors.border.default,
+      primary: colors.intent.primary.main,
+      success: colors.intent.success.main,
+      danger: colors.intent.danger.main,
+      warning: '#f59e0b',
+    };
 
-  const accentColor = intentBorderColors[intent];
+    const accentColor = intentBorderColors[intent];
 
-  return (
-    <RadixToast.Root
-      duration={duration}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      style={{
-        position: 'relative',
-        display: 'flex',
-        flexDirection: 'column',
-        backgroundColor: colors.bg.surface,
-        border: `1px solid ${colors.border.subtle}`,
-        borderLeft: `4px solid ${accentColor}`,
-        borderRadius: tokens.radii.lg,
-        boxShadow: tokens.shadows.lg,
-        boxSizing: 'border-box',
-        listStyle: 'none',
-        outline: 'none',
-        overflow: 'hidden',
-        minWidth: '320px',
-      }}
-      {...props}
-    >
-      <div
+    return (
+      <RadixToast.Root
+        ref={ref}
+        duration={duration}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
         style={{
+          position: 'relative',
           display: 'flex',
           flexDirection: 'column',
-          gap: tokens.spacing[1],
-          padding: `${tokens.spacing[3]} ${tokens.spacing[4]}`,
-          paddingRight: tokens.spacing[8], // space for top-right close X
-          paddingBottom: showProgress && duration > 0 ? tokens.spacing[4] : tokens.spacing[3],
-          width: '100%',
+          backgroundColor: colors.bg.surface,
+          border: `1px solid ${colors.border.subtle}`,
+          borderLeft: `4px solid ${accentColor}`,
+          borderRadius: tokens.radii.lg,
+          boxShadow: tokens.shadows.lg,
           boxSizing: 'border-box',
+          listStyle: 'none',
+          outline: 'none',
+          overflow: 'hidden',
+          minWidth: '320px',
         }}
+        {...props}
       >
-        {children}
-      </div>
-
-      {showProgress && duration > 0 && (
         <div
           style={{
-            position: 'absolute',
-            bottom: 0,
-            left: 0,
-            right: 0,
-            height: '3px',
-            backgroundColor: `${accentColor}25`,
-            overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: tokens.spacing[1],
+            padding: `${tokens.spacing[3]} ${tokens.spacing[4]}`,
+            paddingRight: tokens.spacing[8], // space for top-right close X
+            paddingBottom: showProgress && duration > 0 ? tokens.spacing[4] : tokens.spacing[3],
+            width: '100%',
+            boxSizing: 'border-box',
           }}
         >
-          <div
-            data-testid="toast-progress"
-            style={{
-              height: '100%',
-              width: '100%',
-              backgroundColor: accentColor,
-              transformOrigin: 'left',
-              animation: `scaffoldToastCountdown ${duration}ms linear forwards`,
-              animationPlayState: isHovered ? 'paused' : 'running',
-            }}
-          />
+          {children}
         </div>
-      )}
-    </RadixToast.Root>
-  );
-}
+
+        {showProgress && duration > 0 && (
+          <div
+            style={{
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              height: '3px',
+              backgroundColor: `${accentColor}25`,
+              overflow: 'hidden',
+            }}
+          >
+            <div
+              data-testid="toast-progress"
+              style={{
+                height: '100%',
+                width: '100%',
+                backgroundColor: accentColor,
+                transformOrigin: 'left',
+                animation: `scaffoldToastCountdown ${duration}ms linear forwards`,
+                animationPlayState: isHovered ? 'paused' : 'running',
+              }}
+            />
+          </div>
+        )}
+      </RadixToast.Root>
+    );
+  }
+);
+Toast.displayName = 'Toast';
 
 export interface ToastTitleProps
-  extends Omit<ComponentPropsWithoutRef<typeof RadixToast.Title>, 'className' | 'style'> {
+  extends Omit<ComponentPropsWithRef<typeof RadixToast.Title>, 'className' | 'style'> {
   children: ReactNode;
 }
 
-export function ToastTitle({ children, ...props }: ToastTitleProps) {
-  const { colors, tokens } = useTheme();
-  return (
-    <RadixToast.Title
-      style={{
-        margin: 0,
-        fontSize: tokens.typography.fontSize.sm,
-        fontWeight: tokens.typography.fontWeight.semibold,
-        color: colors.text.primary,
-        lineHeight: tokens.typography.lineHeight.snug,
-      }}
-      {...props}
-    >
-      {children}
-    </RadixToast.Title>
-  );
-}
+export const ToastTitle = forwardRef<HTMLHeadingElement, ToastTitleProps>(
+  ({ children, ...props }, ref) => {
+    const { colors, tokens } = useTheme();
+    return (
+      <RadixToast.Title
+        ref={ref}
+        style={{
+          margin: 0,
+          fontSize: tokens.typography.fontSize.sm,
+          fontWeight: tokens.typography.fontWeight.semibold,
+          color: colors.text.primary,
+          lineHeight: tokens.typography.lineHeight.snug,
+        }}
+        {...props}
+      >
+        {children}
+      </RadixToast.Title>
+    );
+  }
+);
+ToastTitle.displayName = 'ToastTitle';
 
 export interface ToastDescriptionProps
-  extends Omit<ComponentPropsWithoutRef<typeof RadixToast.Description>, 'className' | 'style'> {
+  extends Omit<ComponentPropsWithRef<typeof RadixToast.Description>, 'className' | 'style'> {
   children: ReactNode;
 }
 
-export function ToastDescription({ children, ...props }: ToastDescriptionProps) {
-  const { colors, tokens } = useTheme();
-  return (
-    <RadixToast.Description
-      style={{
-        margin: 0,
-        fontSize: tokens.typography.fontSize.sm,
-        color: colors.text.secondary,
-        lineHeight: tokens.typography.lineHeight.normal,
-      }}
-      {...props}
-    >
-      {children}
-    </RadixToast.Description>
-  );
-}
+export const ToastDescription = forwardRef<HTMLParagraphElement, ToastDescriptionProps>(
+  ({ children, ...props }, ref) => {
+    const { colors, tokens } = useTheme();
+    return (
+      <RadixToast.Description
+        ref={ref}
+        style={{
+          margin: 0,
+          fontSize: tokens.typography.fontSize.sm,
+          color: colors.text.secondary,
+          lineHeight: tokens.typography.lineHeight.normal,
+        }}
+        {...props}
+      >
+        {children}
+      </RadixToast.Description>
+    );
+  }
+);
+ToastDescription.displayName = 'ToastDescription';
 
 export interface ToastActionProps
-  extends Omit<ComponentPropsWithoutRef<typeof RadixToast.Action>, 'className' | 'style'> {
+  extends Omit<ComponentPropsWithRef<typeof RadixToast.Action>, 'className' | 'style'> {
   altText: string;
   children: ReactNode;
 }
 
-export function ToastAction({ altText, children, ...props }: ToastActionProps) {
-  const { colors, tokens } = useTheme();
-  return (
-    <RadixToast.Action
-      altText={altText}
-      style={{
-        marginTop: tokens.spacing[2],
-        backgroundColor: colors.bg.subtle,
-        color: colors.text.primary,
-        border: `1px solid ${colors.border.default}`,
-        borderRadius: tokens.radii.sm,
-        padding: `${tokens.spacing[1]} ${tokens.spacing[3]}`,
-        fontSize: tokens.typography.fontSize.xs,
-        fontWeight: tokens.typography.fontWeight.medium,
-        cursor: 'pointer',
-        alignSelf: 'flex-start',
-        whiteSpace: 'nowrap',
-        transition: 'background-color 0.15s ease, border-color 0.15s ease',
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.backgroundColor = colors.border.subtle;
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.backgroundColor = colors.bg.subtle;
-      }}
-      {...props}
-    >
-      {children}
-    </RadixToast.Action>
-  );
-}
+export const ToastAction = forwardRef<HTMLButtonElement, ToastActionProps>(
+  ({ altText, children, ...props }, ref) => {
+    const { colors, tokens } = useTheme();
+    return (
+      <RadixToast.Action
+        ref={ref}
+        altText={altText}
+        style={{
+          marginTop: tokens.spacing[2],
+          backgroundColor: colors.bg.subtle,
+          color: colors.text.primary,
+          border: `1px solid ${colors.border.default}`,
+          borderRadius: tokens.radii.sm,
+          padding: `${tokens.spacing[1]} ${tokens.spacing[3]}`,
+          fontSize: tokens.typography.fontSize.xs,
+          fontWeight: tokens.typography.fontWeight.medium,
+          cursor: 'pointer',
+          alignSelf: 'flex-start',
+          whiteSpace: 'nowrap',
+          transition: 'background-color 0.15s ease, border-color 0.15s ease',
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.backgroundColor = colors.border.subtle;
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.backgroundColor = colors.bg.subtle;
+        }}
+        {...props}
+      >
+        {children}
+      </RadixToast.Action>
+    );
+  }
+);
+ToastAction.displayName = 'ToastAction';
 
-export interface ToastCloseProps {
+export interface ToastCloseProps
+  extends Omit<ComponentPropsWithRef<typeof RadixToast.Close>, 'className' | 'style'> {
   children?: ReactNode;
 }
 
-export function ToastClose({ children }: ToastCloseProps) {
-  const { colors, tokens } = useTheme();
-  return (
-    <RadixToast.Close
-      aria-label="Dismiss toast"
-      style={{
-        position: 'absolute',
-        top: tokens.spacing[2],
-        right: tokens.spacing[2],
-        backgroundColor: 'transparent',
-        border: 'none',
-        color: colors.text.muted,
-        cursor: 'pointer',
-        padding: tokens.spacing[1],
-        borderRadius: tokens.radii.sm,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 10,
-        transition: 'color 0.15s ease, background-color 0.15s ease',
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.color = colors.text.primary;
-        e.currentTarget.style.backgroundColor = colors.bg.subtle;
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.color = colors.text.muted;
-        e.currentTarget.style.backgroundColor = 'transparent';
-      }}
-    >
-      {children || (
-        <svg
-          width="15"
-          height="15"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <line x1="18" y1="6" x2="6" y2="18" />
-          <line x1="6" y1="6" x2="18" y2="18" />
-        </svg>
-      )}
-    </RadixToast.Close>
-  );
-}
+export const ToastClose = forwardRef<HTMLButtonElement, ToastCloseProps>(
+  ({ children, ...props }, ref) => {
+    const { colors, tokens } = useTheme();
+    return (
+      <RadixToast.Close
+        ref={ref}
+        aria-label="Dismiss toast"
+        style={{
+          position: 'absolute',
+          top: tokens.spacing[2],
+          right: tokens.spacing[2],
+          backgroundColor: 'transparent',
+          border: 'none',
+          color: colors.text.muted,
+          cursor: 'pointer',
+          padding: tokens.spacing[1],
+          borderRadius: tokens.radii.sm,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 10,
+          transition: 'color 0.15s ease, background-color 0.15s ease',
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.color = colors.text.primary;
+          e.currentTarget.style.backgroundColor = colors.bg.subtle;
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.color = colors.text.muted;
+          e.currentTarget.style.backgroundColor = 'transparent';
+        }}
+        {...props}
+      >
+        {children || (
+          <svg
+            width="15"
+            height="15"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        )}
+      </RadixToast.Close>
+    );
+  }
+);
+ToastClose.displayName = 'ToastClose';
 
 // ---------------------------------------------------------------------------
 // High-Level <Toaster /> Component

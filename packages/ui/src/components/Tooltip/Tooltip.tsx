@@ -1,6 +1,8 @@
 import React, {
+  forwardRef,
   type ReactNode,
   type ComponentPropsWithoutRef,
+  type ElementRef,
 } from 'react';
 import * as RadixTooltip from '@radix-ui/react-tooltip';
 import { useTheme } from '../../theme/ThemeContext';
@@ -79,24 +81,34 @@ export function Tooltip(props: TooltipProps) {
 
   const { open, defaultOpen, onOpenChange, children } = props as TooltipCompoundProps;
   return (
-    <RadixTooltip.Root
-      open={open}
-      defaultOpen={defaultOpen}
-      onOpenChange={onOpenChange}
-    >
-      {children}
-    </RadixTooltip.Root>
+    <TooltipProvider>
+      <RadixTooltip.Root
+        open={open}
+        defaultOpen={defaultOpen}
+        onOpenChange={onOpenChange}
+      >
+        {children}
+      </RadixTooltip.Root>
+    </TooltipProvider>
   );
 }
 
-export interface TooltipTriggerProps {
+export interface TooltipTriggerProps
+  extends ComponentPropsWithoutRef<typeof RadixTooltip.Trigger> {
   asChild?: boolean;
   children: ReactNode;
 }
 
-export function TooltipTrigger({ asChild = true, children }: TooltipTriggerProps) {
-  return <RadixTooltip.Trigger asChild={asChild}>{children}</RadixTooltip.Trigger>;
-}
+export const TooltipTrigger = forwardRef<
+  ElementRef<typeof RadixTooltip.Trigger>,
+  TooltipTriggerProps
+>(function TooltipTrigger({ asChild = true, children, ...props }, ref) {
+  return (
+    <RadixTooltip.Trigger ref={ref} asChild={asChild} {...props}>
+      {children}
+    </RadixTooltip.Trigger>
+  );
+});
 
 export interface TooltipContentProps
   extends Omit<ComponentPropsWithoutRef<typeof RadixTooltip.Content>, 'className' | 'style'> {
@@ -106,18 +118,25 @@ export interface TooltipContentProps
   children: ReactNode;
 }
 
-export function TooltipContent({
-  side = 'top',
-  align = 'center',
-  sideOffset = 6,
-  children,
-  ...props
-}: TooltipContentProps) {
+export const TooltipContent = forwardRef<
+  ElementRef<typeof RadixTooltip.Content>,
+  TooltipContentProps
+>(function TooltipContent(
+  {
+    side = 'top',
+    align = 'center',
+    sideOffset = 6,
+    children,
+    ...props
+  },
+  ref
+) {
   const { colors, tokens } = useTheme();
 
   return (
     <RadixTooltip.Portal>
       <RadixTooltip.Content
+        ref={ref}
         side={side}
         align={align}
         sideOffset={sideOffset}
@@ -142,4 +161,5 @@ export function TooltipContent({
       </RadixTooltip.Content>
     </RadixTooltip.Portal>
   );
-}
+});
+

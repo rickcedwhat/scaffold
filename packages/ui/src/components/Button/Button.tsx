@@ -1,4 +1,8 @@
-import React, { type ButtonHTMLAttributes, type ReactNode } from 'react';
+import React, {
+  forwardRef,
+  type ButtonHTMLAttributes,
+  type ReactNode,
+} from 'react';
 import { useTheme } from '../../theme/ThemeContext';
 
 export type ButtonVariant = 'solid' | 'outline' | 'ghost';
@@ -22,17 +26,20 @@ export interface ButtonProps
   children: ReactNode;
 }
 
-export function Button({
-  intent = 'primary',
-  variant = 'solid',
-  size = 'md',
-  fullWidth = false,
-  loading = false,
-  disabled = false,
-  children,
-  type = 'button',
-  ...props
-}: ButtonProps) {
+export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
+  {
+    intent = 'primary',
+    variant = 'solid',
+    size = 'md',
+    fullWidth = false,
+    loading = false,
+    disabled = false,
+    children,
+    type = 'button',
+    ...props
+  },
+  ref
+) {
   const { tokens, colors } = useTheme();
   const intentColors = colors.intent[intent];
 
@@ -109,6 +116,7 @@ export function Button({
 
   return (
     <button
+      ref={ref}
       type={type}
       disabled={disabled || loading}
       style={computedStyles}
@@ -141,4 +149,5 @@ export function Button({
       {children}
     </button>
   );
-}
+});
+

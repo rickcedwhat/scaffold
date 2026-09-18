@@ -1,6 +1,7 @@
 import React, {
+  forwardRef,
   type ReactNode,
-  type ComponentPropsWithoutRef,
+  type ComponentPropsWithRef,
 } from 'react';
 import * as RadixDialog from '@radix-ui/react-dialog';
 import { useTheme } from '../../theme/ThemeContext';
@@ -22,122 +23,129 @@ export function Dialog({ open, defaultOpen, onOpenChange, children }: DialogProp
   );
 }
 
-export interface DialogTriggerProps {
+export interface DialogTriggerProps
+  extends Omit<ComponentPropsWithRef<typeof RadixDialog.Trigger>, 'className' | 'style'> {
   asChild?: boolean;
   children: ReactNode;
 }
 
-export function DialogTrigger({ asChild = true, children }: DialogTriggerProps) {
-  return <RadixDialog.Trigger asChild={asChild}>{children}</RadixDialog.Trigger>;
-}
+export const DialogTrigger = forwardRef<HTMLButtonElement, DialogTriggerProps>(
+  ({ asChild = true, children, ...props }, ref) => {
+    return (
+      <RadixDialog.Trigger ref={ref} asChild={asChild} {...props}>
+        {children}
+      </RadixDialog.Trigger>
+    );
+  }
+);
+DialogTrigger.displayName = 'DialogTrigger';
 
 export interface DialogContentProps
-  extends Omit<ComponentPropsWithoutRef<typeof RadixDialog.Content>, 'className' | 'style'> {
+  extends Omit<ComponentPropsWithRef<typeof RadixDialog.Content>, 'className' | 'style'> {
   size?: DialogSize;
   showCloseButton?: boolean;
   children: ReactNode;
 }
 
-export function DialogContent({
-  size = 'md',
-  showCloseButton = true,
-  children,
-  ...props
-}: DialogContentProps) {
-  const { colors, tokens } = useTheme();
+export const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
+  ({ size = 'md', showCloseButton = true, children, ...props }, ref) => {
+    const { colors, tokens } = useTheme();
 
-  const maxWidthMap: Record<DialogSize, string> = {
-    sm: '400px',
-    md: '540px',
-    lg: '720px',
-    xl: '960px',
-    full: 'calc(100vw - 32px)',
-  };
+    const maxWidthMap: Record<DialogSize, string> = {
+      sm: '400px',
+      md: '540px',
+      lg: '720px',
+      xl: '960px',
+      full: 'calc(100vw - 32px)',
+    };
 
-  return (
-    <RadixDialog.Portal>
-      {/* Backdrop overlay */}
-      <RadixDialog.Overlay
-        style={{
-          position: 'fixed',
-          inset: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.65)',
-          backdropFilter: 'blur(4px)',
-          WebkitBackdropFilter: 'blur(4px)',
-          zIndex: 100,
-        }}
-      />
-      {/* Centered Modal Content */}
-      <RadixDialog.Content
-        style={{
-          position: 'fixed',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          width: '100%',
-          maxWidth: maxWidthMap[size],
-          maxHeight: 'calc(100vh - 64px)',
-          overflowY: 'auto',
-          backgroundColor: colors.bg.surface,
-          border: `1px solid ${colors.border.subtle}`,
-          borderRadius: tokens.radii.xl,
-          boxShadow: tokens.shadows.xl,
-          padding: tokens.spacing[6],
-          boxSizing: 'border-box',
-          zIndex: 101,
-          outline: 'none',
-        }}
-        {...props}
-      >
-        {children}
-        {showCloseButton && (
-          <RadixDialog.Close
-            aria-label="Close dialog"
-            style={{
-              position: 'absolute',
-              top: tokens.spacing[4],
-              right: tokens.spacing[4],
-              width: '32px',
-              height: '32px',
-              borderRadius: tokens.radii.md,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: 'transparent',
-              border: 'none',
-              cursor: 'pointer',
-              color: colors.text.muted,
-              padding: 0,
-              transition: 'background-color 0.15s ease, color 0.15s ease',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = colors.bg.subtle;
-              e.currentTarget.style.color = colors.text.primary;
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'transparent';
-              e.currentTarget.style.color = colors.text.muted;
-            }}
-          >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+    return (
+      <RadixDialog.Portal>
+        {/* Backdrop overlay */}
+        <RadixDialog.Overlay
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: colors.overlay.backdrop,
+            backdropFilter: 'blur(4px)',
+            WebkitBackdropFilter: 'blur(4px)',
+            zIndex: 100,
+          }}
+        />
+        {/* Centered Modal Content */}
+        <RadixDialog.Content
+          ref={ref}
+          style={{
+            position: 'fixed',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: '100%',
+            maxWidth: maxWidthMap[size],
+            maxHeight: 'calc(100vh - 64px)',
+            overflowY: 'auto',
+            backgroundColor: colors.bg.surface,
+            border: `1px solid ${colors.border.subtle}`,
+            borderRadius: tokens.radii.xl,
+            boxShadow: tokens.shadows.xl,
+            padding: tokens.spacing[6],
+            boxSizing: 'border-box',
+            zIndex: 101,
+            outline: 'none',
+          }}
+          {...props}
+        >
+          {children}
+          {showCloseButton && (
+            <RadixDialog.Close
+              aria-label="Close dialog"
+              style={{
+                position: 'absolute',
+                top: tokens.spacing[4],
+                right: tokens.spacing[4],
+                width: tokens.spacing[8],
+                height: tokens.spacing[8],
+                borderRadius: tokens.radii.md,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                color: colors.text.muted,
+                padding: 0,
+                transition: 'background-color 0.15s ease, color 0.15s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = colors.bg.subtle;
+                e.currentTarget.style.color = colors.text.primary;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.color = colors.text.muted;
+              }}
             >
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          </RadixDialog.Close>
-        )}
-      </RadixDialog.Content>
-    </RadixDialog.Portal>
-  );
-}
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </RadixDialog.Close>
+          )}
+        </RadixDialog.Content>
+      </RadixDialog.Portal>
+    );
+  }
+);
+DialogContent.displayName = 'DialogContent';
 
 export interface DialogHeaderProps {
   children: ReactNode;
@@ -161,50 +169,58 @@ export function DialogHeader({ children }: DialogHeaderProps) {
 }
 
 export interface DialogTitleProps
-  extends Omit<ComponentPropsWithoutRef<typeof RadixDialog.Title>, 'className' | 'style'> {
+  extends Omit<ComponentPropsWithRef<typeof RadixDialog.Title>, 'className' | 'style'> {
   children: ReactNode;
 }
 
-export function DialogTitle({ children, ...props }: DialogTitleProps) {
-  const { colors, tokens } = useTheme();
-  return (
-    <RadixDialog.Title
-      style={{
-        margin: 0,
-        fontSize: tokens.typography.fontSize.xl,
-        fontWeight: tokens.typography.fontWeight.semibold,
-        lineHeight: tokens.typography.lineHeight.snug,
-        color: colors.text.primary,
-        letterSpacing: '-0.015em',
-      }}
-      {...props}
-    >
-      {children}
-    </RadixDialog.Title>
-  );
-}
+export const DialogTitle = forwardRef<HTMLHeadingElement, DialogTitleProps>(
+  ({ children, ...props }, ref) => {
+    const { colors, tokens } = useTheme();
+    return (
+      <RadixDialog.Title
+        ref={ref}
+        style={{
+          margin: 0,
+          fontSize: tokens.typography.fontSize.xl,
+          fontWeight: tokens.typography.fontWeight.semibold,
+          lineHeight: tokens.typography.lineHeight.snug,
+          color: colors.text.primary,
+          letterSpacing: '-0.015em',
+        }}
+        {...props}
+      >
+        {children}
+      </RadixDialog.Title>
+    );
+  }
+);
+DialogTitle.displayName = 'DialogTitle';
 
 export interface DialogDescriptionProps
-  extends Omit<ComponentPropsWithoutRef<typeof RadixDialog.Description>, 'className' | 'style'> {
+  extends Omit<ComponentPropsWithRef<typeof RadixDialog.Description>, 'className' | 'style'> {
   children: ReactNode;
 }
 
-export function DialogDescription({ children, ...props }: DialogDescriptionProps) {
-  const { colors, tokens } = useTheme();
-  return (
-    <RadixDialog.Description
-      style={{
-        margin: 0,
-        fontSize: tokens.typography.fontSize.sm,
-        lineHeight: tokens.typography.lineHeight.relaxed,
-        color: colors.text.muted,
-      }}
-      {...props}
-    >
-      {children}
-    </RadixDialog.Description>
-  );
-}
+export const DialogDescription = forwardRef<HTMLParagraphElement, DialogDescriptionProps>(
+  ({ children, ...props }, ref) => {
+    const { colors, tokens } = useTheme();
+    return (
+      <RadixDialog.Description
+        ref={ref}
+        style={{
+          margin: 0,
+          fontSize: tokens.typography.fontSize.sm,
+          lineHeight: tokens.typography.lineHeight.relaxed,
+          color: colors.text.muted,
+        }}
+        {...props}
+      >
+        {children}
+      </RadixDialog.Description>
+    );
+  }
+);
+DialogDescription.displayName = 'DialogDescription';
 
 export interface DialogFooterProps {
   children: ReactNode;
@@ -227,14 +243,22 @@ export function DialogFooter({ children }: DialogFooterProps) {
   );
 }
 
-export interface DialogCloseProps {
+export interface DialogCloseProps
+  extends Omit<ComponentPropsWithRef<typeof RadixDialog.Close>, 'className' | 'style'> {
   asChild?: boolean;
   children: ReactNode;
 }
 
-export function DialogClose({ asChild = true, children }: DialogCloseProps) {
-  return <RadixDialog.Close asChild={asChild}>{children}</RadixDialog.Close>;
-}
+export const DialogClose = forwardRef<HTMLButtonElement, DialogCloseProps>(
+  ({ asChild = true, children, ...props }, ref) => {
+    return (
+      <RadixDialog.Close ref={ref} asChild={asChild} {...props}>
+        {children}
+      </RadixDialog.Close>
+    );
+  }
+);
+DialogClose.displayName = 'DialogClose';
 
 // Aliases for Modal terminology
 export const Modal = Dialog;

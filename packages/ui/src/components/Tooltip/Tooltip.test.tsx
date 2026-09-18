@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import React from 'react';
 import {
   Tooltip,
@@ -10,29 +10,42 @@ import {
 import { Button } from '../Button/Button';
 
 describe('Tooltip', () => {
-  it('renders simple tooltip on trigger focus/hover', async () => {
+  it('renders simple tooltip on trigger focus', () => {
     render(
-      <Tooltip content="Quick shortcut tooltip" defaultOpen>
+      <Tooltip content="Quick shortcut tooltip">
         <Button>Hover Me</Button>
       </Tooltip>
     );
 
-    expect(screen.getByText('Hover Me')).toBeInTheDocument();
-    expect(screen.getByText('Quick shortcut tooltip')).toBeInTheDocument();
+    const trigger = screen.getByRole('button', { name: 'Hover Me' });
+    expect(trigger).toBeInTheDocument();
+
+    fireEvent.focus(trigger);
+
+    expect(screen.getByRole('tooltip')).toHaveTextContent('Quick shortcut tooltip');
   });
+
 
   it('supports compound syntax', () => {
     render(
       <TooltipProvider>
-        <Tooltip defaultOpen>
-          <TooltipTrigger>
-            <button>Info Icon</button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button>Info Icon</Button>
           </TooltipTrigger>
           <TooltipContent>Detailed compound explanation</TooltipContent>
         </Tooltip>
       </TooltipProvider>
     );
 
-    expect(screen.getByText('Detailed compound explanation')).toBeInTheDocument();
+    const trigger = screen.getByRole('button', { name: 'Info Icon' });
+    expect(trigger).toBeInTheDocument();
+
+    fireEvent.focus(trigger);
+
+    expect(screen.getByRole('tooltip')).toHaveTextContent('Detailed compound explanation');
   });
+
 });
+
+
