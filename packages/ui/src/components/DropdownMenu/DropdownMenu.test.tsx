@@ -50,7 +50,7 @@ describe('DropdownMenu', () => {
     const handleDisabled = vi.fn();
 
     render(
-      <DropdownMenu defaultOpen>
+      <DropdownMenu>
         <DropdownMenuTrigger>
           <button>Menu</button>
         </DropdownMenuTrigger>
@@ -62,10 +62,16 @@ describe('DropdownMenu', () => {
       </DropdownMenu>
     );
 
-    const disabledItem = screen.getByText('Unavailable Action');
-    expect(disabledItem).toHaveAttribute('data-disabled');
+    fireEvent.pointerDown(screen.getByRole('button', { name: /menu/i }), {
+      button: 0,
+      ctrlKey: false,
+    });
+
+    const disabledItem = screen.getByRole('menuitem', { name: 'Unavailable Action' });
+    expect(disabledItem).toHaveAttribute('aria-disabled', 'true');
 
     fireEvent.click(disabledItem);
     expect(handleDisabled).not.toHaveBeenCalled();
   });
+
 });
