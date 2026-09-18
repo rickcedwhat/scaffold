@@ -87,6 +87,15 @@ export const tokens = {
       normal: '1.5',
       relaxed: '1.75',
     },
+    letterSpacing: {
+      tighter: '-0.05em',
+      tight: '-0.015em',
+      normal: '0em',
+      wide: '0.025em',
+    },
+  },
+  layout: {
+    dialogMaxHeight: 'calc(100vh - 4rem)',
   },
   colors: {
     light: {

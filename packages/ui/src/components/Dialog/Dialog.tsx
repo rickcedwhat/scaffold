@@ -82,7 +82,7 @@ export const DialogContent = forwardRef<HTMLDivElement, DialogContentProps>(
             transform: 'translate(-50%, -50%)',
             width: '100%',
             maxWidth: maxWidthMap[size],
-            maxHeight: 'calc(100vh - 64px)',
+            maxHeight: tokens.layout.dialogMaxHeight,
             overflowY: 'auto',
             backgroundColor: colors.bg.surface,
             border: `1px solid ${colors.border.subtle}`,
@@ -185,7 +185,7 @@ export const DialogTitle = forwardRef<HTMLHeadingElement, DialogTitleProps>(
           fontWeight: tokens.typography.fontWeight.semibold,
           lineHeight: tokens.typography.lineHeight.snug,
           color: colors.text.primary,
-          letterSpacing: '-0.015em',
+          letterSpacing: tokens.typography.letterSpacing.tight,
         }}
         {...props}
       >
