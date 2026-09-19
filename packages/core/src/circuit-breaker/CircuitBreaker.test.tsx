@@ -3,7 +3,7 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { ThemeProvider } from '@scaffold/ui';
 import { CircuitBreaker, RenderStormError } from './CircuitBreaker';
-import { protectQueryFn } from './queryWrapper';
+import { protectQueryFn, serializeQueryKey } from './queryWrapper';
 import { RenderStormOverlay } from './RenderStormOverlay';
 import { RenderStormProvider, useRenderStorm } from './RenderStormProvider';
 
@@ -125,6 +125,78 @@ describe('CircuitBreaker', () => {
     expect(prodBreaker.getState()).toBe('closed');
   });
 
+  it('permits only one in-flight probe during half-open and rejects concurrent calls', async () => {
+    const fn = vi.fn().mockResolvedValue('data');
+    for (let i = 0; i < 6; i++) {
+      try {
+        await breaker.execute('probe-test', fn);
+      } catch {
+        // trip
+      }
+    }
+    expect(breaker.getState()).toBe('open');
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    expect(breaker.getState()).toBe('half-open');
+
+    // Simulate in-flight pending probe
+    let resolveProbe!: (val: string) => void;
+    const probePromise = new Promise<string>((res) => {
+      resolveProbe = res;
+    });
+
+    const firstCall = breaker.execute('probe-test', () => probePromise);
+    // Second concurrent call should be rejected immediately because probe is in flight
+    await expect(breaker.execute('probe-test', fn)).rejects.toThrow(RenderStormError);
+
+    // Resolve first probe
+    resolveProbe('ok');
+    const firstResult = await firstCall;
+    expect(firstResult).toBe('ok');
+    expect(breaker.getState()).toBe('closed');
+  });
+
+  it('re-trips with a fresh trip event when half-open recovery fails', async () => {
+    const fn = vi.fn().mockResolvedValue('data');
+    for (let i = 0; i < 6; i++) {
+      try {
+        await breaker.execute('fail-recovery', fn);
+      } catch {
+        // trip
+      }
+    }
+    expect(breaker.getState()).toBe('open');
+    const initialTripTimestamp = breaker.getLastTrip()?.timestamp;
+
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    expect(breaker.getState()).toBe('half-open');
+
+    // Recovery probe throws error
+    const failingProbe = vi.fn().mockRejectedValue(new Error('backend failed'));
+    await expect(breaker.execute('fail-recovery', failingProbe)).rejects.toThrow('backend failed');
+
+    expect(breaker.getState()).toBe('open');
+    expect(breaker.getLastTrip()?.timestamp).toBeGreaterThanOrEqual(initialTripTimestamp!);
+  });
+
+  it('normalizes velocity over non-standard windowMs', () => {
+    const customBreaker = new CircuitBreaker({
+      windowMs: 2000,
+      maxVelocity: 5,
+      isDev: true,
+    });
+
+    // 10 calls in a 2000ms window = 5 calls/sec. Should be allowed.
+    for (let i = 0; i < 10; i++) {
+      const res = customBreaker.recordCall('key');
+      expect(res.allowed).toBe(true);
+    }
+
+    // 11th call = 11 / 2 = 5.5 calls/sec > maxVelocity (5). Should trip.
+    const tripRes = customBreaker.recordCall('key');
+    expect(tripRes.allowed).toBe(false);
+    expect(customBreaker.getState()).toBe('open');
+  });
+
   it('respects mute duration and ignores trips during mute', async () => {
     breaker.mute(1000);
     expect(breaker.isMuted()).toBe(true);
@@ -160,6 +232,12 @@ describe('protectQueryFn', () => {
     // 4th call exceeds velocity of 3
     await expect(wrapped()).rejects.toThrow(RenderStormError);
     expect(queryMock).toHaveBeenCalledTimes(3);
+  });
+
+  it('serializes undefined and non-standard query keys stably', () => {
+    expect(serializeQueryKey(undefined)).toBe('undefined');
+    expect(serializeQueryKey('simple-key')).toBe('simple-key');
+    expect(serializeQueryKey(['users', 1])).toBe('["users",1]');
   });
 });
 

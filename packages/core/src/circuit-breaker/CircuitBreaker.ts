@@ -70,11 +70,11 @@ function resolveIsDev(explicit?: boolean): boolean {
   } catch {
     // Ignore environments where import.meta is restricted
   }
-  // Node / common bundler replacement
+  // Node / common bundler replacement - default safe (only true if NODE_ENV === 'development' or 'test')
   if (typeof process !== 'undefined' && process.env) {
-    return process.env.NODE_ENV !== 'production';
+    return process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test';
   }
-  return true;
+  return false;
 }
 
 export class CircuitBreaker {
@@ -87,6 +87,7 @@ export class CircuitBreaker {
   private callTimestamps: Map<string, number[]> = new Map();
   private lastTrip: RenderStormTripEvent | null = null;
   private trippedAt: number | null = null;
+  private isProbing: boolean = false;
   private mutedUntil: number = 0;
   private listeners: Set<(event: CircuitBreakerEvent) => void> = new Set();
 
@@ -155,6 +156,7 @@ export class CircuitBreaker {
     if (this.state === 'open' && this.trippedAt !== null) {
       if (Date.now() - this.trippedAt >= this.cooldownMs) {
         this.state = 'half-open';
+        this.isProbing = false;
         this.notify('state-change');
       }
     }
@@ -191,7 +193,7 @@ export class CircuitBreaker {
     valid.push(now);
     this.callTimestamps.set(key, valid);
 
-    const velocity = valid.length;
+    const velocity = valid.length / (this.windowMs / 1000);
 
     // Check if threshold exceeded
     if (velocity > this.maxVelocity) {
@@ -242,6 +244,23 @@ export class CircuitBreaker {
       );
     }
 
+    if (this.state === 'half-open') {
+      if (this.isProbing) {
+        throw new RenderStormError(
+          this.lastTrip || {
+            key,
+            velocity: this.getVelocity(key),
+            threshold: this.maxVelocity,
+            windowMs: this.windowMs,
+            timestamp: Date.now(),
+            stack,
+            circuitState: 'half-open',
+          }
+        );
+      }
+      this.isProbing = true;
+    }
+
     const check = this.recordCall(key, stack);
     if (!check.allowed) {
       throw new RenderStormError(this.lastTrip!);
@@ -254,14 +273,27 @@ export class CircuitBreaker {
         this.state = 'closed';
         this.lastTrip = null;
         this.trippedAt = null;
+        this.isProbing = false;
+        this.callTimestamps.clear();
         this.notify('state-change');
       }
       return result;
     } catch (error) {
       if (this.state === 'half-open') {
         // Failed recovery re-trips the circuit
+        const now = Date.now();
         this.state = 'open';
-        this.trippedAt = Date.now();
+        this.trippedAt = now;
+        this.isProbing = false;
+        this.lastTrip = {
+          key,
+          velocity: check.velocity,
+          threshold: this.maxVelocity,
+          windowMs: this.windowMs,
+          timestamp: now,
+          stack: stack || new Error().stack,
+          circuitState: 'open',
+        };
         this.notify('trip');
       }
       throw error;
@@ -275,6 +307,7 @@ export class CircuitBreaker {
     this.state = 'closed';
     this.lastTrip = null;
     this.trippedAt = null;
+    this.isProbing = false;
     this.callTimestamps.clear();
     this.notify('reset');
   }

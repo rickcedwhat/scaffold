@@ -6,7 +6,7 @@ import { defaultCircuitBreaker, CircuitBreaker } from './CircuitBreaker';
 export function serializeQueryKey(queryKey: unknown): string {
   if (typeof queryKey === 'string') return queryKey;
   try {
-    return JSON.stringify(queryKey);
+    return JSON.stringify(queryKey) ?? String(queryKey);
   } catch {
     return String(queryKey);
   }
