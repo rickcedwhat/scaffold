@@ -344,4 +344,39 @@ toast.error('Network connection timeout');
 <Skeleton animation="wave" height={36} />
 <Skeleton animation="none" height={36} />`,
   },
+
+  circuitBreaker: {
+    protectQuery: `// Protect TanStack Query functions from runaway loops
+import { protectQueryFn } from '@scaffold/core';
+
+export function useProjectsQuery() {
+  return useQuery({
+    queryKey: ['projects'],
+    queryFn: protectQueryFn(async () => {
+      const res = await fetch('/api/projects');
+      return res.json();
+    }, ['projects']),
+  });
+}`,
+    provider: `// Wrap root app tree with dev-mode diagnostic overlay
+import { RenderStormProvider } from '@scaffold/core';
+
+export function App() {
+  return (
+    <RenderStormProvider>
+      <QueryClientProvider client={queryClient}>
+        <RouterProvider router={router} />
+      </QueryClientProvider>
+    </RenderStormProvider>
+  );
+}`,
+    customBreaker: `// Custom velocity threshold and cooldown tuning
+import { CircuitBreaker } from '@scaffold/core';
+
+const customBreaker = new CircuitBreaker({
+  windowMs: 1000,
+  maxVelocity: 8,   // Trip if > 8 calls/sec
+  cooldownMs: 4000, // Wait 4s before half-open probe
+});`,
+  },
 };

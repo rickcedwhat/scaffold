@@ -73,7 +73,9 @@ import {
   Bell,
   Inbox,
   Loader2,
+  Zap,
 } from 'lucide-react';
+import { useRenderStorm } from '@scaffold/core';
 
 export type WorkbenchTab =
   | 'button'
@@ -83,6 +85,7 @@ export type WorkbenchTab =
   | 'toasts'
   | 'emptyStates'
   | 'skeletons'
+  | 'circuitBreaker'
   | 'badges'
   | 'sidebar'
   | 'stack'
@@ -93,6 +96,51 @@ export type WorkbenchTab =
 export function App() {
   const { mode, toggleMode, colors, tokens } = useTheme();
   const [activeTab, setActiveTab] = useState<WorkbenchTab>('textInput');
+
+  // Circuit Breaker interactive simulation state
+  const {
+    breaker,
+    state: circuitState,
+    velocity: currentVelocity,
+    reset: resetCircuit,
+    mute: muteCircuit,
+  } = useRenderStorm();
+  const [stormLogs, setStormLogs] = useState<string[]>([]);
+  const [simulatedQueryCount, setSimulatedQueryCount] = useState(0);
+
+  const addLog = (msg: string) => {
+    const time = new Date().toLocaleTimeString();
+    setStormLogs((prev) => [`[${time}] ${msg}`, ...prev.slice(0, 19)]);
+  };
+
+  const handleSafeQuery = async () => {
+    try {
+      await breaker.execute('api/projects/list', async () => {
+        setSimulatedQueryCount((c) => c + 1);
+        addLog('✓ Executed safe query: api/projects/list');
+      });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      addLog(`❌ Blocked: ${msg}`);
+    }
+  };
+
+  const handleTriggerStorm = async () => {
+    addLog('⚡ Initiating runaway render storm simulation (25 rapid calls)...');
+    for (let i = 1; i <= 25; i++) {
+      try {
+        await breaker.execute('api/analytics/realtime-stream', async () => {
+          setSimulatedQueryCount((c) => c + 1);
+          addLog(`✓ Call #${i} dispatched`);
+        });
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        addLog(`🛑 HALTED by Circuit Breaker at call #${i}: ${msg}`);
+        break;
+      }
+      await new Promise((r) => setTimeout(r, 16));
+    }
+  };
 
   // isDirty interactive demo state (matching cedrickcatalan.com)
   const initialUsername = 'John Doe';
@@ -130,6 +178,7 @@ export function App() {
     toasts: 'Toasts',
     emptyStates: 'Empty States',
     skeletons: 'Skeletons',
+    circuitBreaker: 'Circuit Breaker',
     badges: 'Badges & Avatars',
     sidebar: 'Sidebar Nav',
     stack: 'Stack & Grid',
@@ -226,6 +275,16 @@ export function App() {
                 onClick={() => setActiveTab('skeletons')}
               >
                 Skeletons
+              </SidebarItem>
+            </SidebarSection>
+
+            <SidebarSection title="Core & Reliability">
+              <SidebarItem
+                icon={<Zap size={16} />}
+                active={activeTab === 'circuitBreaker'}
+                onClick={() => setActiveTab('circuitBreaker')}
+              >
+                Circuit Breaker
               </SidebarItem>
             </SidebarSection>
 
@@ -1279,6 +1338,205 @@ export function App() {
                       <Skeleton variant="text" lines={5} height={16} animation={skeletonAnimation} />
                     </Stack>
                   </Card>
+                </ComponentExample>
+              </Stack>
+            )}
+
+            {/* Circuit Breaker Tab */}
+            {activeTab === 'circuitBreaker' && (
+              <Stack gap={6}>
+                <div>
+                  <Heading level={3} size="lg">
+                    Render-Storm Circuit Breaker
+                  </Heading>
+                  <Text size="sm" color="secondary">
+                    Velocity-tracking throttler active in development mode. Halts runaway query/render loops and displays an immediate diagnostic overlay (philosophy.md § 7).
+                  </Text>
+                </div>
+
+                <ComponentExample
+                  title="Interactive Storm Simulator"
+                  description="Fire safe isolated requests, or simulate a runaway component re-render loop to watch the circuit breaker trip and display the developer diagnostic overlay."
+                  code={SNIPPETS.circuitBreaker.protectQuery}
+                  defaultExpanded={false}
+                >
+                  <Stack gap={5}>
+                    {/* Live Telemetry Bar */}
+                    <Card padding="normal" variant="subtle">
+                      <Grid minItemWidth={200} gap={4}>
+                        <Stack gap={1}>
+                          <Text size="xs" color="muted" weight="medium">
+                            Circuit Breaker State
+                          </Text>
+                          <Stack direction="row" align="center" gap={2}>
+                            <Badge
+                              intent={
+                                circuitState === 'closed'
+                                  ? 'success'
+                                  : circuitState === 'open'
+                                  ? 'danger'
+                                  : 'neutral'
+                              }
+                              size="md"
+                            >
+                              {circuitState.toUpperCase()}
+                            </Badge>
+                            {circuitState === 'open' && (
+                              <Text size="xs" color="danger" weight="semibold">
+                                Requests Halted
+                              </Text>
+                            )}
+                          </Stack>
+                        </Stack>
+
+                        <Stack gap={1}>
+                          <Text size="xs" color="muted" weight="medium">
+                            Live Request Velocity
+                          </Text>
+                          <Stack direction="row" align="baseline" gap={2}>
+                            <Text
+                              size="xl"
+                              weight="bold"
+                              color={currentVelocity > 10 ? 'danger' : 'primary'}
+                            >
+                              {currentVelocity.toFixed(1)}
+                            </Text>
+                            <Text size="xs" color="secondary">
+                              req/sec (Threshold: 10/sec)
+                            </Text>
+                          </Stack>
+                        </Stack>
+
+                        <Stack gap={1}>
+                          <Text size="xs" color="muted" weight="medium">
+                            Total Dispatched Queries
+                          </Text>
+                          <Text size="xl" weight="bold">
+                            {simulatedQueryCount}
+                          </Text>
+                        </Stack>
+                      </Grid>
+                    </Card>
+
+                    {/* Simulation Controls */}
+                    <Stack direction="row" gap={3} wrap align="center">
+                      <Button
+                        intent="neutral"
+                        onClick={handleSafeQuery}
+                        disabled={circuitState === 'open'}
+                      >
+                        Execute Safe Query (1 req)
+                      </Button>
+
+                      <Button
+                        intent="danger"
+                        onClick={handleTriggerStorm}
+                        disabled={circuitState === 'open'}
+                      >
+                        ⚡ Trigger Render Storm (25 reqs / 400ms)
+                      </Button>
+
+                      <Button
+                        intent="primary"
+                        variant="outline"
+                        onClick={() => {
+                          resetCircuit();
+                          addLog('↺ Circuit breaker manually reset to CLOSED.');
+                        }}
+                      >
+                        Reset Circuit Breaker
+                      </Button>
+
+                      <Button
+                        intent="neutral"
+                        variant="ghost"
+                        onClick={() => {
+                          muteCircuit(30000);
+                          addLog('🔇 Circuit breaker muted for 30 seconds.');
+                        }}
+                      >
+                        Mute 30s
+                      </Button>
+                    </Stack>
+
+                    {/* Live Event Stream / Console */}
+                    <Card padding="compact" variant="outline">
+                      <Stack gap={2}>
+                        <Stack direction="row" justify="between" align="center">
+                          <Text size="xs" weight="semibold" color="secondary">
+                            Live Simulation Event Log
+                          </Text>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setStormLogs([])}
+                          >
+                            Clear Log
+                          </Button>
+                        </Stack>
+                        <div
+                          style={{
+                            backgroundColor: colors.bg.canvas,
+                            borderRadius: tokens.radii.sm,
+                            padding: tokens.spacing[3],
+                            minHeight: '140px',
+                            maxHeight: '220px',
+                            overflowY: 'auto',
+                            fontFamily: tokens.typography.fontFamily.mono,
+                            fontSize: tokens.typography.fontSize.xs,
+                            lineHeight: tokens.typography.lineHeight.normal,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '4px',
+                            border: `1px solid ${colors.border.subtle}`,
+                          }}
+                        >
+                          {stormLogs.length === 0 ? (
+                            <span style={{ color: colors.text.muted }}>
+                              Ready. Click &quot;Execute Safe Query&quot; or &quot;⚡ Trigger Render Storm&quot; to see the circuit breaker in action.
+                            </span>
+                          ) : (
+                            stormLogs.map((log, index) => (
+                              <div
+                                key={index}
+                                style={{
+                                  color: log.includes('🛑') || log.includes('❌')
+                                    ? colors.intent.danger.main
+                                    : log.includes('⚡')
+                                    ? colors.intent.primary.main
+                                    : colors.text.primary,
+                                }}
+                              >
+                                {log}
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </Stack>
+                    </Card>
+                  </Stack>
+                </ComponentExample>
+
+                <ComponentExample
+                  title="App-Wide Provider Integration"
+                  description="Wrap the root application tree with RenderStormProvider to automatically catch runaway queries across all routes."
+                  code={SNIPPETS.circuitBreaker.provider}
+                  defaultExpanded={false}
+                >
+                  <Text size="sm" color="secondary">
+                    Mounting <code>&lt;RenderStormProvider&gt;</code> in development exposes the <code>useRenderStorm()</code> hook and renders the <code>&lt;RenderStormOverlay&gt;</code> floating diagnostic banner whenever an unstable component loop is tripped.
+                  </Text>
+                </ComponentExample>
+
+                <ComponentExample
+                  title="Custom Circuit Breaker Configuration"
+                  description="Customize the rolling window, max velocity threshold, and cooldown timing for specific heavy workloads."
+                  code={SNIPPETS.circuitBreaker.customBreaker}
+                  defaultExpanded={false}
+                >
+                  <Text size="sm" color="secondary">
+                    Instantiate custom <code>CircuitBreaker</code> instances for specific endpoints or microservices that need looser or stricter trip boundaries.
+                  </Text>
                 </ComponentExample>
               </Stack>
             )}
