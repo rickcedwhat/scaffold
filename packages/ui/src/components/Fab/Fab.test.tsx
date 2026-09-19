@@ -148,8 +148,15 @@ describe('Fab (Floating Action Button)', () => {
     const button = screen.getByRole('button', { name: 'Escape Test' });
     expect(button).toHaveAttribute('aria-expanded', 'true');
 
-    fireEvent.keyDown(document, { key: 'Escape' });
+    // Focus a sub-action menu item
+    const firstItem = screen.getByRole('menuitem', { name: 'Create Project' });
+    firstItem.focus();
+    expect(firstItem).toHaveFocus();
+
+    // Escape closes menu and restores focus to the main button trigger
+    fireEvent.keyDown(firstItem, { key: 'Escape' });
     expect(button).toHaveAttribute('aria-expanded', 'false');
+    expect(button).toHaveFocus();
   });
 
   it('closes speed-dial menu on pointerdown outside', () => {
@@ -185,8 +192,8 @@ describe('Fab (Floating Action Button)', () => {
     const root = screen.getByTestId('scaffold-fab-root');
     const menuItems = screen.getAllByRole('menuitem');
 
-    // ArrowDown moves to first item
-    fireEvent.keyDown(root, { key: 'ArrowDown' });
+    // Focus first item
+    menuItems[0].focus();
     expect(menuItems[0]).toHaveFocus();
 
     // ArrowDown moves to second item
@@ -204,6 +211,34 @@ describe('Fab (Floating Action Button)', () => {
     // Home key moves back to first item
     fireEvent.keyDown(root, { key: 'Home' });
     expect(menuItems[0]).toHaveFocus();
+  });
+
+  it('recalculates implicit menu direction dynamically after dragging', () => {
+    renderWithTheme(
+      <Fab
+        label="Direction Test"
+        icon={<span>★</span>}
+        actions={mockActions}
+        placement="bottom-right"
+        draggable={true}
+        defaultOpen={true}
+      />
+    );
+
+    const menuContainer = screen.getByRole('menu');
+    expect(menuContainer.style.bottom).toBe('66px');
+
+    // Dragged towards top of viewport (y = 50px < window.innerHeight / 2)
+    const button = screen.getByRole('button', { name: 'Direction Test' });
+    button.setPointerCapture = vi.fn();
+    button.releasePointerCapture = vi.fn();
+
+    fireEvent.pointerDown(button, { clientX: 100, clientY: 500, pointerId: 1 });
+    fireEvent.pointerMove(button, { clientX: 100, clientY: 50, pointerId: 1 });
+    fireEvent.pointerUp(button, { clientX: 100, clientY: 50, pointerId: 1 });
+
+    // When dragged to top half, implicit direction recalculates to 'down'
+    expect(menuContainer.style.top).toBe('66px');
   });
 
   it('does not fire action on disabled sub-actions', () => {

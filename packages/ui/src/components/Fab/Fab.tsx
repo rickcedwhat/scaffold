@@ -128,6 +128,7 @@ export const Fab = forwardRef<HTMLDivElement, FabProps>(function Fab(
   const [focusedActionIndex, setFocusedActionIndex] = useState<number>(-1);
 
   const containerRef = useRef<HTMLDivElement>(null);
+  const mainButtonRef = useRef<HTMLButtonElement>(null);
   const pointerStartRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const elementStartRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const lastCoordsRef = useRef<{ x: number; y: number } | null>(null);
@@ -139,9 +140,14 @@ export const Fab = forwardRef<HTMLDivElement, FabProps>(function Fab(
   const hasActions = actions.length > 0;
   const config = SIZE_MAP[size];
 
-  // Resolve expansion direction based on placement if not explicitly passed
-  const resolvedDirection: FabDirection =
-    direction || (placement.startsWith('bottom') ? 'up' : 'down');
+  // Resolve expansion direction: recalculate dynamically from current coords after drag, or placement initially
+  const resolvedDirection: FabDirection = (() => {
+    if (direction) return direction;
+    if (coords && typeof window !== 'undefined') {
+      return coords.y < window.innerHeight / 2 ? 'down' : 'up';
+    }
+    return placement.startsWith('bottom') ? 'up' : 'down';
+  })();
 
   const setOpen = useCallback(
     (nextOpen: boolean) => {
@@ -172,6 +178,7 @@ export const Fab = forwardRef<HTMLDivElement, FabProps>(function Fab(
     const handleKeyDown = (event: globalThis.KeyboardEvent) => {
       if (event.key === 'Escape') {
         setOpen(false);
+        mainButtonRef.current?.focus();
       }
     };
 
@@ -298,6 +305,13 @@ export const Fab = forwardRef<HTMLDivElement, FabProps>(function Fab(
   // Keyboard navigation across actions (skipping disabled items)
   const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     if (!hasActions || !isMenuOpen) return;
+
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      setOpen(false);
+      mainButtonRef.current?.focus();
+      return;
+    }
 
     const enabledIndices = actions
       .map((action, i) => (!action.disabled && !disabled ? i : -1))
@@ -552,6 +566,7 @@ export const Fab = forwardRef<HTMLDivElement, FabProps>(function Fab(
 
       {/* Main Trigger Floating Action Button */}
       <button
+        ref={mainButtonRef}
         type="button"
         role="button"
         aria-label={label}

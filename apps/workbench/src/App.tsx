@@ -1540,9 +1540,11 @@ export function App() {
                                 size="sm"
                                 variant={fabIntent === i ? 'solid' : 'outline'}
                                 intent={fabIntent === i ? 'primary' : 'neutral'}
+                                aria-label={`Intent: ${i}`}
+                                title={i}
                                 onClick={() => setFabIntent(i)}
                               >
-                                {i[0].toUpperCase()}
+                                {i.slice(0, 3)}
                               </Button>
                             ))}
                           </Stack>

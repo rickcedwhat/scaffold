@@ -431,8 +431,8 @@ import { Sparkles } from 'lucide-react';
   draggable={true}
   placement="bottom-right"
   offset={[24, 24]}
-  actions={aiActions}
   badge={true}
+  onClick={() => openAssistant()}
 />`,
   },
 };
