@@ -1516,28 +1516,6 @@ export function App() {
                     </Card>
                   </Stack>
                 </ComponentExample>
-
-                <ComponentExample
-                  title="App-Wide Provider Integration"
-                  description="Wrap the root application tree with RenderStormProvider to automatically catch runaway queries across all routes."
-                  code={SNIPPETS.circuitBreaker.provider}
-                  defaultExpanded={false}
-                >
-                  <Text size="sm" color="secondary">
-                    Mounting <code>&lt;RenderStormProvider&gt;</code> in development exposes the <code>useRenderStorm()</code> hook and renders the <code>&lt;RenderStormOverlay&gt;</code> floating diagnostic banner whenever an unstable component loop is tripped.
-                  </Text>
-                </ComponentExample>
-
-                <ComponentExample
-                  title="Custom Circuit Breaker Configuration"
-                  description="Customize the rolling window, max velocity threshold, and cooldown timing for specific heavy workloads."
-                  code={SNIPPETS.circuitBreaker.customBreaker}
-                  defaultExpanded={false}
-                >
-                  <Text size="sm" color="secondary">
-                    Instantiate custom <code>CircuitBreaker</code> instances for specific endpoints or microservices that need looser or stricter trip boundaries.
-                  </Text>
-                </ComponentExample>
               </Stack>
             )}
 
