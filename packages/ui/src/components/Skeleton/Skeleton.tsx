@@ -59,7 +59,7 @@ export const Skeleton = forwardRef<HTMLDivElement, SkeletonProps>(
     },
     ref
   ) => {
-    const { colors, tokens } = useTheme();
+    const { colors, tokens, mode } = useTheme();
 
     ensureSkeletonKeyframes();
 
@@ -88,12 +88,14 @@ export const Skeleton = forwardRef<HTMLDivElement, SkeletonProps>(
     const resolvedHeight = formatDimension(height) || defaultHeight;
 
     const baseStyle: React.CSSProperties = {
-      backgroundColor: colors.bg.subtle,
+      backgroundColor: mode === 'dark' ? colors.border.default : colors.border.subtle,
       borderRadius,
       position: 'relative',
       overflow: 'hidden',
       boxSizing: 'border-box',
     };
+
+    const waveHighlight = mode === 'dark' ? colors.border.strong : colors.bg.surface;
 
     const animationStyle: React.CSSProperties = {
       pulse: {
@@ -127,7 +129,7 @@ export const Skeleton = forwardRef<HTMLDivElement, SkeletonProps>(
                 style={{
                   position: 'absolute',
                   inset: 0,
-                  background: `linear-gradient(90deg, transparent, ${colors.border.subtle}, transparent)`,
+                  background: `linear-gradient(90deg, transparent, ${waveHighlight}, transparent)`,
                   animation: 'scaffold-skeleton-wave 1.6s linear infinite',
                 }}
               />
@@ -170,7 +172,7 @@ export const Skeleton = forwardRef<HTMLDivElement, SkeletonProps>(
             style={{
               position: 'absolute',
               inset: 0,
-              background: `linear-gradient(90deg, transparent, ${colors.border.subtle}, transparent)`,
+              background: `linear-gradient(90deg, transparent, ${waveHighlight}, transparent)`,
               animation: 'scaffold-skeleton-wave 1.6s linear infinite',
             }}
           />
