@@ -12,7 +12,6 @@ export {
 export {
   protectQueryFn,
   serializeQueryKey,
-  withCircuitBreakerQueryOptions,
 } from './circuit-breaker/queryWrapper';
 
 export {

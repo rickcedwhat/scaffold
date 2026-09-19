@@ -203,6 +203,39 @@ describe('RenderStormOverlay', () => {
       expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     });
   });
+
+  it('honors open={false} as a controlled visibility override even after trip', async () => {
+    const testBreaker = new CircuitBreaker({
+      windowMs: 1000,
+      maxVelocity: 2,
+      isDev: true,
+    });
+
+    const { rerender } = render(
+      <ThemeProvider>
+        <RenderStormOverlay breaker={testBreaker} open={false} />
+      </ThemeProvider>
+    );
+
+    // Trip the breaker
+    act(() => {
+      for (let i = 0; i < 3; i++) {
+        testBreaker.recordCall('test-forced-close');
+      }
+    });
+
+    expect(testBreaker.getState()).toBe('open');
+    // Still not rendered because open={false} overrides
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+
+    // Rerender with open={true} to verify explicit open
+    rerender(
+      <ThemeProvider>
+        <RenderStormOverlay breaker={testBreaker} open={true} />
+      </ThemeProvider>
+    );
+    expect(screen.getByRole('alert')).toBeInTheDocument();
+  });
 });
 
 describe('RenderStormProvider & useRenderStorm', () => {

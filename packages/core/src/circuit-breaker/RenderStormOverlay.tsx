@@ -50,7 +50,12 @@ export const RenderStormOverlay: React.FC<RenderStormOverlayProps> = ({
     };
   }, [breaker]);
 
-  const activeTrip = controlledOpen ? breaker.getLastTrip() || internalTrip : internalTrip;
+  const activeTrip =
+    controlledOpen === false
+      ? null
+      : controlledOpen === true
+        ? breaker.getLastTrip() || internalTrip
+        : internalTrip;
   const isVisible = Boolean(activeTrip && !isDismissed);
 
   if (!isVisible || !activeTrip) {

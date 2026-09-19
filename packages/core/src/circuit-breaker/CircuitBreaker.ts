@@ -57,6 +57,26 @@ export interface CircuitBreakerOptions {
   isDev?: boolean;
 }
 
+function resolveIsDev(explicit?: boolean): boolean {
+  if (explicit !== undefined) return explicit;
+  try {
+    // Browser / modern ESM bundlers (Vite, Rollup, etc.)
+    if (
+      typeof import.meta !== 'undefined' &&
+      (import.meta as { env?: { DEV?: boolean } }).env?.DEV !== undefined
+    ) {
+      return (import.meta as { env?: { DEV?: boolean } }).env?.DEV === true;
+    }
+  } catch {
+    // Ignore environments where import.meta is restricted
+  }
+  // Node / common bundler replacement
+  if (typeof process !== 'undefined' && process.env) {
+    return process.env.NODE_ENV !== 'production';
+  }
+  return true;
+}
+
 export class CircuitBreaker {
   private state: CircuitState = 'closed';
   private readonly windowMs: number;
@@ -74,10 +94,7 @@ export class CircuitBreaker {
     this.windowMs = options.windowMs ?? 1000;
     this.maxVelocity = options.maxVelocity ?? 10;
     this.cooldownMs = options.cooldownMs ?? 5000;
-    this.isDev =
-      options.isDev !== undefined
-        ? options.isDev
-        : typeof process !== 'undefined' && process.env?.NODE_ENV !== 'production';
+    this.isDev = resolveIsDev(options.isDev);
   }
 
   getState(): CircuitState {

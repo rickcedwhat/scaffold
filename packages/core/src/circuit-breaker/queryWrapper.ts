@@ -28,20 +28,3 @@ export function protectQueryFn<TData, TQueryKey extends readonly unknown[] = rea
     return breaker.execute(keyIdentifier, () => queryFn(context));
   };
 }
-
-/**
- * Returns defaultOptions for a TanStack QueryClient with automatic queryFn wrapping.
- */
-export function withCircuitBreakerQueryOptions(
-  _breaker: CircuitBreaker = defaultCircuitBreaker
-) {
-  return {
-    queries: {
-      queryFn: async (context: { queryKey: readonly unknown[] }) => {
-        throw new Error(
-          `[CircuitBreaker] No queryFn provided for queryKey: ${serializeQueryKey(context.queryKey)}`
-        );
-      },
-    },
-  };
-}
