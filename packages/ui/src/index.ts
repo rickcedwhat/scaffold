@@ -29,4 +29,5 @@ export * from './components/Toast/Toast';
 export * from './components/Skeleton/Skeleton';
 export * from './components/StatusIllustration/StatusIllustration';
 export * from './components/EmptyState/EmptyState';
+export * from './components/Fab';
 
