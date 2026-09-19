@@ -1397,7 +1397,7 @@ export function App() {
                   code={SNIPPETS.skeletons.multiline}
                   defaultExpanded={false}
                 >
-                  <Card padding="normal" variant="subtle">
+                  <Card padding="normal">
                     <Stack gap={4}>
                       <Skeleton variant="text" width="40%" height={24} animation={skeletonAnimation} />
                       <Skeleton variant="text" lines={5} height={16} animation={skeletonAnimation} />
