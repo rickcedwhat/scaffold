@@ -45,7 +45,7 @@ Or:
 ```bash
 curl -sS -X POST http://localhost:4000/api/register \
   -H 'Content-Type: application/json' \
-  -d '{"protocol":1,"name":"Project Name","directory":"/absolute/path","port":5180}'
+  -d '{"protocol":<pulled-protocol>,"name":"Project Name","directory":"/absolute/path","port":5180}'
 ```
 
 Confirm name, directory, and port after registering.
@@ -62,7 +62,7 @@ Tell the dashboard when you **start** and **finish** work so the card shows “a
 curl -sS -X POST http://localhost:4000/api/agent-activity \
   -H 'Content-Type: application/json' \
   -d '{
-    "protocol": 1,
+    "protocol": <pulled-protocol>,
     "phase": "start",
     "directory": "/absolute/path/to/this/project",
     "pr": 129,
@@ -83,7 +83,7 @@ Send another `phase: "start"` with an updated `summary` during long sessions so 
 curl -sS -X POST http://localhost:4000/api/agent-activity \
   -H 'Content-Type: application/json' \
   -d '{
-    "protocol": 1,
+    "protocol": <pulled-protocol>,
     "phase": "finish",
     "directory": "/absolute/path/to/this/project",
     "summary": "CR comments addressed; waiting on CI"
