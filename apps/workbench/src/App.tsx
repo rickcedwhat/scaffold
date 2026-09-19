@@ -1426,7 +1426,7 @@ export function App() {
                   defaultExpanded={false}
                 >
                   <Stack gap={4}>
-                    <Grid minItemWidth="260px" gap={4}>
+                    <Grid minItemWidth="300px" gap={4}>
                       {/* Mode & Draggable */}
                       <Card padding="compact" variant="subtle">
                         <Stack gap={2}>
@@ -1519,58 +1519,70 @@ export function App() {
                         <Stack gap={2}>
                           <Text size="xs" weight="semibold" color="secondary">Style & Badge</Text>
                           <Stack direction="row" gap={2} align="center">
-                            <Text size="xs" color="muted">Size:</Text>
-                            {(['sm', 'md', 'lg'] as const).map((s) => (
-                              <Button
-                                key={s}
-                                size="sm"
-                                variant={fabSize === s ? 'solid' : 'outline'}
-                                intent={fabSize === s ? 'primary' : 'neutral'}
-                                onClick={() => setFabSize(s)}
-                              >
-                                {s.toUpperCase()}
-                              </Button>
-                            ))}
+                            <div style={{ minWidth: 42 }}>
+                              <Text size="xs" color="muted">Size:</Text>
+                            </div>
+                            <Stack direction="row" gap={1} wrap>
+                              {(['sm', 'md', 'lg'] as const).map((s) => (
+                                <Button
+                                  key={s}
+                                  size="sm"
+                                  variant={fabSize === s ? 'solid' : 'outline'}
+                                  intent={fabSize === s ? 'primary' : 'neutral'}
+                                  onClick={() => setFabSize(s)}
+                                >
+                                  {s.toUpperCase()}
+                                </Button>
+                              ))}
+                            </Stack>
                           </Stack>
-                          <Stack direction="row" gap={2} align="center">
-                            <Text size="xs" color="muted">Intent:</Text>
-                            {(['primary', 'secondary', 'neutral', 'success', 'danger'] as ButtonIntent[]).map((i) => (
-                              <Button
-                                key={i}
-                                size="sm"
-                                variant={fabIntent === i ? 'solid' : 'outline'}
-                                intent={fabIntent === i ? 'primary' : 'neutral'}
-                                aria-label={`Intent: ${i}`}
-                                title={i}
-                                onClick={() => setFabIntent(i)}
-                              >
-                                {i.slice(0, 3)}
-                              </Button>
-                            ))}
-                          </Stack>
-                          <Stack direction="row" gap={2} align="center">
-                            <Text size="xs" color="muted">Badge:</Text>
-                            {(['count', 'dot', 'none'] as const).map((b) => (
-                              <Button
-                                key={b}
-                                size="sm"
-                                variant={fabBadgeType === b ? 'solid' : 'outline'}
-                                intent={fabBadgeType === b ? 'primary' : 'neutral'}
-                                onClick={() => setFabBadgeType(b)}
-                              >
-                                {b}
-                              </Button>
-                            ))}
-                            {fabBadgeType === 'count' && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => setFabBadgeCount((c) => (c >= 9 ? 1 : c + 1))}
-                              >
-                                +1 ({fabBadgeCount})
-                              </Button>
-                            )}
-                          </Stack>
+                          <div>
+                            <div style={{ marginBottom: 4 }}>
+                              <Text size="xs" color="muted">Intent:</Text>
+                            </div>
+                            <Stack direction="row" gap={1} wrap>
+                              {(['primary', 'secondary', 'neutral', 'success', 'danger'] as ButtonIntent[]).map((i) => (
+                                <Button
+                                  key={i}
+                                  size="sm"
+                                  variant={fabIntent === i ? 'solid' : 'outline'}
+                                  intent={fabIntent === i ? 'primary' : 'neutral'}
+                                  aria-label={`Intent: ${i}`}
+                                  title={i}
+                                  onClick={() => setFabIntent(i)}
+                                >
+                                  {i.slice(0, 3)}
+                                </Button>
+                              ))}
+                            </Stack>
+                          </div>
+                          <div>
+                            <div style={{ marginBottom: 4 }}>
+                              <Text size="xs" color="muted">Badge:</Text>
+                            </div>
+                            <Stack direction="row" gap={1} wrap align="center">
+                              {(['count', 'dot', 'none'] as const).map((b) => (
+                                <Button
+                                  key={b}
+                                  size="sm"
+                                  variant={fabBadgeType === b ? 'solid' : 'outline'}
+                                  intent={fabBadgeType === b ? 'primary' : 'neutral'}
+                                  onClick={() => setFabBadgeType(b)}
+                                >
+                                  {b}
+                                </Button>
+                              ))}
+                              {fabBadgeType === 'count' && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => setFabBadgeCount((c) => (c >= 9 ? 1 : c + 1))}
+                                >
+                                  +1 ({fabBadgeCount})
+                                </Button>
+                              )}
+                            </Stack>
+                          </div>
                         </Stack>
                       </Card>
                     </Grid>

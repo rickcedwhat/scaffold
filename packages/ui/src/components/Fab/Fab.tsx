@@ -630,17 +630,23 @@ export const Fab = forwardRef<HTMLDivElement, FabProps>(function Fab(
             data-testid="scaffold-fab-badge"
             style={{
               position: 'absolute',
-              top: '-2px',
-              right: '-2px',
+              top: '-3px',
+              right: '-3px',
               backgroundColor: colors.intent.danger.main,
               color: colors.text.inverse,
-              fontSize: tokens.typography.fontSize.xs,
+              fontSize: '11px',
               fontWeight: tokens.typography.fontWeight.semibold,
-              lineHeight: tokens.typography.lineHeight.tight,
+              lineHeight: 1,
               borderRadius: tokens.radii.full,
-              minWidth: badge === true ? '10px' : '18px',
-              height: badge === true ? '10px' : '18px',
-              padding: badge === true ? 0 : `2px ${tokens.spacing[1]}`,
+              minWidth: badge === true ? '10px' : '20px',
+              height: badge === true ? '10px' : '20px',
+              padding:
+                badge === true
+                  ? 0
+                  : String(badge).length > 1
+                  ? `0 ${tokens.spacing[1]}`
+                  : 0,
+              boxSizing: 'border-box',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
