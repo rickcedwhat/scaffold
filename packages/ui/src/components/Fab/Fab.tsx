@@ -4,6 +4,7 @@ import React, {
   useRef,
   useEffect,
   useCallback,
+  useId,
   type ReactNode,
   type KeyboardEvent,
   type PointerEvent as ReactPointerEvent,
@@ -114,6 +115,7 @@ export const Fab = forwardRef<HTMLDivElement, FabProps>(function Fab(
   forwardedRef
 ) {
   const { tokens, colors } = useTheme();
+  const instanceId = useId();
   const label = explicitLabel || ariaLabel || 'Floating action button';
   const menuTrigger = trigger || explicitTrigger;
 
@@ -122,6 +124,7 @@ export const Fab = forwardRef<HTMLDivElement, FabProps>(function Fab(
 
   const [coords, setCoords] = useState<{ x: number; y: number } | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [isMainFocused, setIsMainFocused] = useState(false);
   const [focusedActionIndex, setFocusedActionIndex] = useState<number>(-1);
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -467,6 +470,7 @@ export const Fab = forwardRef<HTMLDivElement, FabProps>(function Fab(
             const actionIntent = action.intent || 'neutral';
             const actionColors = colors.intent[actionIntent];
             const isHoveredOrFocused = focusedActionIndex === index;
+            const labelId = `${instanceId}-fab-label-${action.id}`;
 
             return (
               <div
@@ -481,15 +485,15 @@ export const Fab = forwardRef<HTMLDivElement, FabProps>(function Fab(
               >
                 {/* Action Label Pill */}
                 <span
-                  id={`scaffold-fab-label-${action.id}`}
+                  id={labelId}
                   style={{
                     backgroundColor: colors.bg.surface,
                     color: colors.text.primary,
                     border: `1px solid ${colors.border.subtle}`,
                     borderRadius: tokens.radii.full,
-                    padding: '4px 10px',
+                    padding: `${tokens.spacing[1]} ${tokens.spacing[2]}`,
                     fontSize: tokens.typography.fontSize.xs,
-                    fontWeight: 500,
+                    fontWeight: tokens.typography.fontWeight.medium,
                     boxShadow: tokens.shadows.md,
                     whiteSpace: 'nowrap',
                     opacity: isMenuOpen ? 1 : 0,
@@ -506,7 +510,7 @@ export const Fab = forwardRef<HTMLDivElement, FabProps>(function Fab(
                   }}
                   type="button"
                   role="menuitem"
-                  aria-labelledby={`scaffold-fab-label-${action.id}`}
+                  aria-labelledby={labelId}
                   disabled={action.disabled || disabled}
                   onClick={() => {
                     if (action.disabled || disabled) return;
@@ -534,7 +538,8 @@ export const Fab = forwardRef<HTMLDivElement, FabProps>(function Fab(
                     opacity: action.disabled ? 0.5 : 1,
                     transition: 'background-color 0.15s ease, color 0.15s ease, transform 0.15s ease',
                     transform: isHoveredOrFocused ? 'scale(1.08)' : 'scale(1)',
-                    outline: 'none',
+                    outline: isHoveredOrFocused ? `2px solid ${actionColors.main}` : 'none',
+                    outlineOffset: '2px',
                   }}
                 >
                   {action.icon}
@@ -554,6 +559,8 @@ export const Fab = forwardRef<HTMLDivElement, FabProps>(function Fab(
         aria-expanded={hasActions ? isMenuOpen : undefined}
         disabled={disabled}
         onClick={handleMainButtonClick}
+        onFocus={() => setIsMainFocused(true)}
+        onBlur={() => setIsMainFocused(false)}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
@@ -582,7 +589,8 @@ export const Fab = forwardRef<HTMLDivElement, FabProps>(function Fab(
             ? 'none'
             : 'background-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease',
           transform: isDragging ? 'scale(1.04)' : 'scale(1)',
-          outline: 'none',
+          outline: isMainFocused ? `2px solid ${intentColors.main}` : 'none',
+          outlineOffset: '3px',
           opacity: disabled ? 0.6 : 1,
         }}
         data-testid="scaffold-fab-button"
@@ -611,13 +619,13 @@ export const Fab = forwardRef<HTMLDivElement, FabProps>(function Fab(
               right: '-2px',
               backgroundColor: colors.intent.danger.main,
               color: colors.text.inverse,
-              fontSize: '11px',
-              fontWeight: 600,
-              lineHeight: 1,
+              fontSize: tokens.typography.fontSize.xs,
+              fontWeight: tokens.typography.fontWeight.semibold,
+              lineHeight: tokens.typography.lineHeight.tight,
               borderRadius: tokens.radii.full,
               minWidth: badge === true ? '10px' : '18px',
               height: badge === true ? '10px' : '18px',
-              padding: badge === true ? 0 : '2px 5px',
+              padding: badge === true ? 0 : `2px ${tokens.spacing[1]}`,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
