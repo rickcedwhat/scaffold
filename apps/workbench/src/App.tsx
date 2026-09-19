@@ -44,6 +44,10 @@ import {
   Skeleton,
   EmptyState,
   StatusIllustration,
+  Fab,
+  type FabAction,
+  type FabPlacement,
+  type FabTrigger,
   type ButtonIntent,
   type IllustrationPreset,
   type SkeletonAnimation,
@@ -74,6 +78,10 @@ import {
   Inbox,
   Loader2,
   Zap,
+  Plus,
+  Share2,
+  Trash2,
+  RotateCcw,
 } from 'lucide-react';
 import { useRenderStorm } from '@scaffold/core';
 
@@ -85,6 +93,7 @@ export type WorkbenchTab =
   | 'toasts'
   | 'emptyStates'
   | 'skeletons'
+  | 'fab'
   | 'circuitBreaker'
   | 'badges'
   | 'sidebar'
@@ -170,6 +179,54 @@ export function App() {
 
   const [skeletonAnimation, setSkeletonAnimation] = useState<SkeletonAnimation>('pulse');
 
+  // FAB interactive state
+  const [fabMode, setFabMode] = useState<'speedDial' | 'single'>('speedDial');
+  const [fabDraggable, setFabDraggable] = useState(true);
+  const [fabPlacement, setFabPlacement] = useState<FabPlacement>('bottom-right');
+  const [fabTrigger, setFabTrigger] = useState<FabTrigger>('click');
+  const [fabSize, setFabSize] = useState<'sm' | 'md' | 'lg'>('md');
+  const [fabIntent, setFabIntent] = useState<ButtonIntent>('primary');
+  const [fabBadgeType, setFabBadgeType] = useState<'count' | 'dot' | 'none'>('count');
+  const [fabBadgeCount, setFabBadgeCount] = useState(3);
+  const [fabResetKey, setFabResetKey] = useState(0);
+  const [fabActionLogs, setFabActionLogs] = useState<string[]>([]);
+
+  const addFabLog = (msg: string) => {
+    const time = new Date().toLocaleTimeString();
+    setFabActionLogs((prev) => [`[${time}] ${msg}`, ...prev.slice(0, 9)]);
+  };
+
+  const fabActions: FabAction[] = [
+    {
+      id: 'create',
+      label: 'New Document',
+      icon: <Plus size={18} />,
+      onClick: () => {
+        addFabLog('Action: New Document clicked');
+        toast.success('Created new document');
+      },
+    },
+    {
+      id: 'share',
+      label: 'Share Project',
+      icon: <Share2 size={18} />,
+      onClick: () => {
+        addFabLog('Action: Share Project clicked');
+        toast.info('Sharing link copied');
+      },
+    },
+    {
+      id: 'archive',
+      label: 'Archive Record',
+      icon: <Trash2 size={18} />,
+      intent: 'danger',
+      onClick: () => {
+        addFabLog('Action: Archive Record clicked');
+        toast.error('Record moved to archive');
+      },
+    },
+  ];
+
   const tabTitles: Record<WorkbenchTab, string> = {
     button: 'Button',
     textInput: 'TextInput',
@@ -178,6 +235,7 @@ export function App() {
     toasts: 'Toasts',
     emptyStates: 'Empty States',
     skeletons: 'Skeletons',
+    fab: 'Floating Action Button',
     circuitBreaker: 'Circuit Breaker',
     badges: 'Badges & Avatars',
     sidebar: 'Sidebar Nav',
@@ -275,6 +333,13 @@ export function App() {
                 onClick={() => setActiveTab('skeletons')}
               >
                 Skeletons
+              </SidebarItem>
+              <SidebarItem
+                icon={<Plus size={16} />}
+                active={activeTab === 'fab'}
+                onClick={() => setActiveTab('fab')}
+              >
+                Floating Action Button
               </SidebarItem>
             </SidebarSection>
 
@@ -1337,6 +1402,298 @@ export function App() {
                       <Skeleton variant="text" width="40%" height={24} animation={skeletonAnimation} />
                       <Skeleton variant="text" lines={5} height={16} animation={skeletonAnimation} />
                     </Stack>
+                  </Card>
+                </ComponentExample>
+              </Stack>
+            )}
+
+            {/* Floating Action Button (FAB) Tab */}
+            {activeTab === 'fab' && (
+              <Stack gap={6}>
+                <div>
+                  <Heading level={3} size="lg">
+                    Floating Action Button (FAB)
+                  </Heading>
+                  <Text size="sm" color="secondary">
+                    Draggable, position-anchored floating triggers with speed-dial expansion, notification badges, full keyboard access, and strict encapsulation.
+                  </Text>
+                </div>
+
+                <ComponentExample
+                  title="Interactive FAB Sandbox"
+                  description="Customize draggable state, placement corner, speed-dial vs single action, hover or click triggers, and notification badge."
+                  code={fabMode === 'speedDial' ? SNIPPETS.fab.speedDial : SNIPPETS.fab.singleAction}
+                  defaultExpanded={false}
+                >
+                  <Stack gap={4}>
+                    <Grid minItemWidth="300px" gap={4}>
+                      {/* Mode & Draggable */}
+                      <Card padding="compact" variant="subtle">
+                        <Stack gap={2}>
+                          <Text size="xs" weight="semibold" color="secondary">Mode & Interaction</Text>
+                          <Stack direction="row" gap={2} wrap>
+                            <Button
+                              size="sm"
+                              variant={fabMode === 'speedDial' ? 'solid' : 'outline'}
+                              intent={fabMode === 'speedDial' ? 'primary' : 'neutral'}
+                              onClick={() => setFabMode('speedDial')}
+                            >
+                              Speed Dial
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant={fabMode === 'single' ? 'solid' : 'outline'}
+                              intent={fabMode === 'single' ? 'primary' : 'neutral'}
+                              onClick={() => setFabMode('single')}
+                            >
+                              Single Action
+                            </Button>
+                          </Stack>
+                          <div style={{ marginTop: 4 }}>
+                            <Stack direction="row" gap={2} align="center">
+                              <Button
+                                size="sm"
+                                variant={fabDraggable ? 'solid' : 'outline'}
+                                intent={fabDraggable ? 'primary' : 'neutral'}
+                                onClick={() => setFabDraggable(!fabDraggable)}
+                              >
+                                {fabDraggable ? 'Draggable: On' : 'Draggable: Off'}
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => setFabResetKey((k) => k + 1)}
+                              >
+                                <RotateCcw size={14} />
+                              </Button>
+                            </Stack>
+                          </div>
+                        </Stack>
+                      </Card>
+
+                      {/* Placement & Trigger */}
+                      <Card padding="compact" variant="subtle">
+                        <Stack gap={2}>
+                          <Text size="xs" weight="semibold" color="secondary">Placement Anchor</Text>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: tokens.spacing[2] }}>
+                            {(['bottom-right', 'bottom-left', 'top-right', 'top-left'] as FabPlacement[]).map((p) => (
+                              <Button
+                                key={p}
+                                size="sm"
+                                variant={fabPlacement === p ? 'solid' : 'outline'}
+                                intent={fabPlacement === p ? 'primary' : 'neutral'}
+                                onClick={() => setFabPlacement(p)}
+                              >
+                                {p}
+                              </Button>
+                            ))}
+                          </div>
+                          {fabMode === 'speedDial' && (
+                            <div style={{ marginTop: 4 }}>
+                              <Stack direction="row" gap={2} align="center">
+                                <Text size="xs" color="muted">Trigger:</Text>
+                                <Button
+                                  size="sm"
+                                  variant={fabTrigger === 'click' ? 'solid' : 'outline'}
+                                  intent={fabTrigger === 'click' ? 'primary' : 'neutral'}
+                                  onClick={() => setFabTrigger('click')}
+                                >
+                                  Click
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant={fabTrigger === 'hover' ? 'solid' : 'outline'}
+                                  intent={fabTrigger === 'hover' ? 'primary' : 'neutral'}
+                                  onClick={() => setFabTrigger('hover')}
+                                >
+                                  Hover
+                                </Button>
+                              </Stack>
+                            </div>
+                          )}
+                        </Stack>
+                      </Card>
+
+                      {/* Size, Intent & Badge */}
+                      <Card padding="compact" variant="subtle">
+                        <Stack gap={2}>
+                          <Text size="xs" weight="semibold" color="secondary">Style & Badge</Text>
+                          <Stack direction="row" gap={2} align="center">
+                            <div style={{ minWidth: 42 }}>
+                              <Text size="xs" color="muted">Size:</Text>
+                            </div>
+                            <Stack direction="row" gap={1} wrap>
+                              {(['sm', 'md', 'lg'] as const).map((s) => (
+                                <Button
+                                  key={s}
+                                  size="sm"
+                                  variant={fabSize === s ? 'solid' : 'outline'}
+                                  intent={fabSize === s ? 'primary' : 'neutral'}
+                                  onClick={() => setFabSize(s)}
+                                >
+                                  {s.toUpperCase()}
+                                </Button>
+                              ))}
+                            </Stack>
+                          </Stack>
+                          <div>
+                            <div style={{ marginBottom: 4 }}>
+                              <Text size="xs" color="muted">Intent:</Text>
+                            </div>
+                            <Stack direction="row" gap={1} wrap>
+                              {(['primary', 'secondary', 'neutral', 'success', 'danger'] as ButtonIntent[]).map((i) => (
+                                <Button
+                                  key={i}
+                                  size="sm"
+                                  variant={fabIntent === i ? 'solid' : 'outline'}
+                                  intent={fabIntent === i ? 'primary' : 'neutral'}
+                                  aria-label={`Intent: ${i}`}
+                                  title={i}
+                                  onClick={() => setFabIntent(i)}
+                                >
+                                  {i.slice(0, 3)}
+                                </Button>
+                              ))}
+                            </Stack>
+                          </div>
+                          <div>
+                            <div style={{ marginBottom: 4 }}>
+                              <Text size="xs" color="muted">Badge:</Text>
+                            </div>
+                            <Stack direction="row" gap={1} wrap align="center">
+                              {(['count', 'dot', 'none'] as const).map((b) => (
+                                <Button
+                                  key={b}
+                                  size="sm"
+                                  variant={fabBadgeType === b ? 'solid' : 'outline'}
+                                  intent={fabBadgeType === b ? 'primary' : 'neutral'}
+                                  onClick={() => setFabBadgeType(b)}
+                                >
+                                  {b}
+                                </Button>
+                              ))}
+                              {fabBadgeType === 'count' && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => setFabBadgeCount((c) => (c >= 9 ? 1 : c + 1))}
+                                >
+                                  +1 ({fabBadgeCount})
+                                </Button>
+                              )}
+                            </Stack>
+                          </div>
+                        </Stack>
+                      </Card>
+                    </Grid>
+
+                    {/* Live Event Log */}
+                    <Card padding="normal">
+                      <Stack gap={2}>
+                        <Stack direction="row" justify="between" align="center">
+                          <Text weight="semibold" size="sm">Live Event Dispatch Log</Text>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setFabActionLogs([])}
+                            disabled={fabActionLogs.length === 0}
+                          >
+                            Clear
+                          </Button>
+                        </Stack>
+                        <Text size="xs" color="muted">
+                          {fabDraggable
+                            ? 'Drag the floating button anywhere on the screen! Boundary clamping ensures it cannot be pushed offscreen.'
+                            : 'Floating button is fixed to the selected placement corner.'}
+                        </Text>
+                        <div
+                          style={{
+                            background: colors.bg.subtle,
+                            borderRadius: tokens.radii.sm,
+                            padding: tokens.spacing[3],
+                            fontFamily: 'monospace',
+                            fontSize: 12,
+                            minHeight: 80,
+                            maxHeight: 140,
+                            overflowY: 'auto',
+                          }}
+                        >
+                          {fabActionLogs.length === 0 ? (
+                            <span style={{ color: colors.text.muted }}>
+                              Interact with the FAB or drag it to log events here...
+                            </span>
+                          ) : (
+                            fabActionLogs.map((log, idx) => (
+                              <div key={idx} style={{ color: colors.text.primary, marginBottom: 2 }}>
+                                {log}
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </Stack>
+                    </Card>
+
+                    {/* Mount the Active FAB */}
+                    {fabMode === 'speedDial' ? (
+                      <Fab
+                        key={fabResetKey}
+                        ariaLabel="Interactive Speed Dial"
+                        icon={<Plus size={fabSize === 'sm' ? 18 : fabSize === 'lg' ? 26 : 22} />}
+                        placement={fabPlacement}
+                        draggable={fabDraggable}
+                        size={fabSize}
+                        intent={fabIntent}
+                        trigger={fabTrigger}
+                        actions={fabActions}
+                        badge={
+                          fabBadgeType === 'count'
+                            ? fabBadgeCount
+                            : fabBadgeType === 'dot'
+                            ? true
+                            : undefined
+                        }
+                        onDragEnd={(pos: { x: number; y: number }) => {
+                          addFabLog(`Dragged to (${Math.round(pos.x)}, ${Math.round(pos.y)})`);
+                        }}
+                      />
+                    ) : (
+                      <Fab
+                        key={fabResetKey}
+                        ariaLabel="Interactive Single Action"
+                        icon={<Plus size={fabSize === 'sm' ? 18 : fabSize === 'lg' ? 26 : 22} />}
+                        placement={fabPlacement}
+                        draggable={fabDraggable}
+                        size={fabSize}
+                        intent={fabIntent}
+                        badge={
+                          fabBadgeType === 'count'
+                            ? fabBadgeCount
+                            : fabBadgeType === 'dot'
+                            ? true
+                            : undefined
+                        }
+                        onClick={() => {
+                          addFabLog('Single action clicked');
+                          toast.success('Single action FAB triggered');
+                        }}
+                        onDragEnd={(pos: { x: number; y: number }) => {
+                          addFabLog(`Dragged to (${Math.round(pos.x)}, ${Math.round(pos.y)})`);
+                        }}
+                      />
+                    )}
+                  </Stack>
+                </ComponentExample>
+
+                <ComponentExample
+                  title="Draggable Single Action FAB"
+                  description="A compact single-action FAB with free drag & drop, boundary collision detection, and suppress-click-on-drag logic."
+                  code={SNIPPETS.fab.draggable}
+                  defaultExpanded={false}
+                >
+                  <Card padding="normal" variant="subtle">
+                    <Text size="sm" color="secondary">
+                      Toggle Draggable in the interactive sandbox above to experience smooth boundary-aware movement. When dragged beyond 5px, click events are safely suppressed so no unintended actions fire.
+                    </Text>
                   </Card>
                 </ComponentExample>
               </Stack>

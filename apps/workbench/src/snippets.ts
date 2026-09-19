@@ -372,4 +372,67 @@ export function useProjectsQuery() {
   });
 }`,
   },
+
+  fab: {
+    singleAction: `// Single-action Floating Action Button
+import { Fab } from '@scaffold/ui';
+import { Plus } from 'lucide-react';
+
+<Fab
+  label="Create New Item"
+  icon={<Plus size={22} />}
+  placement="bottom-right"
+  intent="primary"
+  onClick={() => console.log('Primary FAB clicked')}
+/>`,
+    speedDial: `// Expandable Speed-Dial Action Menu
+import { Fab, type FabActionItem } from '@scaffold/ui';
+import { Plus, FileText, Upload, Share2 } from 'lucide-react';
+
+const actions: FabActionItem[] = [
+  {
+    id: 'document',
+    label: 'New Document',
+    icon: <FileText size={18} />,
+    onClick: () => handleNewDoc(),
+    intent: 'primary',
+  },
+  {
+    id: 'upload',
+    label: 'Upload File',
+    icon: <Upload size={18} />,
+    onClick: () => handleUpload(),
+    intent: 'neutral',
+  },
+  {
+    id: 'share',
+    label: 'Share Project',
+    icon: <Share2 size={18} />,
+    onClick: () => handleShare(),
+    intent: 'success',
+  },
+];
+
+<Fab
+  label="Quick Actions"
+  icon={<Plus size={22} />}
+  actions={actions}
+  menuTrigger="click"
+  placement="bottom-right"
+  badge={3}
+/>`,
+    draggable: `// Draggable Floating Action Button with viewport boundary clamping
+import { Fab } from '@scaffold/ui';
+import { Sparkles } from 'lucide-react';
+
+<Fab
+  label="AI Assistant"
+  icon={<Sparkles size={22} />}
+  draggable={true}
+  placement="bottom-right"
+  offset={[24, 24]}
+  badge={true}
+  onClick={() => openAssistant()}
+/>`,
+  },
 };
