@@ -346,7 +346,20 @@ toast.error('Network connection timeout');
   },
 
   circuitBreaker: {
-    protectQuery: `// Protect TanStack Query functions from runaway loops
+    protectQuery: `// 1. Wrap your application root with RenderStormProvider
+import { RenderStormProvider } from '@scaffold/core';
+
+export function App() {
+  return (
+    <RenderStormProvider>
+      <QueryClientProvider client={queryClient}>
+        <RouterProvider router={router} />
+      </QueryClientProvider>
+    </RenderStormProvider>
+  );
+}
+
+// 2. Protect queries from runaway render loops
 import { protectQueryFn } from '@scaffold/core';
 
 export function useProjectsQuery() {
@@ -358,25 +371,5 @@ export function useProjectsQuery() {
     }, ['projects']),
   });
 }`,
-    provider: `// Wrap root app tree with dev-mode diagnostic overlay
-import { RenderStormProvider } from '@scaffold/core';
-
-export function App() {
-  return (
-    <RenderStormProvider>
-      <QueryClientProvider client={queryClient}>
-        <RouterProvider router={router} />
-      </QueryClientProvider>
-    </RenderStormProvider>
-  );
-}`,
-    customBreaker: `// Custom velocity threshold and cooldown tuning
-import { CircuitBreaker } from '@scaffold/core';
-
-const customBreaker = new CircuitBreaker({
-  windowMs: 1000,
-  maxVelocity: 8,   // Trip if > 8 calls/sec
-  cooldownMs: 4000, // Wait 4s before half-open probe
-});`,
   },
 };
