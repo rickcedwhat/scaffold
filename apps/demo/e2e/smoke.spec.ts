@@ -12,61 +12,61 @@ test.describe('Demo App — Smoke Suite', () => {
   test('landing page renders hero content', async ({ page }) => {
     await page.goto('/');
 
-    await expect(page.getByText('Scaffold Starter')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Scaffold Starter' })).toBeVisible();
     await expect(
       page.getByText('The Architectural Foundation for Personal Software')
     ).toBeVisible();
-    await expect(page.getByText('TanStack Router')).toBeVisible();
-    await expect(page.getByText('TanStack Query')).toBeVisible();
-    await expect(page.getByText('Component Guardrails')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'TanStack Router' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'TanStack Query' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Component Guardrails' })).toBeVisible();
   });
 
   test('dashboard overview loads with sidebar and stats', async ({ page }) => {
     await page.goto('/dashboard');
 
     // Sidebar nav items
-    await expect(page.getByText('Overview')).toBeVisible();
-    await expect(page.getByText('Projects')).toBeVisible();
-    await expect(page.getByText('Settings')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Overview' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Projects' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Settings' })).toBeVisible();
 
     // Dashboard content
-    await expect(page.getByText('Workspace Overview')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Workspace Overview' })).toBeVisible();
     await expect(page.getByText('$128,450')).toBeVisible();
   });
 
   test('settings page renders form fields', async ({ page }) => {
     await page.goto('/dashboard/settings');
 
-    await expect(page.getByText('Workspace Settings')).toBeVisible();
-    await expect(page.getByDisplayValue('Alex Developer')).toBeVisible();
-    await expect(page.getByDisplayValue('alex@example.com')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Workspace Settings' })).toBeVisible();
+    await expect(page.getByRole('textbox', { name: 'Full Name' })).toHaveValue('Alex Developer');
+    await expect(page.getByRole('textbox', { name: 'Email Address' })).toHaveValue('alex@example.com');
   });
 
   test('projects page renders list and filter tabs', async ({ page }) => {
     await page.goto('/dashboard/projects');
 
-    await expect(page.getByText('Projects & Workspaces')).toBeVisible();
-    await expect(page.getByText('scaffold-core')).toBeVisible();
-    await expect(page.getByText('local-dev-dashboard')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Projects & Workspaces' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'scaffold-core' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'local-dev-dashboard' })).toBeVisible();
 
     // Filter to in-progress
     await page.getByRole('button', { name: /in-progress/i }).click();
-    await expect(page.getByText('tanstack-router-starter')).toBeVisible();
-    await expect(page.getByText('scaffold-core')).not.toBeVisible();
+    await expect(page.getByRole('heading', { name: 'tanstack-router-starter' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'scaffold-core' })).not.toBeVisible();
   });
 
   test('sidebar navigation links work', async ({ page }) => {
     await page.goto('/dashboard');
 
     // Navigate to Projects via sidebar
-    await page.getByRole('link', { name: /projects/i }).first().click();
+    await page.getByRole('button', { name: 'Projects' }).click();
     await expect(page).toHaveURL(/\/dashboard\/projects/);
-    await expect(page.getByText('Projects & Workspaces')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Projects & Workspaces' })).toBeVisible();
 
     // Navigate to Settings via sidebar
-    await page.getByRole('link', { name: /settings/i }).first().click();
+    await page.getByRole('button', { name: 'Settings' }).click();
     await expect(page).toHaveURL(/\/dashboard\/settings/);
-    await expect(page.getByText('Workspace Settings')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Workspace Settings' })).toBeVisible();
   });
 
   test('no uncaught console errors on any route', async ({ page }) => {
