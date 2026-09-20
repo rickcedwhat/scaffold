@@ -51,9 +51,9 @@ for (const name of componentExports) {
     continue;
   }
 
-  // It must contain a *.test.tsx file
+  // It must contain the component's exact <ComponentName>.test.tsx file
   const entries = fs.readdirSync(componentDir);
-  const hasTest = entries.some((f) => f.endsWith('.test.tsx') || f.endsWith('.test.ts'));
+  const hasTest = entries.includes(`${name}.test.tsx`);
 
   if (!hasTest) {
     missing.push({ name, reason: 'no .test.tsx file found' });
