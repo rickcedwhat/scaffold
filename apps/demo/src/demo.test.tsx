@@ -1,48 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
-import React from 'react';
-import { ThemeProvider } from '@scaffold/ui';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { createRouter, createMemoryHistory, RouterProvider } from '@tanstack/react-router';
+import { renderApp, screen, fireEvent } from '@scaffold/test-utils';
 import { routeTree } from './routeTree.gen';
-
-function createTestRouter(initialPath = '/') {
-  const queryClient = new QueryClient({
-    defaultOptions: {
-      queries: { retry: false },
-    },
-  });
-
-  const history = createMemoryHistory({
-    initialEntries: [initialPath],
-  });
-
-  const router = createRouter({
-    routeTree,
-    history,
-    context: {
-      queryClient,
-    },
-  });
-
-  return { router, queryClient };
-}
-
-function renderApp(initialPath = '/') {
-  const { router, queryClient } = createTestRouter(initialPath);
-
-  return render(
-    <QueryClientProvider client={queryClient}>
-      <ThemeProvider defaultMode="dark">
-        <RouterProvider router={router} />
-      </ThemeProvider>
-    </QueryClientProvider>
-  );
-}
 
 describe('Scaffold Starter Application', () => {
   it('renders landing page at root route', async () => {
-    renderApp('/');
+    renderApp(routeTree, { initialPath: '/' });
 
     expect(await screen.findByText('Scaffold Starter')).toBeInTheDocument();
     expect(
@@ -54,7 +16,7 @@ describe('Scaffold Starter Application', () => {
   });
 
   it('renders dashboard overview with nested sidebar layout', async () => {
-    renderApp('/dashboard');
+    renderApp(routeTree, { initialPath: '/dashboard' });
 
     expect(await screen.findByText('Workspace Overview')).toBeInTheDocument();
     expect(screen.getByText('Alex Developer')).toBeInTheDocument();
@@ -63,7 +25,7 @@ describe('Scaffold Starter Application', () => {
   });
 
   it('navigates to settings and handles form saving', async () => {
-    renderApp('/dashboard/settings');
+    renderApp(routeTree, { initialPath: '/dashboard/settings' });
 
     expect(await screen.findByText('Workspace Settings')).toBeInTheDocument();
     const nameInput = screen.getByDisplayValue('Alex Developer');
@@ -76,7 +38,7 @@ describe('Scaffold Starter Application', () => {
   });
 
   it('validates email field and activates design system error state', async () => {
-    renderApp('/dashboard/settings');
+    renderApp(routeTree, { initialPath: '/dashboard/settings' });
 
     expect(await screen.findByText('Workspace Settings')).toBeInTheDocument();
     const emailInput = screen.getByDisplayValue('alex@example.com');
@@ -110,7 +72,7 @@ describe('Scaffold Starter Application', () => {
   });
 
   it('tracks isDirty on inputs and dropdowns, and resets dirty state on successful save', async () => {
-    renderApp('/dashboard/settings');
+    renderApp(routeTree, { initialPath: '/dashboard/settings' });
 
     expect(await screen.findByText('Workspace Settings')).toBeInTheDocument();
 
@@ -131,7 +93,7 @@ describe('Scaffold Starter Application', () => {
   });
 
   it('renders projects route with loader data and filters', async () => {
-    renderApp('/dashboard/projects');
+    renderApp(routeTree, { initialPath: '/dashboard/projects' });
 
     expect(await screen.findByText('Projects & Workspaces')).toBeInTheDocument();
     expect(await screen.findByText('scaffold-core')).toBeInTheDocument();

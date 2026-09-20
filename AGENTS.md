@@ -1,19 +1,6 @@
-# AI Playbook & Instructions
-
-This repository is governed by the engineering principles defined in [philosophy.md](./philosophy.md).
-
-## Core Rules for AI
-1. Component Boundaries: Never add `className` or `style` props to public component interfaces. Styling is strictly encapsulated. Customization must use semantic design tokens and props.
-2. Architecture: TanStack Router for routing, TanStack Query for server state, Vitest and Playwright for tests.
-3. Dual-Account Git Flow: The AI account (`rickcedwhat-ai`) pushes only to feature branches and opens PRs. Never push directly to `main`.
-4. Quality: Always verify typechecks, lint (npm run lint), tests, and builds before proposing or opening PRs.
-5. Peer Review: Address and proactively resolve actionable review comments left by CodeRabbit on open PRs prior to human merge. Always reply directly to each inline review comment thread on GitHub (using `gh api repos/{owner}/{repo}/pulls/{pr}/comments -F in_reply_to={comment_id} -f body="..."`) referencing the resolving commit. NEVER post replies as top-level PR issue comments (`gh pr comment`), because CodeRabbit only detects and resolves threads when replied to directly within the thread. Inspect active threads via GraphQL (`reviewThreads { nodes { id isResolved comments { ... } } }`) to ensure no thread is missed.
-
----
-
 # Local Dev Dashboard — Agent Protocol
 
-**Protocol version: 1**
+**Protocol version: 2**
 
 Tool-agnostic (Cursor, Antigravity, Claude Code, Copilot Chat, etc.). Canonical copy lives on the dashboard — **pull it**, don’t rely on pasted prompts staying fresh.
 
@@ -29,23 +16,47 @@ curl -sS http://localhost:4000/api/agent-protocol
 
 If any dashboard response has `"stale": true`, repeat this pull, update `AGENTS.md`, then retry with the new protocol. Do **not** expect full instructions in the stale POST body — only `protocolUrl` / `message`.
 
-Dashboard: `/Users/cedrick/Documents/Projects/local-dev-dashboard`  
+Dashboard repo (this machine): `/Users/cedrick/Documents/Projects/local-dev-dashboard`  
 Base URL: `http://localhost:4000`
+
+---
+
+## GitHub CLI (`gh`) — Cursor sandbox
+
+On this machine, GitHub CLI is normally logged in as **`rickcedwhat-ai`** (keyring). That auth is fine.
+
+Cursor **agent shells default to a sandbox** with a limited network allowlist. In that sandbox, `gh api` / `gh issue` / `gh pr` often fail with **HTTP Forbidden** (sometimes misreported as “token in keyring is invalid”). This is **not** broken auth.
+
+**Required:** when running any `gh` command that talks to GitHub, request elevated permissions so the command is **not** limited to the default sandbox allowlist:
+
+- Prefer `required_permissions: ["full_network"]`
+- Or `required_permissions: ["all"]` if keyring/credential access is also blocked
+
+If `gh` returns Forbidden / “keyring is invalid” under the default sandbox:
+
+1. **Do not** run `gh auth logout`, `gh auth refresh`, or paste tokens.
+2. Re-run the same `gh` command with `full_network` or `all` and approve the permission prompt.
+3. Only treat auth as broken if the same command fails in a normal Terminal.app window outside Cursor.
+
+Antigravity and unsandboxed terminals are unaffected.
 
 ---
 
 ## Register a project
 
-```bash
-node "/Users/cedrick/Documents/Projects/local-dev-dashboard/register.mjs" "<Project Name>" "<absolute-directory>" <port>
-```
-
-Or:
+**Preferred (portable)** — works as long as the dashboard is running:
 
 ```bash
 curl -sS -X POST http://localhost:4000/api/register \
   -H 'Content-Type: application/json' \
-  -d '{"protocol":<pulled-protocol>,"name":"Project Name","directory":"/absolute/path","port":5180}'
+  -d '{"protocol":2,"name":"Project Name","directory":"/absolute/path","port":5180}'
+```
+
+Optional local helper (only if you have the dashboard checkout):
+
+```bash
+export LOCAL_DEV_DASHBOARD=/Users/cedrick/Documents/Projects/local-dev-dashboard
+node "$LOCAL_DEV_DASHBOARD/register.mjs" "<Project Name>" "<absolute-directory>" <port>
 ```
 
 Confirm name, directory, and port after registering.
@@ -58,14 +69,16 @@ Tell the dashboard when you **start** and **finish** work so the card shows “a
 
 ### Start
 
+Replace `<PR_NUMBER>` with the **active** pull request for this branch (do not copy a stale example number).
+
 ```bash
 curl -sS -X POST http://localhost:4000/api/agent-activity \
   -H 'Content-Type: application/json' \
   -d '{
-    "protocol": <pulled-protocol>,
+    "protocol": 2,
     "phase": "start",
     "directory": "/absolute/path/to/this/project",
-    "pr": 129,
+    "pr": <PR_NUMBER>,
     "summary": "Fixing CodeRabbit actionable comments",
     "agent": "cursor"
   }'
@@ -83,7 +96,7 @@ Send another `phase: "start"` with an updated `summary` during long sessions so 
 curl -sS -X POST http://localhost:4000/api/agent-activity \
   -H 'Content-Type: application/json' \
   -d '{
-    "protocol": <pulled-protocol>,
+    "protocol": 2,
     "phase": "finish",
     "directory": "/absolute/path/to/this/project",
     "summary": "CR comments addressed; waiting on CI"

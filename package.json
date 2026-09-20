@@ -13,12 +13,14 @@
     "build": "npm run build --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
+    "test:e2e": "playwright test",
     "prelint": "npm --workspace=@scaffold/eslint-plugin run build",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.63.0",
     "@types/node": "^22.13.4",
     "@typescript-eslint/rule-tester": "^8.70.0",
     "@typescript-eslint/utils": "^8.70.0",

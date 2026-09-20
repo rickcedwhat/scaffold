@@ -18,6 +18,7 @@
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
+    "@scaffold/test-utils": "*",
     "@tanstack/router-plugin": "^1.168.40",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.2.0",
