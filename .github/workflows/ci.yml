@@ -28,6 +28,9 @@ jobs:
       - name: Run ESLint & Guardrails
         run: npm run lint
 
+      - name: Component Test Coverage Check
+        run: npm --workspace=@scaffold/ui run test:coverage-check
+
       - name: Run Unit Tests
         run: npm run test
 
@@ -42,5 +45,6 @@ jobs:
           echo "| :--- | :--- | :--- |" >> $GITHUB_STEP_SUMMARY
           echo "| **TypeScript Typecheck** | \`${{ job.status }}\` | All workspace packages typechecked cleanly |" >> $GITHUB_STEP_SUMMARY
           echo "| **ESLint & Component Guardrails** | \`${{ job.status }}\` | Strict encapsulation & \`@scaffold/ui\` rules enforced |" >> $GITHUB_STEP_SUMMARY
-          echo "| **Vitest Unit Tests** | \`${{ job.status }}\` | 60 unit tests across UI & tooling suites |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Component Coverage Guard** | \`${{ job.status }}\` | Every exported \`@scaffold/ui\` component has a test file |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Vitest Unit Tests** | \`${{ job.status }}\` | Unit tests across UI & tooling suites |" >> $GITHUB_STEP_SUMMARY
           echo "| **Production Build** | \`${{ job.status }}\` | Vite & TypeScript builds succeeded |" >> $GITHUB_STEP_SUMMARY
