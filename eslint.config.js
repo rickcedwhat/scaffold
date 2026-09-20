@@ -32,4 +32,18 @@ export default [
       '@typescript-eslint/no-explicit-any': 'warn',
     },
   },
+  // Node.js scripts — declare Node globals so console/process/fs are recognised
+  {
+    files: ['**/scripts/**/*.mjs', '**/scripts/**/*.js'],
+    languageOptions: {
+      globals: {
+        console: 'readonly',
+        process: 'readonly',
+        __dirname: 'readonly',
+        __filename: 'readonly',
+        Buffer: 'readonly',
+        URL: 'readonly',
+      },
+    },
+  },
 ];
