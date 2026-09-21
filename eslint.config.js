@@ -46,4 +46,11 @@ export default [
       },
     },
   },
+  // Playwright e2e specs — disable React-specific guardrails
+  {
+    files: ['**/e2e/**/*.spec.ts'],
+    rules: {
+      'scaffold/no-arbitrary-styling': 'off',
+    },
+  },
 ];
