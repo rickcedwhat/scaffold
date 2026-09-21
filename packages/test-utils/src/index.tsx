@@ -84,7 +84,9 @@ export function renderWithProviders(
   function Wrapper({ children }: { children: React.ReactNode }) {
     return (
       <QueryClientProvider client={queryClient}>
-        <ThemeProvider defaultMode={themeMode}>{children}</ThemeProvider>
+        <ThemeProvider defaultMode={themeMode} storageKey="">
+          {children}
+        </ThemeProvider>
       </QueryClientProvider>
     );
   }
@@ -122,7 +124,7 @@ export function createTestApp<TRoute extends AnyRoute>(
   const router = createRouter({
     routeTree,
     history,
-    context: { queryClient, ...context },
+    context: { ...context, queryClient },
   });
 
   return { router, queryClient };
@@ -158,7 +160,7 @@ export function renderApp<TRoute extends AnyRoute>(
 
   const result = render(
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider defaultMode={themeMode}>
+      <ThemeProvider defaultMode={themeMode} storageKey="">
         <RouterProvider router={router} />
       </ThemeProvider>
     </QueryClientProvider>

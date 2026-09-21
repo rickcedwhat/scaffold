@@ -72,6 +72,9 @@ test.describe('Demo App — Smoke Suite', () => {
   test('no uncaught console errors on any route', async ({ page }) => {
     const errors: string[] = [];
     page.on('pageerror', (err) => errors.push(err.message));
+    page.on('console', (message) => {
+      if (message.type() === 'error') errors.push(message.text());
+    });
 
     for (const path of ['/', '/dashboard', '/dashboard/settings', '/dashboard/projects']) {
       await page.goto(path);
