@@ -3,6 +3,7 @@ import { useTheme } from '../../theme/ThemeContext';
 import type {
   StepGraphConfig,
   ChoiceNodeConfig,
+  ScoreNodeConfig,
   ScriptRuleNodeConfig,
 } from './types';
 
@@ -47,6 +48,7 @@ export function StepGraph({
   const bucketInPortRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   const [cables, setCables] = useState<CablePath[]>([]);
+  const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
 
   const calculateCables = useCallback(() => {
     const canvas = canvasRef.current;
@@ -56,7 +58,6 @@ export function StepGraph({
     const getPortCoord = (el: HTMLElement | null) => {
       if (!el) return null;
       const r = el.getBoundingClientRect();
-      // If element is not rendered or has 0 dimensions in JSDOM, provide fallback
       if (r.width === 0 && r.height === 0 && r.left === 0 && r.top === 0) {
         return null;
       }
@@ -85,7 +86,7 @@ export function StepGraph({
       });
     }
 
-    // 2. Questions -> Script (or Questions -> Buckets if no script)
+    // 2. Questions -> Script
     const scriptIn = getPortCoord(scriptInPortRef.current);
     if (scriptIn) {
       qOutPortRefs.current.forEach((qOutEl, idx) => {
@@ -168,7 +169,7 @@ export function StepGraph({
         border: '1px solid #1e293b',
         padding: tokens.spacing[6],
         boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5)',
-        overflow: 'hidden',
+        overflow: 'visible',
         width: '100%',
         boxSizing: 'border-box',
       }}
@@ -199,7 +200,7 @@ export function StepGraph({
           justifyContent: 'space-between',
           borderBottom: '1px solid #1e293b',
           paddingBottom: tokens.spacing[3],
-          marginBottom: tokens.spacing[5],
+          marginBottom: tokens.spacing[6],
           position: 'relative',
           zIndex: 2,
         }}
@@ -376,419 +377,695 @@ export function StepGraph({
         ))}
       </svg>
 
-      {/* 4-Column Node Grid */}
+      {/* 4-Column Architecture Diagram Grid */}
       <div
         style={{
           display: 'grid',
           gridTemplateColumns:
             config.questionNodes.length > 1
-              ? '2.5fr 4.8fr 3.4fr 2.5fr'
-              : '3fr 3.3fr 3.4fr 2.5fr',
+              ? '2.5fr 4.2fr 3.3fr 2.5fr'
+              : '2.8fr 3.2fr 3.2fr 2.6fr',
           gap: tokens.spacing[5],
           alignItems: 'center',
-          minHeight: '480px',
+          minHeight: '440px',
           position: 'relative',
           zIndex: 2,
         }}
       >
-        {/* 1. Source Inputs Node */}
+        {/* 1. Source Inputs Node (Compact Token Cylinder Symbol) */}
         <div
+          onMouseEnter={() => setHoveredNodeId('src')}
+          onMouseLeave={() => setHoveredNodeId(null)}
           style={{
-            backgroundColor: '#0b0f19',
-            border: '2px solid rgba(6, 182, 212, 0.8)',
-            borderRadius: tokens.radii.xl,
-            padding: tokens.spacing[4],
-            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.4)',
             position: 'relative',
             display: 'flex',
-            flexDirection: 'column',
-            gap: tokens.spacing[2],
+            justifyContent: 'center',
           }}
         >
           <div
+            onClick={() => onSelectSlice?.('all', config.source.label, config.source.count)}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                onSelectSlice?.('all', config.source.label, config.source.count);
+              }
+            }}
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              borderBottom: '1px solid #1e293b',
-              paddingBottom: tokens.spacing[1],
+              backgroundColor: '#0b0f19',
+              border: '2px solid #06b6d4',
+              borderRadius: tokens.radii.xl,
+              padding: tokens.spacing[4],
+              boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.4)',
+              position: 'relative',
+              width: '100%',
+              maxWidth: '220px',
+              textAlign: 'center',
+              cursor: onSelectSlice ? 'pointer' : 'default',
+              transition: 'border-color 0.15s ease, box-shadow 0.15s ease',
             }}
           >
-            <span
+            {/* Cylinder / Token Icon */}
+            <div
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '36px',
+                height: '36px',
+                borderRadius: tokens.radii.lg,
+                backgroundColor: 'rgba(6, 182, 212, 0.12)',
+                border: '1px solid rgba(6, 182, 212, 0.4)',
+                color: '#22d3ee',
+                marginBottom: tokens.spacing[2],
+              }}
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+              </svg>
+            </div>
+
+            <div
               style={{
                 fontSize: '10px',
                 fontFamily: 'monospace',
-                fontWeight: 700,
-                color: '#22d3ee',
                 textTransform: 'uppercase',
+                color: '#22d3ee',
+                fontWeight: 700,
+                letterSpacing: '0.05em',
               }}
             >
               {config.source.label}
-            </span>
-            {config.source.sublabel && (
-              <span style={{ fontSize: '10px', color: '#64748b', fontFamily: 'monospace' }}>
-                {config.source.sublabel}
-              </span>
-            )}
-          </div>
+            </div>
 
-          <div
-            style={{
-              fontSize: '28px',
-              fontWeight: 700,
-              fontFamily: 'monospace',
-              color: '#ffffff',
-            }}
-          >
-            {config.source.count.toLocaleString()}
-          </div>
-
-          <div style={{ fontSize: '12px', color: '#94a3b8' }}>
-            {config.source.sublabel ? `${config.source.sublabel} Items` : 'Candidate Items'}
-          </div>
-
-          {config.source.description && (
-            <p
+            <div
               style={{
-                margin: 0,
-                fontSize: '11px',
-                color: '#64748b',
+                fontSize: '26px',
+                fontWeight: 700,
                 fontFamily: 'monospace',
-                lineHeight: 1.4,
+                color: '#ffffff',
+                margin: '2px 0',
               }}
             >
-              {config.source.description}
-            </p>
-          )}
+              {config.source.count.toLocaleString()}
+            </div>
 
-          {onSelectSlice && (
-            <button
-              type="button"
-              onClick={() => onSelectSlice('all', config.source.label, config.source.count)}
+            <div
               style={{
-                marginTop: tokens.spacing[1],
                 fontSize: '11px',
                 fontFamily: 'monospace',
-                color: '#22d3ee',
-                background: 'none',
-                border: 'none',
-                padding: 0,
-                cursor: 'pointer',
-                textAlign: 'left',
-                textDecoration: 'underline',
+                color: '#94a3b8',
               }}
             >
-              Browse All Inputs &rarr;
-            </button>
-          )}
+              {config.source.sublabel || 'Candidate Tokens'}
+            </div>
 
-          {/* Output port on the right */}
+            {/* Right output port */}
+            <div
+              ref={srcPortRef}
+              style={{
+                position: 'absolute',
+                right: '-8px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                width: '16px',
+                height: '16px',
+                borderRadius: '50%',
+                backgroundColor: '#22d3ee',
+                border: '2px solid #030712',
+                boxShadow: '0 0 8px rgba(34, 211, 238, 0.9)',
+              }}
+            />
+          </div>
+
+          {/* Source Popover */}
           <div
-            ref={srcPortRef}
+            role="tooltip"
+            aria-hidden={hoveredNodeId !== 'src'}
             style={{
               position: 'absolute',
-              right: '-8px',
-              top: '50%',
-              transform: 'translateY(-50%)',
-              width: '16px',
-              height: '16px',
-              borderRadius: '50%',
-              backgroundColor: '#22d3ee',
-              border: '2px solid #030712',
-              boxShadow: '0 0 8px rgba(34, 211, 238, 0.8)',
+              top: 'calc(100% + 10px)',
+              left: '50%',
+              transform:
+                hoveredNodeId === 'src'
+                  ? 'translateX(-50%) translateY(0)'
+                  : 'translateX(-50%) translateY(4px)',
+              opacity: hoveredNodeId === 'src' ? 1 : 0,
+              visibility: hoveredNodeId === 'src' ? 'visible' : 'hidden',
+              pointerEvents: hoveredNodeId === 'src' ? 'auto' : 'none',
+              transition:
+                'opacity 0.18s cubic-bezier(0.16, 1, 0.3, 1), transform 0.18s cubic-bezier(0.16, 1, 0.3, 1)',
+              zIndex: 50,
+              backgroundColor: '#090d16',
+              border: '1px solid rgba(6, 182, 212, 0.6)',
+              borderRadius: tokens.radii.lg,
+              padding: tokens.spacing[3],
+              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.85)',
+              width: '260px',
+              boxSizing: 'border-box',
             }}
-          />
+          >
+            <div
+              style={{
+                fontSize: '11px',
+                fontWeight: 700,
+                color: '#22d3ee',
+                fontFamily: 'monospace',
+                marginBottom: '4px',
+              }}
+            >
+              {config.source.label} Stream
+            </div>
+            <p style={{ margin: 0, fontSize: '11px', color: '#cbd5e1', lineHeight: 1.4 }}>
+              {config.source.description ||
+                `${config.source.count.toLocaleString()} candidate tokens filtered for pipeline processing.`}
+            </p>
+            {onSelectSlice && (
+              <button
+                type="button"
+                onClick={() => onSelectSlice('all', config.source.label, config.source.count)}
+                style={{
+                  marginTop: '8px',
+                  fontSize: '10px',
+                  fontFamily: 'monospace',
+                  color: '#22d3ee',
+                  background: 'none',
+                  border: 'none',
+                  padding: 0,
+                  cursor: 'pointer',
+                  textDecoration: 'underline',
+                  display: 'block',
+                }}
+              >
+                Click node to browse input sample &rarr;
+              </button>
+            )}
+          </div>
         </div>
 
-        {/* 2. Question / Operation Nodes (Choice / Score) */}
+        {/* 2. Question / Evaluator Nodes (Choice / Score) */}
         <div
           style={{
             display: 'flex',
             flexDirection: 'column',
-            gap: tokens.spacing[3],
+            gap: tokens.spacing[4],
           }}
         >
           {config.questionNodes.map((node, idx) => {
             const isScore = node.type === 'score';
-            const borderColor = isScore ? '#f59e0b' : '#06b6d4';
-            const badgeBg = isScore ? 'rgba(245, 158, 11, 0.15)' : 'rgba(6, 182, 212, 0.15)';
-            const badgeColor = isScore ? '#f59e0b' : '#22d3ee';
+            const qId = `q-${idx}`;
+            const isHovered = hoveredNodeId === qId;
+            const borderColor = isScore ? '#f59e0b' : '#a855f7';
+            const badgeBg = isScore ? 'rgba(245, 158, 11, 0.15)' : 'rgba(168, 85, 247, 0.15)';
+            const badgeColor = isScore ? '#fbbf24' : '#d8b4fe';
             const portColor = isScore ? '#f59e0b' : '#22d3ee';
+
+            // Calculate percentages for summary
+            let passPercentage = 0;
+            let flagPercentage = 0;
+            if (node.type === 'choice') {
+              const choiceNode = node as ChoiceNodeConfig;
+              choiceNode.options.forEach((opt) => {
+                if (opt.isFlag) flagPercentage += opt.percentage;
+                else passPercentage += opt.percentage;
+              });
+            } else {
+              const scoreNode = node as ScoreNodeConfig;
+              scoreNode.tiers.forEach((tier) => {
+                if (tier.isFlag) flagPercentage += tier.percentage;
+                else passPercentage += tier.percentage;
+              });
+            }
+            passPercentage = Math.round(passPercentage * 10) / 10;
+            flagPercentage = Math.round(flagPercentage * 10) / 10;
 
             return (
               <div
                 key={node.id}
+                onMouseEnter={() => setHoveredNodeId(qId)}
+                onMouseLeave={() => setHoveredNodeId(null)}
                 style={{
-                  backgroundColor: '#0b0f19',
-                  border: `2px solid ${borderColor}`,
-                  borderRadius: tokens.radii.xl,
-                  padding: tokens.spacing[3],
-                  boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.4)',
                   position: 'relative',
+                  display: 'flex',
+                  justifyContent: 'center',
+                  width: '100%',
                 }}
               >
-                {/* Left input port */}
-                <div
-                  ref={(el) => {
-                    qInPortRefs.current[idx] = el;
-                  }}
-                  style={{
-                    position: 'absolute',
-                    left: '-7px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    width: '14px',
-                    height: '14px',
-                    borderRadius: '50%',
-                    backgroundColor: portColor,
-                    border: '2px solid #030712',
-                  }}
-                />
-
-                {/* Right output port */}
-                <div
-                  ref={(el) => {
-                    qOutPortRefs.current[idx] = el;
-                  }}
-                  style={{
-                    position: 'absolute',
-                    right: '-7px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    width: '14px',
-                    height: '14px',
-                    borderRadius: '50%',
-                    backgroundColor: '#c084fc',
-                    border: '2px solid #030712',
-                    boxShadow: '0 0 6px rgba(192, 132, 252, 0.7)',
-                  }}
-                />
-
                 <div
                   style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    marginBottom: tokens.spacing[1],
+                    backgroundColor: '#0b0f19',
+                    border: `2px solid ${borderColor}`,
+                    borderRadius: tokens.radii.xl,
+                    padding: tokens.spacing[4],
+                    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.4)',
+                    position: 'relative',
+                    width: '100%',
+                    maxWidth: '240px',
+                    boxSizing: 'border-box',
                   }}
                 >
-                  <span
-                    style={{
-                      fontSize: '12px',
-                      fontWeight: 700,
-                      color: '#ffffff',
+                  {/* Left in port */}
+                  <div
+                    ref={(el) => {
+                      qInPortRefs.current[idx] = el;
                     }}
-                  >
-                    {node.title}
-                  </span>
-                  <span
                     style={{
-                      fontSize: '9px',
-                      fontFamily: 'monospace',
-                      fontWeight: 700,
-                      padding: `2px ${tokens.spacing[1]}`,
-                      borderRadius: tokens.radii.sm,
-                      backgroundColor: badgeBg,
-                      color: badgeColor,
-                      border: `1px solid ${badgeColor}`,
+                      position: 'absolute',
+                      left: '-7px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      width: '14px',
+                      height: '14px',
+                      borderRadius: '50%',
+                      backgroundColor: portColor,
+                      border: '2px solid #030712',
                     }}
-                  >
-                    {node.type.toUpperCase()}
-                  </span>
-                </div>
+                  />
 
-                {node.subtitle && (
-                  <p
+                  {/* Right out port */}
+                  <div
+                    ref={(el) => {
+                      qOutPortRefs.current[idx] = el;
+                    }}
                     style={{
-                      margin: `0 0 ${tokens.spacing[2]} 0`,
-                      fontSize: '11px',
-                      color: '#94a3b8',
-                      fontFamily: 'monospace',
+                      position: 'absolute',
+                      right: '-7px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      width: '14px',
+                      height: '14px',
+                      borderRadius: '50%',
+                      backgroundColor: '#c084fc',
+                      border: '2px solid #030712',
+                      boxShadow: '0 0 8px rgba(192, 132, 252, 0.9)',
                     }}
-                  >
-                    {node.subtitle}
-                  </p>
-                )}
+                  />
 
-                {/* Choice Node Strips */}
-                {node.type === 'choice' && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    {(node as ChoiceNodeConfig).options.map((opt) => (
-                      <div
-                        key={opt.key}
-                        onClick={() =>
-                          onSelectSlice?.(opt.key, `${node.title} • ${opt.label}`, opt.count)
-                        }
-                        role="button"
-                        tabIndex={0}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            onSelectSlice?.(opt.key, `${node.title} • ${opt.label}`, opt.count);
-                          }
-                        }}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          padding: `4px ${tokens.spacing[2]}`,
-                          borderRadius: tokens.radii.md,
-                          backgroundColor: '#030712',
-                          border: `1px solid ${opt.isFlag ? 'rgba(244, 63, 94, 0.4)' : '#1e293b'}`,
-                          cursor: onSelectSlice ? 'pointer' : 'default',
-                          fontSize: '11px',
-                          fontFamily: 'monospace',
-                          transition: 'background-color 0.15s ease',
-                        }}
-                      >
-                        <span
-                          style={{
-                            color: opt.isFlag ? '#fb7185' : '#34d399',
-                            fontWeight: opt.isFlag ? 700 : 500,
-                          }}
-                        >
-                          {opt.label}
-                        </span>
-                        <span
-                          style={{
-                            color: opt.isFlag ? '#fb7185' : '#34d399',
-                            fontWeight: 700,
-                          }}
-                        >
-                          {opt.percentage}% ({opt.count.toLocaleString()}) {opt.isFlag ? '→' : ''}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Score Node Tiers */}
-                {node.type === 'score' && (
+                  {/* Header row */}
                   <div
                     style={{
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
+                      marginBottom: tokens.spacing[2],
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontSize: '9px',
+                        fontFamily: 'monospace',
+                        fontWeight: 700,
+                        padding: '2px 6px',
+                        borderRadius: tokens.radii.sm,
+                        backgroundColor: badgeBg,
+                        color: badgeColor,
+                        border: `1px solid ${badgeColor}`,
+                      }}
+                    >
+                      {isScore ? '⚡ SCORE EVAL' : '⚡ JEV SYSTEM 1'}
+                    </span>
+                    {node.type === 'choice' && (node as ChoiceNodeConfig).throughput ? (
+                      <span
+                        style={{
+                          fontSize: '10px',
+                          fontFamily: 'monospace',
+                          color: '#c084fc',
+                          fontWeight: 700,
+                        }}
+                      >
+                        {(node as ChoiceNodeConfig).throughput}
+                      </span>
+                    ) : isScore ? (
+                      <span
+                        style={{
+                          fontSize: '10px',
+                          fontFamily: 'monospace',
+                          color: '#fbbf24',
+                          fontWeight: 700,
+                        }}
+                      >
+                        &ge; {(node as ScoreNodeConfig).cutoffValue}
+                      </span>
+                    ) : (
+                      <span
+                        style={{
+                          fontSize: '10px',
+                          fontFamily: 'monospace',
+                          color: '#94a3b8',
+                        }}
+                      >
+                        parallel
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Title */}
+                  <div
+                    style={{
+                      fontSize: '12px',
+                      fontWeight: 700,
+                      color: '#ffffff',
+                      marginBottom: tokens.spacing[2],
+                    }}
+                  >
+                    {node.title}
+                  </div>
+
+                  {/* Segmented Distribution Bar */}
+                  <div
+                    style={{
+                      width: '100%',
+                      height: '10px',
+                      borderRadius: '9999px',
                       backgroundColor: '#030712',
-                      padding: tokens.spacing[2],
-                      borderRadius: tokens.radii.md,
-                      border: '1px solid #1e293b',
-                      fontSize: '11px',
+                      display: 'flex',
+                      overflow: 'hidden',
+                      boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.6)',
+                      marginBottom: tokens.spacing[2],
+                    }}
+                  >
+                    {node.type === 'choice'
+                      ? (node as ChoiceNodeConfig).options.map((opt, optIdx) => {
+                          const colors = ['#10b981', '#f43f5e', '#f59e0b', '#a855f7', '#06b6d4'];
+                          const segColor = opt.isFlag
+                            ? colors[(optIdx % (colors.length - 1)) + 1]
+                            : '#10b981';
+                          return (
+                            <div
+                              key={opt.key}
+                              style={{
+                                width: `${opt.percentage}%`,
+                                height: '100%',
+                                backgroundColor: segColor,
+                              }}
+                              title={`${opt.label}: ${opt.percentage}% (${opt.count.toLocaleString()})`}
+                            />
+                          );
+                        })
+                      : (node as ScoreNodeConfig).tiers.map((tier, tIdx) => {
+                          const colors = ['#10b981', '#06b6d4', '#f59e0b', '#f43f5e'];
+                          const segColor = tier.isFlag ? '#f43f5e' : colors[tIdx % colors.length];
+                          return (
+                            <div
+                              key={tier.key}
+                              style={{
+                                width: `${tier.percentage}%`,
+                                height: '100%',
+                                backgroundColor: segColor,
+                              }}
+                              title={`${tier.label}: ${tier.percentage}% (${tier.count.toLocaleString()})`}
+                            />
+                          );
+                        })}
+                  </div>
+
+                  {/* Summary metric line below bar */}
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      fontSize: '10px',
                       fontFamily: 'monospace',
                     }}
                   >
-                    <span style={{ color: '#94a3b8' }}>
-                      Elem/Inter/Adv: <strong style={{ color: '#34d399' }}>92%</strong>
+                    <span style={{ color: '#34d399', fontWeight: 700 }}>
+                      {passPercentage}% {isScore ? 'Pass' : 'Valid'}
                     </span>
                     <span
-                      onClick={() =>
-                        onSelectSlice?.('obscure', `${node.title} • Obscure Words`, 193)
-                      }
                       style={{
-                        color: '#fb7185',
+                        color: flagPercentage > 0 ? '#fb7185' : '#94a3b8',
                         fontWeight: 700,
-                        cursor: 'pointer',
-                        textDecoration: 'underline',
                       }}
                     >
-                      Obscure: 8% (193) &rarr;
+                      {flagPercentage}% {isScore ? 'Obscure' : 'Flags'}
                     </span>
                   </div>
-                )}
+                </div>
+
+                {/* Evaluator Hover Popover */}
+                <div
+                  role="tooltip"
+                  aria-hidden={!isHovered}
+                  style={{
+                    position: 'absolute',
+                    top: 'calc(100% + 10px)',
+                    left: '50%',
+                    transform: isHovered
+                      ? 'translateX(-50%) translateY(0)'
+                      : 'translateX(-50%) translateY(4px)',
+                    opacity: isHovered ? 1 : 0,
+                    visibility: isHovered ? 'visible' : 'hidden',
+                    pointerEvents: isHovered ? 'auto' : 'none',
+                    transition:
+                      'opacity 0.18s cubic-bezier(0.16, 1, 0.3, 1), transform 0.18s cubic-bezier(0.16, 1, 0.3, 1)',
+                    zIndex: 50,
+                    backgroundColor: '#090d16',
+                    border: `1px solid ${borderColor}`,
+                    borderRadius: tokens.radii.lg,
+                    padding: tokens.spacing[3],
+                    boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.85)',
+                    width: '280px',
+                    boxSizing: 'border-box',
+                    fontFamily: 'monospace',
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      color: badgeColor,
+                      marginBottom: '2px',
+                    }}
+                  >
+                    {node.title} Breakdown
+                  </div>
+                  {node.subtitle && (
+                    <div style={{ fontSize: '10px', color: '#94a3b8', marginBottom: '8px' }}>
+                      {node.subtitle}
+                    </div>
+                  )}
+
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '4px',
+                      borderTop: '1px solid #1e293b',
+                      paddingTop: '6px',
+                    }}
+                  >
+                    {node.type === 'choice'
+                      ? (node as ChoiceNodeConfig).options.map((opt) => (
+                          <div
+                            key={opt.key}
+                            onClick={() =>
+                              onSelectSlice?.(opt.key, `${node.title} • ${opt.label}`, opt.count)
+                            }
+                            role="button"
+                            tabIndex={0}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                onSelectSlice?.(opt.key, `${node.title} • ${opt.label}`, opt.count);
+                              }
+                            }}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              padding: '3px 6px',
+                              borderRadius: tokens.radii.sm,
+                              backgroundColor: '#030712',
+                              border: `1px solid ${opt.isFlag ? 'rgba(244, 63, 94, 0.3)' : '#1e293b'}`,
+                              cursor: onSelectSlice ? 'pointer' : 'default',
+                              fontSize: '10px',
+                            }}
+                          >
+                            <span
+                              style={{
+                                color: opt.isFlag ? '#fb7185' : '#34d399',
+                                fontWeight: opt.isFlag ? 700 : 500,
+                              }}
+                            >
+                              &bull; {opt.label}
+                            </span>
+                            <span
+                              style={{
+                                color: opt.isFlag ? '#fb7185' : '#34d399',
+                                fontWeight: 700,
+                              }}
+                            >
+                              {opt.percentage}% ({opt.count.toLocaleString()}){' '}
+                              {opt.isFlag ? '→' : ''}
+                            </span>
+                          </div>
+                        ))
+                      : (node as ScoreNodeConfig).tiers.map((tier) => (
+                          <div
+                            key={tier.key}
+                            onClick={() =>
+                              onSelectSlice?.(tier.key, `${node.title} • ${tier.label}`, tier.count)
+                            }
+                            role="button"
+                            tabIndex={0}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                onSelectSlice?.(
+                                  tier.key,
+                                  `${node.title} • ${tier.label}`,
+                                  tier.count
+                                );
+                              }
+                            }}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              padding: '3px 6px',
+                              borderRadius: tokens.radii.sm,
+                              backgroundColor: '#030712',
+                              border: `1px solid ${tier.isFlag ? 'rgba(244, 63, 94, 0.3)' : '#1e293b'}`,
+                              cursor: onSelectSlice ? 'pointer' : 'default',
+                              fontSize: '10px',
+                            }}
+                          >
+                            <span
+                              style={{
+                                color: tier.isFlag ? '#fb7185' : '#34d399',
+                                fontWeight: tier.isFlag ? 700 : 500,
+                              }}
+                            >
+                              &bull; {tier.label}
+                            </span>
+                            <span
+                              style={{
+                                color: tier.isFlag ? '#fb7185' : '#34d399',
+                                fontWeight: 700,
+                              }}
+                            >
+                              {tier.percentage}% ({tier.count.toLocaleString()})
+                            </span>
+                          </div>
+                        ))}
+                  </div>
+
+                  <div style={{ marginTop: '8px', fontSize: '9px', color: '#64748b' }}>
+                    Click row to inspect sample words &rarr;
+                  </div>
+                </div>
               </div>
             );
           })}
         </div>
 
-        {/* 3. Script / Rule Node (First-Class Citizen) */}
+        {/* 3. Script / Rule Node (Compact Glow Chip Symbol) */}
         {config.scriptNode && (
           <div
-            onClick={() => onSelectScript?.(config.scriptNode!)}
-            className="node-script-pulse"
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                onSelectScript?.(config.scriptNode!);
-              }
-            }}
+            onMouseEnter={() => setHoveredNodeId('script')}
+            onMouseLeave={() => setHoveredNodeId(null)}
             style={{
-              backgroundColor: '#0b0f19',
-              border: '2px solid #6366f1',
-              borderRadius: tokens.radii.xl,
-              padding: tokens.spacing[4],
-              boxShadow: '0 20px 25px -5px rgba(99, 102, 241, 0.25)',
               position: 'relative',
-              cursor: 'pointer',
               display: 'flex',
-              flexDirection: 'column',
-              gap: tokens.spacing[2],
+              justifyContent: 'center',
+              width: '100%',
             }}
           >
-            {/* Left input port */}
             <div
-              ref={scriptInPortRef}
-              style={{
-                position: 'absolute',
-                left: '-7px',
-                top: '50%',
-                transform: 'translateY(-50%)',
-                width: '14px',
-                height: '14px',
-                borderRadius: '50%',
-                backgroundColor: '#c084fc',
-                border: '2px solid #030712',
+              onClick={() => onSelectScript?.(config.scriptNode!)}
+              className="node-script-pulse"
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  onSelectScript?.(config.scriptNode!);
+                }
               }}
-            />
-
-            {/* Right top output port (clean/pass) */}
-            <div
-              ref={scriptOut1Ref}
               style={{
-                position: 'absolute',
-                right: '-7px',
-                top: '36px',
-                width: '14px',
-                height: '14px',
-                borderRadius: '50%',
-                backgroundColor: '#34d399',
-                border: '2px solid #030712',
-                boxShadow: '0 0 6px rgba(52, 211, 153, 0.7)',
-              }}
-            />
-
-            {/* Right bottom output port (prune/queue) */}
-            <div
-              ref={scriptOut2Ref}
-              style={{
-                position: 'absolute',
-                right: '-7px',
-                bottom: '36px',
-                width: '14px',
-                height: '14px',
-                borderRadius: '50%',
-                backgroundColor:
-                  config.destinationBuckets[1]?.intent === 'warning' ? '#fbbf24' : '#fb7185',
-                border: '2px solid #030712',
-                boxShadow: '0 0 6px rgba(251, 113, 133, 0.7)',
-              }}
-            />
-
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                borderBottom: '1px solid #1e293b',
-                paddingBottom: tokens.spacing[1],
+                backgroundColor: '#0b0f19',
+                border: '2px solid #6366f1',
+                borderRadius: tokens.radii.xl,
+                padding: tokens.spacing[4],
+                position: 'relative',
+                cursor: 'pointer',
+                width: '100%',
+                maxWidth: '240px',
+                boxSizing: 'border-box',
+                transition: 'all 0.2s ease',
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              {/* Left in port */}
+              <div
+                ref={scriptInPortRef}
+                style={{
+                  position: 'absolute',
+                  left: '-7px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  width: '14px',
+                  height: '14px',
+                  borderRadius: '50%',
+                  backgroundColor: '#c084fc',
+                  border: '2px solid #030712',
+                }}
+              />
+
+              {/* Top right clean port */}
+              <div
+                ref={scriptOut1Ref}
+                style={{
+                  position: 'absolute',
+                  right: '-7px',
+                  top: '28px',
+                  width: '14px',
+                  height: '14px',
+                  borderRadius: '50%',
+                  backgroundColor: '#34d399',
+                  border: '2px solid #030712',
+                  boxShadow: '0 0 8px rgba(52, 211, 153, 0.9)',
+                }}
+              />
+
+              {/* Bottom right pruned/queue port */}
+              <div
+                ref={scriptOut2Ref}
+                style={{
+                  position: 'absolute',
+                  right: '-7px',
+                  bottom: '28px',
+                  width: '14px',
+                  height: '14px',
+                  borderRadius: '50%',
+                  backgroundColor:
+                    config.destinationBuckets[1]?.intent === 'warning' ? '#fbbf24' : '#fb7185',
+                  border: '2px solid #030712',
+                  boxShadow: '0 0 8px rgba(251, 113, 133, 0.9)',
+                }}
+              />
+
+              {/* Header row */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  marginBottom: tokens.spacing[2],
+                }}
+              >
                 <span
                   style={{
                     fontSize: '9px',
                     fontFamily: 'monospace',
                     fontWeight: 700,
-                    padding: `2px ${tokens.spacing[1]}`,
+                    padding: '2px 6px',
                     borderRadius: tokens.radii.sm,
                     backgroundColor: 'rgba(99, 102, 241, 0.2)',
                     color: '#a5b4fc',
@@ -799,94 +1076,143 @@ export function StepGraph({
                 </span>
                 <span
                   style={{
-                    width: '6px',
-                    height: '6px',
-                    borderRadius: '50%',
-                    backgroundColor: '#818cf8',
+                    fontSize: '10px',
+                    fontFamily: 'monospace',
+                    color: '#818cf8',
+                    textDecoration: 'underline',
                   }}
-                />
+                >
+                  inspect
+                </span>
               </div>
 
-              <span
-                style={{
-                  fontSize: '10px',
-                  fontFamily: 'monospace',
-                  color: '#a5b4fc',
-                  textDecoration: 'underline',
-                }}
-              >
-                View Code
-              </span>
-            </div>
-
-            <div>
+              {/* Title */}
               <div
                 style={{
                   fontSize: '13px',
                   fontWeight: 700,
                   fontFamily: 'monospace',
                   color: '#ffffff',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
                 }}
               >
                 {config.scriptNode.title}
               </div>
-              {config.scriptNode.subtitle && (
+
+              {/* Concise Rule Badge Pill */}
+              <div
+                style={{
+                  margin: '8px 0',
+                  padding: '4px 8px',
+                  backgroundColor: '#030712',
+                  border: '1px solid #1e293b',
+                  borderRadius: tokens.radii.md,
+                  fontFamily: 'monospace',
+                  fontSize: '10px',
+                  color: '#a5b4fc',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {config.scriptNode.ruleBadge ||
+                  config.scriptNode.codeSnippet.split('\n')[0] ||
+                  'conf >= 0.70 && !valid'}
+              </div>
+
+              {/* Decision Summary */}
+              {config.scriptNode.decisionStats && (
                 <div
                   style={{
-                    fontSize: '11px',
-                    color: '#94a3b8',
-                    marginTop: '2px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    fontSize: '10px',
+                    fontFamily: 'monospace',
                   }}
                 >
-                  {config.scriptNode.subtitle}
+                  <span style={{ color: '#fb7185', fontWeight: 700 }}>
+                    &bull; {config.scriptNode.decisionStats.primaryCount}{' '}
+                    {config.scriptNode.decisionStats.primaryLabel}
+                  </span>
+                  <span style={{ color: '#34d399', fontWeight: 700 }}>
+                    &bull; {config.scriptNode.decisionStats.secondaryCount}{' '}
+                    {config.scriptNode.decisionStats.secondaryLabel}
+                  </span>
                 </div>
               )}
             </div>
 
-            {/* Code Snippet Box */}
+            {/* Script Rule Popover */}
             <div
+              role="tooltip"
+              aria-hidden={hoveredNodeId !== 'script'}
               style={{
-                backgroundColor: '#030712',
-                border: '1px solid #1e293b',
-                borderRadius: tokens.radii.md,
-                padding: tokens.spacing[2],
-                fontSize: '10px',
+                position: 'absolute',
+                top: 'calc(100% + 10px)',
+                left: '50%',
+                transform:
+                  hoveredNodeId === 'script'
+                    ? 'translateX(-50%) translateY(0)'
+                    : 'translateX(-50%) translateY(4px)',
+                opacity: hoveredNodeId === 'script' ? 1 : 0,
+                visibility: hoveredNodeId === 'script' ? 'visible' : 'hidden',
+                pointerEvents: hoveredNodeId === 'script' ? 'auto' : 'none',
+                transition:
+                  'opacity 0.18s cubic-bezier(0.16, 1, 0.3, 1), transform 0.18s cubic-bezier(0.16, 1, 0.3, 1)',
+                zIndex: 50,
+                backgroundColor: '#090d16',
+                border: '1px solid rgba(99, 102, 241, 0.8)',
+                borderRadius: tokens.radii.lg,
+                padding: tokens.spacing[3],
+                boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.85)',
+                width: '320px',
+                boxSizing: 'border-box',
                 fontFamily: 'monospace',
-                lineHeight: 1.45,
-                color: '#e2e8f0',
-                overflowX: 'auto',
-                whiteSpace: 'pre',
               }}
             >
-              {config.scriptNode.codeSnippet}
-            </div>
-
-            {config.scriptNode.decisionStats && (
               <div
                 style={{
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  borderTop: '1px solid #1e293b',
-                  paddingTop: tokens.spacing[1],
                   fontSize: '11px',
-                  fontFamily: 'monospace',
+                  fontWeight: 700,
+                  color: '#a5b4fc',
+                  marginBottom: '4px',
                 }}
               >
-                <span style={{ color: '#fb7185', fontWeight: 700 }}>
-                  {config.scriptNode.decisionStats.primaryCount}{' '}
-                  {config.scriptNode.decisionStats.primaryLabel}
-                </span>
-                <span style={{ color: '#34d399', fontWeight: 700 }}>
-                  {config.scriptNode.decisionStats.secondaryCount}{' '}
-                  {config.scriptNode.decisionStats.secondaryLabel}
-                </span>
+                <span>{config.scriptNode.filePath || 'Rule Implementation'}</span>
+                <span style={{ fontSize: '10px', color: '#64748b' }}>active</span>
               </div>
-            )}
+
+              <pre
+                style={{
+                  backgroundColor: '#030712',
+                  padding: '8px',
+                  borderRadius: tokens.radii.md,
+                  border: '1px solid #1e293b',
+                  fontSize: '10px',
+                  color: '#e2e8f0',
+                  lineHeight: 1.4,
+                  margin: '6px 0',
+                  overflowX: 'auto',
+                  whiteSpace: 'pre',
+                }}
+              >
+                {config.scriptNode.codeSnippet}
+              </pre>
+
+              <div style={{ fontSize: '10px', color: '#818cf8', marginTop: '6px' }}>
+                Click node to open full code drawer &rarr;
+              </div>
+            </div>
           </div>
         )}
 
-        {/* 4. Destination Buckets Node */}
+        {/* 4. Destination Buckets (Compact Status Capsules) */}
         <div
           style={{
             display: 'flex',
@@ -900,91 +1226,148 @@ export function StepGraph({
             const borderColor = isClean ? '#10b981' : isWarning ? '#f59e0b' : '#f43f5e';
             const tagColor = isClean ? '#34d399' : isWarning ? '#fbbf24' : '#fb7185';
             const portColor = isClean ? '#34d399' : isWarning ? '#fbbf24' : '#fb7185';
+            const bucketId = `bucket-${bIdx}`;
+            const isHovered = hoveredNodeId === bucketId;
 
             return (
               <div
                 key={bucket.id}
-                onClick={() => onSelectSlice?.(bucket.id, bucket.title, bucket.count)}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    onSelectSlice?.(bucket.id, bucket.title, bucket.count);
-                  }
-                }}
+                onMouseEnter={() => setHoveredNodeId(bucketId)}
+                onMouseLeave={() => setHoveredNodeId(null)}
                 style={{
-                  backgroundColor: '#0b0f19',
-                  border: `2px solid ${borderColor}`,
-                  borderRadius: tokens.radii.xl,
-                  padding: tokens.spacing[3],
-                  boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.4)',
                   position: 'relative',
-                  cursor: onSelectSlice ? 'pointer' : 'default',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '4px',
                 }}
               >
-                {/* Left input port */}
                 <div
-                  ref={(el) => {
-                    bucketInPortRefs.current[bIdx] = el;
+                  onClick={() => onSelectSlice?.(bucket.id, bucket.title, bucket.count)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      onSelectSlice?.(bucket.id, bucket.title, bucket.count);
+                    }
                   }}
                   style={{
-                    position: 'absolute',
-                    left: '-7px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    width: '14px',
-                    height: '14px',
-                    borderRadius: '50%',
-                    backgroundColor: portColor,
-                    border: '2px solid #030712',
-                  }}
-                />
-
-                <div
-                  style={{
+                    backgroundColor: '#0b0f19',
+                    border: `2px solid ${borderColor}`,
+                    borderRadius: tokens.radii.xl,
+                    padding: tokens.spacing[3],
+                    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.4)',
+                    position: 'relative',
+                    cursor: onSelectSlice ? 'pointer' : 'default',
                     display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    fontSize: '10px',
-                    fontFamily: 'monospace',
-                    fontWeight: 700,
-                    color: tagColor,
-                    textTransform: 'uppercase',
+                    flexDirection: 'column',
+                    gap: '2px',
+                    transition: 'border-color 0.15s ease, box-shadow 0.15s ease',
                   }}
                 >
-                  <span>{bucket.title}</span>
-                  <span>
-                    {isClean ? '✓' : '!'}{' '}
-                    {bucket.percentage ? `${bucket.percentage}%` : ''}
-                  </span>
-                </div>
-
-                <div
-                  style={{
-                    fontSize: '18px',
-                    fontWeight: 700,
-                    fontFamily: 'monospace',
-                    color: '#ffffff',
-                  }}
-                >
-                  {bucket.count.toLocaleString()} words
-                </div>
-
-                {bucket.subtitle && (
-                  <p
+                  {/* Left in port */}
+                  <div
+                    ref={(el) => {
+                      bucketInPortRefs.current[bIdx] = el;
+                    }}
                     style={{
-                      margin: 0,
+                      position: 'absolute',
+                      left: '-7px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      width: '14px',
+                      height: '14px',
+                      borderRadius: '50%',
+                      backgroundColor: portColor,
+                      border: '2px solid #030712',
+                    }}
+                  />
+
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
                       fontSize: '10px',
-                      color: '#94a3b8',
                       fontFamily: 'monospace',
+                      fontWeight: 700,
+                      color: tagColor,
+                      textTransform: 'uppercase',
                     }}
                   >
-                    {bucket.subtitle}
+                    <span>{bucket.title}</span>
+                    <span>
+                      {isClean ? '✓' : '!'}{' '}
+                      {bucket.percentage ? `${bucket.percentage}%` : ''}
+                    </span>
+                  </div>
+
+                  <div
+                    style={{
+                      fontSize: '18px',
+                      fontWeight: 700,
+                      fontFamily: 'monospace',
+                      color: '#ffffff',
+                    }}
+                  >
+                    {bucket.count.toLocaleString()} words
+                  </div>
+
+                  {bucket.subtitle && (
+                    <p
+                      style={{
+                        margin: 0,
+                        fontSize: '10px',
+                        color: '#94a3b8',
+                        fontFamily: 'monospace',
+                      }}
+                    >
+                      {bucket.subtitle}
+                    </p>
+                  )}
+                </div>
+
+                {/* Bucket Popover */}
+                <div
+                  role="tooltip"
+                  aria-hidden={!isHovered}
+                  style={{
+                    position: 'absolute',
+                    ...(isClean
+                      ? { top: 'calc(100% + 10px)', right: 0 }
+                      : { bottom: 'calc(100% + 10px)', right: 0 }),
+                    opacity: isHovered ? 1 : 0,
+                    visibility: isHovered ? 'visible' : 'hidden',
+                    pointerEvents: isHovered ? 'auto' : 'none',
+                    transition:
+                      'opacity 0.18s cubic-bezier(0.16, 1, 0.3, 1), transform 0.18s cubic-bezier(0.16, 1, 0.3, 1)',
+                    zIndex: 50,
+                    backgroundColor: '#090d16',
+                    border: `1px solid ${borderColor}`,
+                    borderRadius: tokens.radii.lg,
+                    padding: tokens.spacing[3],
+                    boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.85)',
+                    width: '240px',
+                    boxSizing: 'border-box',
+                    fontFamily: 'monospace',
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      color: tagColor,
+                      marginBottom: '4px',
+                    }}
+                  >
+                    {bucket.title} ({bucket.count.toLocaleString()} words)
+                  </div>
+                  <p style={{ margin: 0, fontSize: '10px', color: '#cbd5e1', lineHeight: 1.4 }}>
+                    {bucket.description ||
+                      (isClean
+                        ? 'Verified passing headwords progressing to downstream stages.'
+                        : 'Excluded outliers routed to prune log or human review queue.')}
                   </p>
-                )}
+                  <div style={{ marginTop: '6px', fontSize: '9px', color: tagColor }}>
+                    Click capsule to inspect items &rarr;
+                  </div>
+                </div>
               </div>
             );
           })}

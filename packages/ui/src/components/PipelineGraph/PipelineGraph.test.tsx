@@ -285,5 +285,36 @@ describe('PipelineGraph & StepGraph', () => {
     fireEvent.click(prevBtnOn3);
     expect(currentStage).toBe('stage-2');
   });
+
+  it('triggers onSelectScript when clicking the Script Rule node', () => {
+    let clickedScript: ScriptRuleNodeConfig | null = null;
+    render(
+      <StepGraph
+        config={mockStepConfig}
+        onSelectScript={(script) => {
+          clickedScript = script;
+        }}
+      />
+    );
+
+    const scriptNode = screen.getByText('decideShouldRemove()');
+    fireEvent.click(scriptNode);
+    expect(clickedScript).not.toBeNull();
+    expect((clickedScript as unknown as ScriptRuleNodeConfig)?.id).toBe('script-1');
+  });
+
+  it('discloses hover popovers on diagram nodes', () => {
+    render(<StepGraph config={mockStepConfig} />);
+
+    // Hover over the script node
+    const scriptNode = screen.getByText('decideShouldRemove()');
+    fireEvent.mouseEnter(scriptNode);
+
+    // Popover content should be in the DOM
+    expect(screen.getByText('scripts/applyValidityPrune.ts')).toBeInTheDocument();
+    expect(screen.getByText(/Click node to open full code drawer/i)).toBeInTheDocument();
+
+    fireEvent.mouseLeave(scriptNode);
+  });
 });
 

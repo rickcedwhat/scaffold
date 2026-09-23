@@ -68,6 +68,7 @@ export interface ScriptRuleNodeConfig {
   filePath?: string;
   consumedInputs: string[];
   codeSnippet: string;
+  ruleBadge?: string;
   fullCode?: string;
   decisionStats?: {
     primaryLabel: string;

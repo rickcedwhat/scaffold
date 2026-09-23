@@ -92,6 +92,7 @@ export const stage2StepConfig: StepGraphConfig = {
     subtitle: 'Dual-signal threshold policy & low-confidence safeguard',
     filePath: 'scripts/applyValidityPrune.ts',
     consumedInputs: ['jev.verdict', 'jev.confidence >= 0.70', 'DEF_ADMITS_NOT_PT regex'],
+    ruleBadge: 'conf >= 0.70 && !valid',
     codeSnippet: `if (verdict !== 'valid' && confidence >= 0.70) {
   prune(token, reason: \`jev_\${verdict}_\${confidence}\`);
 } else {
@@ -195,6 +196,7 @@ export const stage4StepConfig: StepGraphConfig = {
     subtitle: 'Consolidates 3 parallel JEV signals into final routing decision',
     filePath: 'scripts/auditPuzzleWords.mjs',
     consumedInputs: ['q1.definitionAccuracy', 'q2.editorialHygiene', 'q3.difficultyTier'],
+    ruleBadge: 'q1.flag || q2.flag || q3.d > 0.90',
     codeSnippet: `if (q1.isFlag || q2.isFlag) {
   queue.push(entry, reason: 'flagged_critique');
 } else if (q3.d > 0.90) {
@@ -280,6 +282,7 @@ export const stage1StepConfig: StepGraphConfig = {
     subtitle: 'Deterministic regex matching and character sanitation',
     filePath: 'scripts/extractFiveLetterTokens.ts',
     consumedInputs: ['rawTokenStream', 'charWhitelistRegex'],
+    ruleBadge: 'token.length === 5 && /^[a-z]+$/',
     codeSnippet: `if (token.length === 5 && /^[a-z]+$/.test(token)) {
   candidates.push(token);
 } else {
@@ -344,6 +347,7 @@ export const stage3StepConfig: StepGraphConfig = {
     subtitle: 'Zod schema validation on structured LLM response',
     filePath: 'scripts/generateDefinitions.ts',
     consumedInputs: ['geminiResponse.json', 'DictionaryEntrySchema'],
+    ruleBadge: 'Schema.safeParse(json).success',
     codeSnippet: `const result = DictionaryEntrySchema.safeParse(json);
 if (result.success) {
   db.store(result.data);
@@ -409,6 +413,7 @@ export const stage5StepConfig: StepGraphConfig = {
     subtitle: 'Routes resolved entries to clean dictionary or escalates to human queue',
     filePath: 'scripts/autoRemediateQueue.ts',
     consumedInputs: ['remediatedEntry', 'critiqueCheck'],
+    ruleBadge: 'critiqueCheck.passes',
     codeSnippet: `if (critiqueCheck.passes) {
   cleanDictionary.push(remediatedEntry);
 } else {
