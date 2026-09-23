@@ -316,5 +316,25 @@ describe('PipelineGraph & StepGraph', () => {
 
     fireEvent.mouseLeave(scriptNode);
   });
+
+  it('allows clicking items within the popover while mouse transitions across hover bridge', () => {
+    let selectedKey = '';
+    render(
+      <StepGraph
+        config={mockStepConfig}
+        onSelectSlice={(key) => {
+          selectedKey = key;
+        }}
+      />
+    );
+
+    const questionTitle = screen.getByText('Q1: Lexical Validity');
+    fireEvent.mouseEnter(questionTitle);
+
+    const properNounItem = screen.getByText(/proper_noun/i);
+    fireEvent.click(properNounItem);
+
+    expect(selectedKey).toBe('proper_noun');
+  });
 });
 

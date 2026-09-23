@@ -1,4 +1,4 @@
-import React, { useRef, useState, useCallback, useLayoutEffect } from 'react';
+import React, { useRef, useState, useCallback, useLayoutEffect, useEffect } from 'react';
 import { useTheme } from '../../theme/ThemeContext';
 import type {
   StepGraphConfig,
@@ -49,6 +49,37 @@ export function StepGraph({
 
   const [cables, setCables] = useState<CablePath[]>([]);
   const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
+  const [pinnedNodeId, setPinnedNodeId] = useState<string | null>(null);
+  const leaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleMouseEnter = useCallback((nodeId: string) => {
+    if (leaveTimerRef.current) {
+      clearTimeout(leaveTimerRef.current);
+      leaveTimerRef.current = null;
+    }
+    setHoveredNodeId(nodeId);
+  }, []);
+
+  const handleMouseLeave = useCallback(() => {
+    if (leaveTimerRef.current) {
+      clearTimeout(leaveTimerRef.current);
+    }
+    leaveTimerRef.current = setTimeout(() => {
+      setHoveredNodeId(null);
+    }, 280);
+  }, []);
+
+  const togglePin = useCallback((nodeId: string) => {
+    setPinnedNodeId((prev) => (prev === nodeId ? null : nodeId));
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (leaveTimerRef.current) {
+        clearTimeout(leaveTimerRef.current);
+      }
+    };
+  }, []);
 
   const calculateCables = useCallback(() => {
     const canvas = canvasRef.current;
@@ -394,8 +425,8 @@ export function StepGraph({
       >
         {/* 1. Source Inputs Node (Compact Token Cylinder Symbol) */}
         <div
-          onMouseEnter={() => setHoveredNodeId('src')}
-          onMouseLeave={() => setHoveredNodeId(null)}
+          onMouseEnter={() => handleMouseEnter('src')}
+          onMouseLeave={handleMouseLeave}
           style={{
             position: 'relative',
             display: 'flex',
@@ -510,18 +541,22 @@ export function StepGraph({
           {/* Source Popover */}
           <div
             role="tooltip"
-            aria-hidden={hoveredNodeId !== 'src'}
+            aria-hidden={hoveredNodeId !== 'src' && pinnedNodeId !== 'src'}
+            onMouseEnter={() => handleMouseEnter('src')}
+            onMouseLeave={handleMouseLeave}
             style={{
               position: 'absolute',
-              top: 'calc(100% + 10px)',
+              top: 'calc(100% + 8px)',
               left: '50%',
               transform:
-                hoveredNodeId === 'src'
+                hoveredNodeId === 'src' || pinnedNodeId === 'src'
                   ? 'translateX(-50%) translateY(0)'
                   : 'translateX(-50%) translateY(4px)',
-              opacity: hoveredNodeId === 'src' ? 1 : 0,
-              visibility: hoveredNodeId === 'src' ? 'visible' : 'hidden',
-              pointerEvents: hoveredNodeId === 'src' ? 'auto' : 'none',
+              opacity: hoveredNodeId === 'src' || pinnedNodeId === 'src' ? 1 : 0,
+              visibility:
+                hoveredNodeId === 'src' || pinnedNodeId === 'src' ? 'visible' : 'hidden',
+              pointerEvents:
+                hoveredNodeId === 'src' || pinnedNodeId === 'src' ? 'auto' : 'none',
               transition:
                 'opacity 0.18s cubic-bezier(0.16, 1, 0.3, 1), transform 0.18s cubic-bezier(0.16, 1, 0.3, 1)',
               zIndex: 50,
@@ -534,6 +569,19 @@ export function StepGraph({
               boxSizing: 'border-box',
             }}
           >
+            {/* Invisible bridge over the 8px gap */}
+            <div
+              style={{
+                position: 'absolute',
+                top: '-14px',
+                left: '-10px',
+                right: '-10px',
+                height: '16px',
+                backgroundColor: 'transparent',
+                pointerEvents: 'auto',
+              }}
+            />
+
             <div
               style={{
                 fontSize: '11px',
@@ -583,7 +631,7 @@ export function StepGraph({
           {config.questionNodes.map((node, idx) => {
             const isScore = node.type === 'score';
             const qId = `q-${idx}`;
-            const isHovered = hoveredNodeId === qId;
+            const isVisible = hoveredNodeId === qId || pinnedNodeId === qId;
             const borderColor = isScore ? '#f59e0b' : '#a855f7';
             const badgeBg = isScore ? 'rgba(245, 158, 11, 0.15)' : 'rgba(168, 85, 247, 0.15)';
             const badgeColor = isScore ? '#fbbf24' : '#d8b4fe';
@@ -611,8 +659,8 @@ export function StepGraph({
             return (
               <div
                 key={node.id}
-                onMouseEnter={() => setHoveredNodeId(qId)}
-                onMouseLeave={() => setHoveredNodeId(null)}
+                onMouseEnter={() => handleMouseEnter(qId)}
+                onMouseLeave={handleMouseLeave}
                 style={{
                   position: 'relative',
                   display: 'flex',
@@ -621,6 +669,14 @@ export function StepGraph({
                 }}
               >
                 <div
+                  onClick={() => togglePin(qId)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      togglePin(qId);
+                    }
+                  }}
                   style={{
                     backgroundColor: '#0b0f19',
                     border: `2px solid ${borderColor}`,
@@ -631,6 +687,7 @@ export function StepGraph({
                     width: '100%',
                     maxWidth: '240px',
                     boxSizing: 'border-box',
+                    cursor: 'pointer',
                   }}
                 >
                   {/* Left in port */}
@@ -815,17 +872,19 @@ export function StepGraph({
                 {/* Evaluator Hover Popover */}
                 <div
                   role="tooltip"
-                  aria-hidden={!isHovered}
+                  aria-hidden={!isVisible}
+                  onMouseEnter={() => handleMouseEnter(qId)}
+                  onMouseLeave={handleMouseLeave}
                   style={{
                     position: 'absolute',
-                    top: 'calc(100% + 10px)',
+                    top: 'calc(100% + 8px)',
                     left: '50%',
-                    transform: isHovered
+                    transform: isVisible
                       ? 'translateX(-50%) translateY(0)'
                       : 'translateX(-50%) translateY(4px)',
-                    opacity: isHovered ? 1 : 0,
-                    visibility: isHovered ? 'visible' : 'hidden',
-                    pointerEvents: isHovered ? 'auto' : 'none',
+                    opacity: isVisible ? 1 : 0,
+                    visibility: isVisible ? 'visible' : 'hidden',
+                    pointerEvents: isVisible ? 'auto' : 'none',
                     transition:
                       'opacity 0.18s cubic-bezier(0.16, 1, 0.3, 1), transform 0.18s cubic-bezier(0.16, 1, 0.3, 1)',
                     zIndex: 50,
@@ -839,6 +898,19 @@ export function StepGraph({
                     fontFamily: 'monospace',
                   }}
                 >
+                  {/* Invisible bridge over the 8px gap */}
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: '-14px',
+                      left: '-10px',
+                      right: '-10px',
+                      height: '16px',
+                      backgroundColor: 'transparent',
+                      pointerEvents: 'auto',
+                    }}
+                  />
+
                   <div
                     style={{
                       fontSize: '11px',
@@ -882,12 +954,25 @@ export function StepGraph({
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'space-between',
-                              padding: '3px 6px',
+                              padding: '4px 6px',
                               borderRadius: tokens.radii.sm,
                               backgroundColor: '#030712',
                               border: `1px solid ${opt.isFlag ? 'rgba(244, 63, 94, 0.3)' : '#1e293b'}`,
                               cursor: onSelectSlice ? 'pointer' : 'default',
                               fontSize: '10px',
+                              transition: 'border-color 0.15s ease, background-color 0.15s ease',
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = '#111827';
+                              e.currentTarget.style.borderColor = opt.isFlag
+                                ? '#f43f5e'
+                                : '#10b981';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = '#030712';
+                              e.currentTarget.style.borderColor = opt.isFlag
+                                ? 'rgba(244, 63, 94, 0.3)'
+                                : '#1e293b';
                             }}
                           >
                             <span
@@ -930,12 +1015,25 @@ export function StepGraph({
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'space-between',
-                              padding: '3px 6px',
+                              padding: '4px 6px',
                               borderRadius: tokens.radii.sm,
                               backgroundColor: '#030712',
                               border: `1px solid ${tier.isFlag ? 'rgba(244, 63, 94, 0.3)' : '#1e293b'}`,
                               cursor: onSelectSlice ? 'pointer' : 'default',
                               fontSize: '10px',
+                              transition: 'border-color 0.15s ease, background-color 0.15s ease',
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = '#111827';
+                              e.currentTarget.style.borderColor = tier.isFlag
+                                ? '#f43f5e'
+                                : '#10b981';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = '#030712';
+                              e.currentTarget.style.borderColor = tier.isFlag
+                                ? 'rgba(244, 63, 94, 0.3)'
+                                : '#1e293b';
                             }}
                           >
                             <span
@@ -970,8 +1068,8 @@ export function StepGraph({
         {/* 3. Script / Rule Node (Compact Glow Chip Symbol) */}
         {config.scriptNode && (
           <div
-            onMouseEnter={() => setHoveredNodeId('script')}
-            onMouseLeave={() => setHoveredNodeId(null)}
+            onMouseEnter={() => handleMouseEnter('script')}
+            onMouseLeave={handleMouseLeave}
             style={{
               position: 'relative',
               display: 'flex',
@@ -1148,18 +1246,22 @@ export function StepGraph({
             {/* Script Rule Popover */}
             <div
               role="tooltip"
-              aria-hidden={hoveredNodeId !== 'script'}
+              aria-hidden={hoveredNodeId !== 'script' && pinnedNodeId !== 'script'}
+              onMouseEnter={() => handleMouseEnter('script')}
+              onMouseLeave={handleMouseLeave}
               style={{
                 position: 'absolute',
-                top: 'calc(100% + 10px)',
+                top: 'calc(100% + 8px)',
                 left: '50%',
                 transform:
-                  hoveredNodeId === 'script'
+                  hoveredNodeId === 'script' || pinnedNodeId === 'script'
                     ? 'translateX(-50%) translateY(0)'
                     : 'translateX(-50%) translateY(4px)',
-                opacity: hoveredNodeId === 'script' ? 1 : 0,
-                visibility: hoveredNodeId === 'script' ? 'visible' : 'hidden',
-                pointerEvents: hoveredNodeId === 'script' ? 'auto' : 'none',
+                opacity: hoveredNodeId === 'script' || pinnedNodeId === 'script' ? 1 : 0,
+                visibility:
+                  hoveredNodeId === 'script' || pinnedNodeId === 'script' ? 'visible' : 'hidden',
+                pointerEvents:
+                  hoveredNodeId === 'script' || pinnedNodeId === 'script' ? 'auto' : 'none',
                 transition:
                   'opacity 0.18s cubic-bezier(0.16, 1, 0.3, 1), transform 0.18s cubic-bezier(0.16, 1, 0.3, 1)',
                 zIndex: 50,
@@ -1173,6 +1275,19 @@ export function StepGraph({
                 fontFamily: 'monospace',
               }}
             >
+              {/* Invisible bridge over the 8px gap */}
+              <div
+                style={{
+                  position: 'absolute',
+                  top: '-14px',
+                  left: '-10px',
+                  right: '-10px',
+                  height: '16px',
+                  backgroundColor: 'transparent',
+                  pointerEvents: 'auto',
+                }}
+              />
+
               <div
                 style={{
                   display: 'flex',
@@ -1227,13 +1342,13 @@ export function StepGraph({
             const tagColor = isClean ? '#34d399' : isWarning ? '#fbbf24' : '#fb7185';
             const portColor = isClean ? '#34d399' : isWarning ? '#fbbf24' : '#fb7185';
             const bucketId = `bucket-${bIdx}`;
-            const isHovered = hoveredNodeId === bucketId;
+            const isVisible = hoveredNodeId === bucketId || pinnedNodeId === bucketId;
 
             return (
               <div
                 key={bucket.id}
-                onMouseEnter={() => setHoveredNodeId(bucketId)}
-                onMouseLeave={() => setHoveredNodeId(null)}
+                onMouseEnter={() => handleMouseEnter(bucketId)}
+                onMouseLeave={handleMouseLeave}
                 style={{
                   position: 'relative',
                 }}
@@ -1326,15 +1441,17 @@ export function StepGraph({
                 {/* Bucket Popover */}
                 <div
                   role="tooltip"
-                  aria-hidden={!isHovered}
+                  aria-hidden={!isVisible}
+                  onMouseEnter={() => handleMouseEnter(bucketId)}
+                  onMouseLeave={handleMouseLeave}
                   style={{
                     position: 'absolute',
                     ...(isClean
-                      ? { top: 'calc(100% + 10px)', right: 0 }
-                      : { bottom: 'calc(100% + 10px)', right: 0 }),
-                    opacity: isHovered ? 1 : 0,
-                    visibility: isHovered ? 'visible' : 'hidden',
-                    pointerEvents: isHovered ? 'auto' : 'none',
+                      ? { top: 'calc(100% + 8px)', right: 0 }
+                      : { bottom: 'calc(100% + 8px)', right: 0 }),
+                    opacity: isVisible ? 1 : 0,
+                    visibility: isVisible ? 'visible' : 'hidden',
+                    pointerEvents: isVisible ? 'auto' : 'none',
                     transition:
                       'opacity 0.18s cubic-bezier(0.16, 1, 0.3, 1), transform 0.18s cubic-bezier(0.16, 1, 0.3, 1)',
                     zIndex: 50,
@@ -1348,6 +1465,19 @@ export function StepGraph({
                     fontFamily: 'monospace',
                   }}
                 >
+                  {/* Invisible bridge over the 8px gap */}
+                  <div
+                    style={{
+                      position: 'absolute',
+                      ...(isClean ? { top: '-14px' } : { bottom: '-14px' }),
+                      left: '-10px',
+                      right: '-10px',
+                      height: '16px',
+                      backgroundColor: 'transparent',
+                      pointerEvents: 'auto',
+                    }}
+                  />
+
                   <div
                     style={{
                       fontSize: '11px',
