@@ -10,6 +10,11 @@ export interface StepGraphProps {
   config: StepGraphConfig;
   onSelectSlice?: (sliceKey: string, title: string, count: number) => void;
   onSelectScript?: (script: ScriptRuleNodeConfig) => void;
+  onBack?: () => void;
+  onPrev?: () => void;
+  onNext?: () => void;
+  prevLabel?: string;
+  nextLabel?: string;
   wrap?: boolean;
 }
 
@@ -24,6 +29,11 @@ export function StepGraph({
   config,
   onSelectSlice,
   onSelectScript,
+  onBack,
+  onPrev,
+  onNext,
+  prevLabel,
+  nextLabel,
 }: StepGraphProps) {
   const { tokens } = useTheme();
 
@@ -194,61 +204,152 @@ export function StepGraph({
           zIndex: 2,
         }}
       >
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: tokens.spacing[2] }}>
-            <span
+        <div style={{ display: 'flex', alignItems: 'center', gap: tokens.spacing[3] }}>
+          {onBack && (
+            <button
+              type="button"
+              onClick={onBack}
               style={{
-                fontSize: '11px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                backgroundColor: '#090d16',
+                border: '1px solid #334155',
+                borderRadius: tokens.radii.md,
+                padding: `6px ${tokens.spacing[3]}`,
+                color: '#f8fafc',
+                fontSize: '12px',
                 fontFamily: 'monospace',
                 fontWeight: 700,
-                color: '#818cf8',
-                textTransform: 'uppercase',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = '#818cf8';
+                e.currentTarget.style.backgroundColor = '#1e1b4b';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = '#334155';
+                e.currentTarget.style.backgroundColor = '#090d16';
               }}
             >
-              STAGE ARCHITECTURE
-            </span>
-            <span
+              &larr; All Stages
+            </button>
+          )}
+
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: tokens.spacing[2] }}>
+              <span
+                style={{
+                  fontSize: '11px',
+                  fontFamily: 'monospace',
+                  fontWeight: 700,
+                  color: '#818cf8',
+                  textTransform: 'uppercase',
+                }}
+              >
+                STAGE ARCHITECTURE
+              </span>
+              <span
+                style={{
+                  fontSize: '10px',
+                  fontFamily: 'monospace',
+                  fontWeight: 700,
+                  padding: `2px ${tokens.spacing[2]}`,
+                  borderRadius: tokens.radii.sm,
+                  backgroundColor: 'rgba(99, 102, 241, 0.15)',
+                  color: '#a5b4fc',
+                  border: '1px solid rgba(99, 102, 241, 0.4)',
+                }}
+              >
+                {config.stageType.toUpperCase()} AI + SCRIPT RULES
+              </span>
+            </div>
+            <h2
               style={{
-                fontSize: '10px',
-                fontFamily: 'monospace',
+                margin: '4px 0 0 0',
+                fontSize: '16px',
                 fontWeight: 700,
-                padding: `2px ${tokens.spacing[2]}`,
-                borderRadius: tokens.radii.sm,
-                backgroundColor: 'rgba(99, 102, 241, 0.15)',
-                color: '#a5b4fc',
-                border: '1px solid rgba(99, 102, 241, 0.4)',
+                color: '#f8fafc',
               }}
             >
-              {config.stageType.toUpperCase()} AI + SCRIPT RULES
-            </span>
+              {config.stageName}
+            </h2>
           </div>
-          <h2
-            style={{
-              margin: '4px 0 0 0',
-              fontSize: '16px',
-              fontWeight: 700,
-              color: '#f8fafc',
-            }}
-          >
-            {config.stageName}
-          </h2>
         </div>
 
-        {config.scriptLabel && (
-          <div
-            style={{
-              fontSize: '12px',
-              fontFamily: 'monospace',
-              color: '#94a3b8',
-              backgroundColor: '#0f172a',
-              padding: `${tokens.spacing[1]} ${tokens.spacing[3]}`,
-              borderRadius: tokens.radii.md,
-              border: '1px solid #1e293b',
-            }}
-          >
-            Script: <strong style={{ color: '#a5b4fc' }}>{config.scriptLabel}</strong>
-          </div>
-        )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: tokens.spacing[3] }}>
+          {config.scriptLabel && (
+            <div
+              style={{
+                fontSize: '12px',
+                fontFamily: 'monospace',
+                color: '#94a3b8',
+                backgroundColor: '#0f172a',
+                padding: `${tokens.spacing[1]} ${tokens.spacing[3]}`,
+                borderRadius: tokens.radii.md,
+                border: '1px solid #1e293b',
+              }}
+            >
+              Script: <strong style={{ color: '#a5b4fc' }}>{config.scriptLabel}</strong>
+            </div>
+          )}
+
+          {/* Prev / Next Step Navigator */}
+          {(onPrev || onNext) && (
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                backgroundColor: '#090d16',
+                border: '1px solid #334155',
+                borderRadius: tokens.radii.md,
+                padding: '2px',
+                gap: '2px',
+              }}
+            >
+              <button
+                type="button"
+                disabled={!onPrev}
+                onClick={onPrev}
+                title={prevLabel ? `Previous: ${prevLabel}` : 'Previous Step'}
+                style={{
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                  borderRadius: tokens.radii.sm,
+                  padding: `5px ${tokens.spacing[2]}`,
+                  fontSize: '11px',
+                  fontFamily: 'monospace',
+                  fontWeight: 700,
+                  color: onPrev ? '#f8fafc' : '#475569',
+                  cursor: onPrev ? 'pointer' : 'not-allowed',
+                }}
+              >
+                &larr; Prev
+              </button>
+              <span style={{ color: '#334155', fontSize: '12px' }}>|</span>
+              <button
+                type="button"
+                disabled={!onNext}
+                onClick={onNext}
+                title={nextLabel ? `Next: ${nextLabel}` : 'Next Step'}
+                style={{
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                  borderRadius: tokens.radii.sm,
+                  padding: `5px ${tokens.spacing[2]}`,
+                  fontSize: '11px',
+                  fontFamily: 'monospace',
+                  fontWeight: 700,
+                  color: onNext ? '#f8fafc' : '#475569',
+                  cursor: onNext ? 'pointer' : 'not-allowed',
+                }}
+              >
+                Next &rarr;
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* SVG Connecting Cables Overlay */}

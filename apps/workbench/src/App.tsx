@@ -89,7 +89,7 @@ import { useRenderStorm } from '@scaffold/core';
 import {
   mockPipelineStages,
   stage2StepConfig,
-  stage4StepConfig,
+  stepConfigsByStageId,
   mockPipelineSlices,
 } from './data/pipelineMocks';
 
@@ -1959,13 +1959,9 @@ export function App() {
                   stages={mockPipelineStages}
                   activeStageId={activePipelineStageId}
                   onSelectStage={(id) => setActivePipelineStageId(id)}
-                  stepGraphConfig={
-                    activePipelineStageId === 'stage-2'
-                      ? stage2StepConfig
-                      : stage4StepConfig
-                  }
+                  stepGraphConfig={stepConfigsByStageId[activePipelineStageId] || stage2StepConfig}
                   slices={mockPipelineSlices}
-                  defaultZoomLevel="micro"
+                  defaultZoomLevel="macro"
                 />
               </Stack>
             )}

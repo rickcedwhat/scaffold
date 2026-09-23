@@ -249,6 +249,207 @@ export const stage4StepConfig: StepGraphConfig = {
   ],
 };
 
+export const stage1StepConfig: StepGraphConfig = {
+  stageId: 'stage-1',
+  stageName: 'Stage 01: Subtitle Corpus Ingestion & Length Filter',
+  stageType: 'transform',
+  scriptLabel: 'extractFiveLetterTokens.ts',
+  source: {
+    label: 'OpenSubtitles Corpus',
+    sublabel: '50k Frequency Tokens',
+    count: 50000,
+    description: 'Raw subtitle token stream with punctuation and casing.',
+  },
+  questionNodes: [
+    {
+      id: 's1-q1',
+      type: 'choice',
+      title: 'Length & Character Set Sanitization',
+      subtitle: 'Lowercases, strips diacritics, and asserts exact length === 5',
+      throughput: '1,200 words/sec',
+      options: [
+        { key: 'valid_length', label: 'valid 5-letter candidate tokens', percentage: 5.0, count: 2500 },
+        { key: 'filtered_out', label: 'non-5-letter tokens & noise', percentage: 95.0, count: 47500, isFlag: true },
+      ],
+    },
+  ],
+  scriptNode: {
+    id: 's1-script',
+    type: 'script',
+    title: 'normalizeAndFilter()',
+    subtitle: 'Deterministic regex matching and character sanitation',
+    filePath: 'scripts/extractFiveLetterTokens.ts',
+    consumedInputs: ['rawTokenStream', 'charWhitelistRegex'],
+    codeSnippet: `if (token.length === 5 && /^[a-z]+$/.test(token)) {
+  candidates.push(token);
+} else {
+  discard(token);
+}`,
+    decisionStats: {
+      primaryLabel: 'discarded',
+      primaryCount: 47500,
+      secondaryLabel: 'candidates kept',
+      secondaryCount: 2500,
+    },
+  },
+  destinationBuckets: [
+    {
+      id: 'candidate_seeds',
+      title: 'Candidate 5-Letter Seeds',
+      count: 2500,
+      percentage: 5.0,
+      intent: 'success',
+      description: 'Passed to Stage 02 JEV Filter',
+    },
+    {
+      id: 'discarded_tokens',
+      title: 'Discarded Tokens & Noise',
+      count: 47500,
+      percentage: 95.0,
+      intent: 'error',
+      isFlag: true,
+      description: 'Filtered out of candidate pool',
+    },
+  ],
+};
+
+export const stage3StepConfig: StepGraphConfig = {
+  stageId: 'stage-3',
+  stageName: 'Stage 03: Gemini 2.5 Flash Structured Lexicography',
+  stageType: 'llm',
+  scriptLabel: 'generateDefinitions.ts',
+  source: {
+    label: 'Clean Candidate Seeds',
+    sublabel: 'From Stage 02',
+    count: 2410,
+    description: 'Lexically verified 5-letter word candidates.',
+  },
+  questionNodes: [
+    {
+      id: 's3-q1',
+      type: 'choice',
+      title: 'Gemini Definition & POS Synthesis',
+      subtitle: 'Generates structured JSON schema with definition and part of speech',
+      throughput: '24 req/sec',
+      options: [
+        { key: 'valid_json', label: 'valid JSON conforming to schema', percentage: 99.6, count: 2400 },
+        { key: 'schema_error', label: 'malformed schema / parse retry', percentage: 0.4, count: 10, isFlag: true },
+      ],
+    },
+  ],
+  scriptNode: {
+    id: 's3-script',
+    type: 'script',
+    title: 'validateSchemaAndStore()',
+    subtitle: 'Zod schema validation on structured LLM response',
+    filePath: 'scripts/generateDefinitions.ts',
+    consumedInputs: ['geminiResponse.json', 'DictionaryEntrySchema'],
+    codeSnippet: `const result = DictionaryEntrySchema.safeParse(json);
+if (result.success) {
+  db.store(result.data);
+} else {
+  retryQueue.push({ token, error: result.error });
+}`,
+    decisionStats: {
+      primaryLabel: 'retry queue',
+      primaryCount: 10,
+      secondaryLabel: 'stored definitions',
+      secondaryCount: 2400,
+    },
+  },
+  destinationBuckets: [
+    {
+      id: 'stored_definitions',
+      title: 'Structured Definitions',
+      count: 2400,
+      percentage: 99.6,
+      intent: 'success',
+      description: 'Passed to Stage 04 3-Way Rubric',
+    },
+    {
+      id: 'schema_retry',
+      title: 'Schema Parse Retries',
+      count: 10,
+      percentage: 0.4,
+      intent: 'warning',
+      isFlag: true,
+      description: 'Re-prompted on next pass',
+    },
+  ],
+};
+
+export const stage5StepConfig: StepGraphConfig = {
+  stageId: 'stage-5',
+  stageName: 'Stage 05: Auto-Remediation & Human Escalation Loop',
+  stageType: 'llm',
+  scriptLabel: 'autoRemediateQueue.ts',
+  source: {
+    label: 'Review Queue Entries',
+    sublabel: 'From Stage 04',
+    count: 306,
+    description: 'Flagged for false friend, malformed syntax, or obscurity.',
+  },
+  questionNodes: [
+    {
+      id: 's5-q1',
+      type: 'choice',
+      title: 'Targeted Remediation Evaluation',
+      subtitle: 'Evaluates if targeted correction prompt resolved critique flags',
+      throughput: '12 req/sec',
+      options: [
+        { key: 'remediated_pass', label: 'flag resolved by targeted auto-fix', percentage: 94.1, count: 288 },
+        { key: 'unresolved_flag', label: 'persistent ambiguity / manual edit', percentage: 5.9, count: 18, isFlag: true },
+      ],
+    },
+  ],
+  scriptNode: {
+    id: 's5-script',
+    type: 'script',
+    title: 'routeRemediationOutcome()',
+    subtitle: 'Routes resolved entries to clean dictionary or escalates to human queue',
+    filePath: 'scripts/autoRemediateQueue.ts',
+    consumedInputs: ['remediatedEntry', 'critiqueCheck'],
+    codeSnippet: `if (critiqueCheck.passes) {
+  cleanDictionary.push(remediatedEntry);
+} else {
+  humanReviewQueue.escalate(remediatedEntry);
+}`,
+    decisionStats: {
+      primaryLabel: 'manual escalation',
+      primaryCount: 18,
+      secondaryLabel: 'auto-remediated',
+      secondaryCount: 288,
+    },
+  },
+  destinationBuckets: [
+    {
+      id: 'remediated_pass',
+      title: 'Auto-Remediated Entries',
+      count: 288,
+      percentage: 94.1,
+      intent: 'success',
+      description: 'Merged into Clean Dictionary',
+    },
+    {
+      id: 'human_escalation',
+      title: 'Human Review Escalation',
+      count: 18,
+      percentage: 5.9,
+      intent: 'error',
+      isFlag: true,
+      description: 'Requires human editor review',
+    },
+  ],
+};
+
+export const stepConfigsByStageId: Record<string, StepGraphConfig> = {
+  'stage-1': stage1StepConfig,
+  'stage-2': stage2StepConfig,
+  'stage-3': stage3StepConfig,
+  'stage-4': stage4StepConfig,
+  'stage-5': stage5StepConfig,
+};
+
 const wordsCatalog: DatasetItem[] = [
   {
     id: 'w-about',

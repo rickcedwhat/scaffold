@@ -158,12 +158,18 @@ describe('PipelineGraph & StepGraph', () => {
     expect(screen.getByText('Jev Lexical Filter')).toBeInTheDocument();
     expect(screen.getByText('Gemini Lexicography')).toBeInTheDocument();
 
-    // Switch to micro view
-    const microBtn = screen.getByRole('button', { name: /detailed step graph/i });
-    fireEvent.click(microBtn);
+    // Click on stage card to zoom into detailed view
+    const stageCard = screen.getByText('Jev Lexical Filter');
+    fireEvent.click(stageCard);
 
     expect(screen.getByText('STAGE ARCHITECTURE')).toBeInTheDocument();
     expect(screen.getByText('Q1: Lexical Validity')).toBeInTheDocument();
+
+    // Zoom back out to macro view
+    const backBtn = screen.getByRole('button', { name: /all stages/i });
+    fireEvent.click(backBtn);
+
+    expect(screen.getByText('Pipeline Stage Sequence')).toBeInTheDocument();
   });
 
   it('renders StepGraph with choice, score, script, and bucket nodes', () => {
@@ -230,6 +236,54 @@ describe('PipelineGraph & StepGraph', () => {
     expect(screen.getByText(/jev\.verdict/i)).toBeInTheDocument();
     expect(screen.getByText('90')).toBeInTheDocument();
     expect(screen.getByText('pruned')).toBeInTheDocument();
+  });
+
+  it('navigates to next and previous steps from the detailed view', () => {
+    let currentStage = 'stage-2';
+    const { rerender } = render(
+      <PipelineGraph
+        stages={mockStages}
+        activeStageId={currentStage}
+        defaultZoomLevel="micro"
+        stepGraphConfig={mockStepConfig}
+        onSelectStage={(id) => {
+          currentStage = id;
+        }}
+      />
+    );
+
+    // Should see Next and Prev buttons
+    const nextBtn = screen.getByRole('button', { name: /next/i });
+    const prevBtn = screen.getByRole('button', { name: /prev/i });
+
+    expect(nextBtn).toBeEnabled();
+    expect(prevBtn).toBeEnabled();
+
+    // Click next step
+    fireEvent.click(nextBtn);
+    expect(currentStage).toBe('stage-3');
+
+    // Rerender with stage-3
+    rerender(
+      <PipelineGraph
+        stages={mockStages}
+        activeStageId="stage-3"
+        defaultZoomLevel="micro"
+        stepGraphConfig={{
+          ...mockStepConfig,
+          stageId: 'stage-3',
+          stageName: 'Gemini Lexicography',
+        }}
+        onSelectStage={(id) => {
+          currentStage = id;
+        }}
+      />
+    );
+
+    // Now click prev step
+    const prevBtnOn3 = screen.getByRole('button', { name: /prev/i });
+    fireEvent.click(prevBtnOn3);
+    expect(currentStage).toBe('stage-2');
   });
 });
 
