@@ -45,6 +45,7 @@ import {
   EmptyState,
   StatusIllustration,
   Fab,
+  PipelineGraph,
   type FabAction,
   type FabPlacement,
   type FabTrigger,
@@ -82,8 +83,16 @@ import {
   Share2,
   Trash2,
   RotateCcw,
+  Workflow,
 } from 'lucide-react';
 import { useRenderStorm } from '@scaffold/core';
+import {
+  mockPipelineStages,
+  stage2StepConfig,
+  stage4StepConfig,
+  mockPipelineSlices,
+} from './data/pipelineMocks';
+
 
 export type WorkbenchTab =
   | 'button'
@@ -100,11 +109,13 @@ export type WorkbenchTab =
   | 'stack'
   | 'cards'
   | 'typography'
-  | 'tokens';
+  | 'tokens'
+  | 'pipelineStudio';
 
 export function App() {
   const { mode, toggleMode, colors, tokens } = useTheme();
-  const [activeTab, setActiveTab] = useState<WorkbenchTab>('textInput');
+  const [activeTab, setActiveTab] = useState<WorkbenchTab>('pipelineStudio');
+  const [activePipelineStageId, setActivePipelineStageId] = useState<string>('stage-4');
 
   // Circuit Breaker interactive simulation state
   const {
@@ -242,6 +253,7 @@ export function App() {
     stack: 'Stack & Grid',
     cards: 'Cards',
     typography: 'Typography',
+    pipelineStudio: 'Pipeline Studio',
     tokens: 'Design Tokens',
   };
 
@@ -350,6 +362,16 @@ export function App() {
                 onClick={() => setActiveTab('circuitBreaker')}
               >
                 Circuit Breaker
+              </SidebarItem>
+            </SidebarSection>
+
+            <SidebarSection title="AI & Pipelines">
+              <SidebarItem
+                icon={<Workflow size={16} />}
+                active={activeTab === 'pipelineStudio'}
+                onClick={() => setActiveTab('pipelineStudio')}
+              >
+                Pipeline Studio
               </SidebarItem>
             </SidebarSection>
 
@@ -1917,6 +1939,70 @@ export function App() {
                       </Card>
                     ))}
                   </Grid>
+                </ComponentExample>
+              </Stack>
+            )}
+
+            {/* Pipeline Studio Tab */}
+            {activeTab === 'pipelineStudio' && (
+              <Stack gap={6}>
+                <div>
+                  <Heading level={3} size="lg">
+                    Pipeline Studio &amp; AI Node Graphs
+                  </Heading>
+                  <Text size="sm" color="secondary">
+                    Visual DAGs, parallel evaluation questions (Choice, Score), first-class Script Rule nodes, and searchable dataset slice drawers.
+                  </Text>
+                </div>
+
+                <Card padding="compact" variant="subtle">
+                  <Stack direction="row" align="center" justify="between" wrap>
+                    <Stack direction="row" align="center" gap={2}>
+                      <Text size="xs" color="muted" weight="bold">
+                        EXPLORE WORKFLOW STAGES:
+                      </Text>
+                      <Button
+                        size="sm"
+                        intent={activePipelineStageId === 'stage-2' ? 'primary' : 'neutral'}
+                        variant={activePipelineStageId === 'stage-2' ? 'solid' : 'outline'}
+                        onClick={() => setActivePipelineStageId('stage-2')}
+                      >
+                        Stage 02: Lexical Prune
+                      </Button>
+                      <Button
+                        size="sm"
+                        intent={activePipelineStageId === 'stage-4' ? 'primary' : 'neutral'}
+                        variant={activePipelineStageId === 'stage-4' ? 'solid' : 'outline'}
+                        onClick={() => setActivePipelineStageId('stage-4')}
+                      >
+                        Stage 04: 3-Way JEV + Queue
+                      </Button>
+                    </Stack>
+
+                    <Text size="xs" color="secondary">
+                      Tip: Click any outcome strip (e.g. <em>wrong_meaning</em>) or the <em>&lt;/&gt; SCRIPT</em> card.
+                    </Text>
+                  </Stack>
+                </Card>
+
+                <ComponentExample
+                  title="Interactive Pipeline Graph Studio"
+                  description="Toggle between the Macro Pipeline view and the Detailed Step Graph. Click outcome strips to inspect paginated datasets or script rule logic."
+                  code={SNIPPETS.pipelineStudio.basic}
+                  defaultExpanded={false}
+                >
+                  <PipelineGraph
+                    stages={mockPipelineStages}
+                    activeStageId={activePipelineStageId}
+                    onSelectStage={(id) => setActivePipelineStageId(id)}
+                    stepGraphConfig={
+                      activePipelineStageId === 'stage-2'
+                        ? stage2StepConfig
+                        : stage4StepConfig
+                    }
+                    slices={mockPipelineSlices}
+                    defaultZoomLevel="micro"
+                  />
                 </ComponentExample>
               </Stack>
             )}
