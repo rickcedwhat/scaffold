@@ -438,7 +438,7 @@ import { Sparkles } from 'lucide-react';
 
   pipelineStudio: {
     basic: `// High-Level Pipeline + Detailed Step Graph
-import { PipelineGraph } from '@scaffold/ui';
+import { PipelineGraph } from '@scaffold/studio';
 
 <PipelineGraph
   stages={stages}
@@ -448,7 +448,7 @@ import { PipelineGraph } from '@scaffold/ui';
   defaultZoomLevel="micro"
 />`,
     stepGraph: `// Detailed Step Graph with Choice, Score, and ScriptRule Nodes
-import { StepGraph } from '@scaffold/ui';
+import { StepGraph } from '@scaffold/studio';
 
 <StepGraph
   config={stepGraphConfig}

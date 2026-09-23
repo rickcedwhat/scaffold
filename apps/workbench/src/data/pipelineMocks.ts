@@ -3,7 +3,7 @@ import type {
   StepGraphConfig,
   OutcomeSlice,
   DatasetItem,
-} from '@scaffold/ui';
+} from '@scaffold/studio';
 
 export const mockPipelineStages: PipelineStageConfig[] = [
   {

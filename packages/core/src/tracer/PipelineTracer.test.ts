@@ -116,17 +116,8 @@ describe('PipelineTracer', () => {
       passCount: 2,
       flagCount: 1,
     });
-
-    const graph = tracer.toStepGraphConfig('stage-verdicts');
-    const question = graph?.questionNodes[0];
-    expect(question?.type).toBe('choice');
-    if (question?.type !== 'choice') throw new Error('Expected a choice node');
-    expect(question.options).toEqual([
-      expect.objectContaining({ key: 'valid', count: 1, isFlag: false }),
-      expect.objectContaining({ key: 'clean_match', count: 1, isFlag: false }),
-      expect.objectContaining({ key: 'proper_noun', count: 1, isFlag: true }),
-    ]);
   });
+
 
   it('wraps and traces LLM execution with latency and token usage', async () => {
     const tracer = new PipelineTracer();
@@ -313,108 +304,6 @@ describe('PipelineTracer', () => {
     expect(listenerSnapshot).toEqual(snapshot);
   });
 
-  it('builds score tiers from recorded confidence values', () => {
-    const tracer = new PipelineTracer();
-    tracer.startStage({ id: 'st-score', name: 'Score Stage', type: 'jev' });
-
-    [0.95, 0.8, 0.79, 0.2].forEach((confidence) => {
-      tracer.recordEvent<JevTraceEvent>({
-        category: 'jev',
-        stageId: 'st-score',
-        type: 'score',
-        question: 'Confidence',
-        verdict: 'scored',
-        confidence,
-        status: 'success',
-      });
-    });
-
-    const graph = tracer.toStepGraphConfig('st-score');
-    const question = graph?.questionNodes[0];
-    expect(question?.type).toBe('score');
-    if (question?.type !== 'score') throw new Error('Expected a score node');
-    expect(question.tiers).toEqual([
-      { key: 'high', label: 'High Confidence', percentage: 50, count: 2 },
-      { key: 'low', label: 'Low Confidence', percentage: 50, count: 2, isFlag: true },
-    ]);
-  });
-
-  it('adapts state to @scaffold/ui PipelineStageConfig and StepGraphConfig', () => {
-    const tracer = new PipelineTracer();
-    tracer.startStage({
-      id: 'st-eval',
-      name: 'Lexical Prune',
-      type: 'jev',
-      itemCount: 2500,
-      description: 'Lexical screening',
-    });
-
-    // Record some JEV events
-    tracer.recordEvent<JevTraceEvent>({
-      category: 'jev',
-      stageId: 'st-eval',
-      type: 'choice',
-      question: 'Lexical Validity',
-      verdict: 'valid',
-      confidence: 0.95,
-      status: 'success',
-    });
-    tracer.recordEvent<JevTraceEvent>({
-      category: 'jev',
-      stageId: 'st-eval',
-      type: 'choice',
-      question: 'Lexical Validity',
-      verdict: 'proper_noun',
-      confidence: 0.85,
-      status: 'success',
-    });
-
-    // Record transform
-    tracer.recordEvent<TransformTraceEvent>({
-      category: 'transform',
-      stageId: 'st-eval',
-      name: 'decideShouldRemove',
-      inputCount: 2500,
-      outputCount: 2410,
-      droppedCount: 90,
-      ruleSnippet: 'if (conf >= 0.70 && !valid) prune()',
-      status: 'success',
-    });
-
-    tracer.endStage('st-eval', { status: 'success' });
-
-    // 1. Adapter to PipelineStageConfig[]
-    const stageConfigs = tracer.toPipelineStageConfigs();
-    expect(stageConfigs).toHaveLength(1);
-    expect(stageConfigs[0].id).toBe('st-eval');
-    expect(stageConfigs[0].type).toBe('jev');
-    expect(stageConfigs[0].status).toBe('success');
-
-    // 2. Adapter to StepGraphConfig
-    const stepConfig = tracer.toStepGraphConfig('st-eval');
-    expect(stepConfig).not.toBeNull();
-    expect(stepConfig?.stageId).toBe('st-eval');
-    expect(stepConfig?.questionNodes).toHaveLength(1);
-    expect(stepConfig?.questionNodes[0].title).toBe('Lexical Validity');
-    expect(stepConfig?.scriptNode?.title).toBe('decideShouldRemove');
-    expect(stepConfig?.destinationBuckets).toHaveLength(2);
-  });
-
-  it('does not let fallback data overwrite computed graph fields', () => {
-    const tracer = new PipelineTracer();
-    tracer.startStage({ id: 'st-fallback', name: 'Computed Stage', type: 'jev' });
-
-    const graph = tracer.toStepGraphConfig('st-fallback', {
-      stageId: 'fallback-id',
-      stageName: 'Fallback Stage',
-      stageType: 'llm',
-      questionNodes: [],
-    });
-
-    expect(graph).toMatchObject({
-      stageId: 'st-fallback',
-      stageName: 'Computed Stage',
-      stageType: 'jev',
-    });
-  });
 });
+
+

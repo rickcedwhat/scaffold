@@ -31,6 +31,3 @@ export * from './components/StatusIllustration/StatusIllustration';
 export * from './components/EmptyState/EmptyState';
 export * from './components/Fab';
 
-// Pipeline & AI Evaluation Visualizers
-export * from './components/PipelineGraph';
-

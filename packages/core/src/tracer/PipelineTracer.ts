@@ -1,14 +1,6 @@
 import type {
   PipelineStageType,
   PipelineStageStatus,
-  PipelineStageConfig,
-  StepGraphConfig,
-  ChoiceNodeConfig,
-  ScoreNodeConfig,
-  BucketNodeConfig,
-  ScriptRuleNodeConfig,
-} from '@scaffold/ui';
-import type {
   PipelineTraceEvent,
   LLMTraceEvent,
   JevTraceEvent,
@@ -24,7 +16,6 @@ function generateEventId(prefix: string): string {
   nextEventCounter += 1;
   return `${prefix}-${Date.now()}-${nextEventCounter}`;
 }
-
 function isPassingJevVerdict(verdict: string): boolean {
   return verdict === 'valid' || verdict.startsWith('clean');
 }
@@ -444,171 +435,6 @@ export class PipelineTracer {
 
     this._pipelineId = parsed.pipelineId;
     this.startTime = parsed.startTime;
-    this.endTime = parsed.endTime;
-  }
-
-  // ─── UI Adapters for @scaffold/ui ──────────────────────────
-
-  public toPipelineStageConfigs(): PipelineStageConfig[] {
-    return this.getStages().map((stage) => {
-      const summaryMetric =
-        stage.summaryMetric ||
-        (stage.metrics
-          ? `${stage.metrics.passCount || 0} pass • ${stage.metrics.flagCount || 0} flag`
-          : `${stage.itemCount} items`);
-
-      return {
-        id: stage.id,
-        name: stage.name,
-        description: stage.description,
-        type: stage.type,
-        status: stage.status,
-        itemCount: stage.itemCount,
-        badge: stage.badge || stage.type.toUpperCase(),
-        summaryMetric,
-        metrics: stage.metrics,
-      };
-    });
-  }
-
-  public toStepGraphConfig(
-    stageId: string,
-    fallback?: Partial<StepGraphConfig>
-  ): StepGraphConfig | null {
-    const stage = this.stages.get(stageId);
-    if (!stage) return null;
-
-    // Collect question nodes from Jev events
-    const questionNodes: Array<ChoiceNodeConfig | ScoreNodeConfig> = [];
-    const jevEvents = stage.events.filter(
-      (e): e is JevTraceEvent => e.category === 'jev' && e.status !== 'error'
-    );
-
-    const groupedByQuestion = new Map<string, JevTraceEvent[]>();
-    jevEvents.forEach((ev) => {
-      const list = groupedByQuestion.get(ev.question) || [];
-      list.push(ev);
-      groupedByQuestion.set(ev.question, list);
-    });
-
-    let qIdx = 1;
-    groupedByQuestion.forEach((events, question) => {
-      const total = events.length;
-      const first = events[0];
-
-      if (first.type === 'score') {
-        const cutoffValue = 0.8;
-        const highConfidenceCount = events.filter((event) => event.confidence >= cutoffValue).length;
-        const lowConfidenceCount = total - highConfidenceCount;
-        const percentage = (count: number) =>
-          total === 0 ? 0 : Math.round((count / total) * 1000) / 10;
-
-        questionNodes.push({
-          id: `score-${qIdx}`,
-          type: 'score',
-          title: question,
-          metricLabel: 'score',
-          cutoffValue,
-          tiers: [
-            {
-              key: 'high',
-              label: 'High Confidence',
-              percentage: percentage(highConfidenceCount),
-              count: highConfidenceCount,
-            },
-            {
-              key: 'low',
-              label: 'Low Confidence',
-              percentage: percentage(lowConfidenceCount),
-              count: lowConfidenceCount,
-              isFlag: true,
-            },
-          ],
-        });
-      } else {
-        const countsByVerdict: Record<string, number> = {};
-        events.forEach((e) => {
-          countsByVerdict[e.verdict] = (countsByVerdict[e.verdict] || 0) + 1;
-        });
-
-        const options = Object.entries(countsByVerdict).map(([verdict, count]) => {
-          const percentage = Math.round((count / (total || 1)) * 1000) / 10;
-          const isFlag = !isPassingJevVerdict(verdict);
-          return {
-            key: verdict,
-            label: verdict,
-            percentage,
-            count,
-            isFlag,
-          };
-        });
-
-        questionNodes.push({
-          id: `choice-${qIdx}`,
-          type: 'choice',
-          title: question,
-          throughput: first.throughputWordsPerSec ? `${first.throughputWordsPerSec} w/s` : undefined,
-          options,
-        });
-      }
-      qIdx += 1;
-    });
-
-    // Check for Transform events as script node
-    const transformEvents = stage.events.filter((e): e is TransformTraceEvent => e.category === 'transform');
-    let scriptNode: ScriptRuleNodeConfig | undefined = fallback?.scriptNode;
-
-    if (!scriptNode && transformEvents.length > 0) {
-      const lastTransform = transformEvents[transformEvents.length - 1];
-      scriptNode = {
-        id: `script-${stage.id}`,
-        type: 'script',
-        title: lastTransform.name,
-        codeSnippet: lastTransform.ruleSnippet || `transform(${lastTransform.name})`,
-        consumedInputs: ['inputItems'],
-        decisionStats: {
-          primaryLabel: 'kept',
-          primaryCount: lastTransform.outputCount,
-          secondaryLabel: 'dropped',
-          secondaryCount: lastTransform.droppedCount || 0,
-        },
-      };
-    }
-
-    // Default destination buckets based on pass vs flag count
-    const passCount = stage.metrics?.passCount ?? stage.itemCount;
-    const flagCount = stage.metrics?.flagCount ?? 0;
-    const totalCount = passCount + flagCount || 1;
-
-    const destinationBuckets: BucketNodeConfig[] = fallback?.destinationBuckets || [
-      {
-        id: 'clean_pass',
-        title: 'Clean Pass',
-        count: passCount,
-        percentage: Math.round((passCount / totalCount) * 1000) / 10,
-        intent: 'success',
-      },
-      {
-        id: 'flagged_queue',
-        title: 'Review Queue',
-        count: flagCount,
-        percentage: Math.round((flagCount / totalCount) * 1000) / 10,
-        intent: 'warning',
-        isFlag: true,
-      },
-    ];
-
-    return {
-      stageId: stage.id,
-      stageName: stage.name,
-      stageType: stage.type,
-      source: fallback?.source || {
-        label: `${stage.name} Inputs`,
-        count: stage.itemCount,
-      },
-      questionNodes: questionNodes.length > 0 ? questionNodes : fallback?.questionNodes || [],
-      scriptNode,
-      destinationBuckets,
-    };
   }
 }
+
