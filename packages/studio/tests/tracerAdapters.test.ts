@@ -182,6 +182,107 @@ describe('tracerAdapters in @scaffold/studio', () => {
       expect.objectContaining({ key: 'proper_noun', count: 1, isFlag: true }),
     ]);
   });
+
+  it('groups choice and score events with the same question separately', () => {
+    const tracer = new PipelineTracer();
+    tracer.startStage({ id: 'mixed-jev', name: 'Mixed JEV', type: 'jev' });
+    tracer.recordEvent({
+      category: 'jev',
+      stageId: 'mixed-jev',
+      type: 'choice',
+      question: 'Quality',
+      verdict: 'valid',
+      confidence: 0.9,
+      status: 'success',
+    });
+    tracer.recordEvent({
+      category: 'jev',
+      stageId: 'mixed-jev',
+      type: 'score',
+      question: 'Quality',
+      verdict: 'scored',
+      confidence: 0.4,
+      status: 'success',
+    });
+
+    const nodes = tracerToStepGraphConfig(tracer, 'mixed-jev')?.questionNodes;
+    expect(nodes).toHaveLength(2);
+    expect(nodes?.[0]).toMatchObject({ type: 'choice', title: 'Quality', options: [{ count: 1 }] });
+    expect(nodes?.[1]).toMatchObject({
+      type: 'score',
+      title: 'Quality',
+      tiers: [{ count: 0 }, { count: 1 }],
+    });
+  });
+
+  it('uses the last successful transform and its output when stage metrics are initialized zeros', () => {
+    const tracer = new PipelineTracer();
+    tracer.startStage({ id: 'transform-stage', name: 'Transform', type: 'transform', itemCount: 10 });
+    tracer.recordEvent({
+      category: 'transform',
+      stageId: 'transform-stage',
+      name: 'Working script',
+      inputCount: 10,
+      outputCount: 7,
+      droppedCount: 3,
+      status: 'success',
+    });
+    tracer.recordEvent({
+      category: 'transform',
+      stageId: 'transform-stage',
+      name: 'Failed script',
+      inputCount: 7,
+      outputCount: 0,
+      status: 'error',
+    });
+
+    const graph = tracerToStepGraphConfig(tracer, 'transform-stage');
+    expect(graph?.scriptNode).toMatchObject({
+      title: 'Working script',
+      decisionStats: { primaryCount: 7, secondaryCount: 3 },
+    });
+    expect(graph?.destinationBuckets.map((bucket) => bucket.count)).toEqual([7, 3]);
+
+    tracer.updateStageMetrics('transform-stage', { passCount: 6, flagCount: 4 });
+    expect(tracerToStepGraphConfig(tracer, 'transform-stage')?.destinationBuckets.map(
+      (bucket) => bucket.count
+    )).toEqual([6, 4]);
+  });
+
+  it('derives missing dropped counts and ignores error-only transform events', () => {
+    const tracer = new PipelineTracer();
+    tracer.startStage({ id: 'transform-stage', name: 'Transform', type: 'transform', itemCount: 5 });
+    tracer.recordEvent({
+      category: 'transform',
+      stageId: 'transform-stage',
+      name: 'Failed script',
+      inputCount: 5,
+      outputCount: 0,
+      status: 'error',
+    });
+    expect(tracerToStepGraphConfig(tracer, 'transform-stage')?.scriptNode).toBeUndefined();
+
+    tracer.recordEvent({
+      category: 'transform',
+      stageId: 'transform-stage',
+      name: 'Working script',
+      inputCount: 5,
+      outputCount: 4,
+      status: 'success',
+    });
+    expect(tracerToStepGraphConfig(tracer, 'transform-stage')?.destinationBuckets.map(
+      (bucket) => bucket.count
+    )).toEqual([4, 1]);
+  });
+
+  it('retains fallback slices and script label in the generated graph', () => {
+    const tracer = new PipelineTracer();
+    tracer.startStage({ id: 'fallback-stage', name: 'Fallback', type: 'jev' });
+    const slices = { flagged_queue: { key: 'flagged_queue', title: 'Flagged', count: 0, items: [] } };
+
+    expect(tracerToStepGraphConfig(tracer, 'fallback-stage', {
+      slices,
+      scriptLabel: 'classification.js',
+    })).toMatchObject({ slices, scriptLabel: 'classification.js' });
+  });
 });
-
-

@@ -271,6 +271,20 @@ describe('PipelineTracer', () => {
     expect(tracer2.getStage('st-1')?.name).toBe('Stage 1');
   });
 
+  it('preserves a populated pipeline end time across JSON import and export', () => {
+    const tracer = new PipelineTracer({ pipelineId: 'completed-pipeline' });
+    tracer.startStage({ id: 'completed-stage', name: 'Completed', type: 'transform' });
+    tracer.endStage('completed-stage');
+    const original = tracer.getSnapshot();
+    const snapshot = { ...original, endTime: original.startTime + 1000 };
+
+    const restored = new PipelineTracer();
+    restored.importJSON(JSON.stringify(snapshot));
+
+    expect(restored.getSnapshot()).toEqual(snapshot);
+    expect(JSON.parse(restored.exportJSON())).toEqual(snapshot);
+  });
+
   it('returns snapshots that do not change with later stage mutations', () => {
     const tracer = new PipelineTracer();
     const snapshotSpy = vi.fn();
@@ -305,5 +319,3 @@ describe('PipelineTracer', () => {
   });
 
 });
-
-

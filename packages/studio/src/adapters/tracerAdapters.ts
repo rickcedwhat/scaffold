@@ -74,15 +74,17 @@ export function tracerToStepGraphConfig(
 
   const groupedByQuestion = new Map<string, JevTraceEvent[]>();
   jevEvents.forEach((ev) => {
-    const list = groupedByQuestion.get(ev.question) || [];
+    const key = JSON.stringify([ev.question, ev.type]);
+    const list = groupedByQuestion.get(key) || [];
     list.push(ev);
-    groupedByQuestion.set(ev.question, list);
+    groupedByQuestion.set(key, list);
   });
 
   let qIdx = 1;
-  groupedByQuestion.forEach((events, question) => {
+  groupedByQuestion.forEach((events) => {
     const total = events.length;
     const first = events[0];
+    const question = first.question;
 
     if (first.type === 'score') {
       const cutoffValue = 0.8;
@@ -144,12 +146,12 @@ export function tracerToStepGraphConfig(
 
   // Check for Transform events as script node
   const transformEvents = stage.events.filter(
-    (e): e is TransformTraceEvent => e.category === 'transform'
+    (e): e is TransformTraceEvent => e.category === 'transform' && e.status === 'success'
   );
+  const lastTransform = transformEvents[transformEvents.length - 1];
   let scriptNode: ScriptRuleNodeConfig | undefined = fallback?.scriptNode;
 
-  if (!scriptNode && transformEvents.length > 0) {
-    const lastTransform = transformEvents[transformEvents.length - 1];
+  if (!scriptNode && lastTransform) {
     scriptNode = {
       id: `script-${stage.id}`,
       type: 'script',
@@ -166,8 +168,14 @@ export function tracerToStepGraphConfig(
   }
 
   // Default destination buckets based on pass vs flag count
-  const passCount = stage.metrics?.passCount ?? stage.itemCount;
-  const flagCount = stage.metrics?.flagCount ?? 0;
+  const hasOutcomeMetrics = (stage.metrics?.passCount ?? 0) + (stage.metrics?.flagCount ?? 0) > 0;
+  const useTransformCounts = stage.type === 'transform' && lastTransform && !hasOutcomeMetrics;
+  const passCount = useTransformCounts
+    ? lastTransform.outputCount
+    : stage.metrics?.passCount ?? stage.itemCount;
+  const flagCount = useTransformCounts
+    ? lastTransform.droppedCount ?? lastTransform.inputCount - lastTransform.outputCount
+    : stage.metrics?.flagCount ?? 0;
   const totalCount = passCount + flagCount || 1;
 
   const destinationBuckets: BucketNodeConfig[] = fallback?.destinationBuckets || [
@@ -192,6 +200,7 @@ export function tracerToStepGraphConfig(
     stageId: stage.id,
     stageName: stage.name,
     stageType: stage.type,
+    scriptLabel: fallback?.scriptLabel,
     source: fallback?.source || {
       label: `${stage.name} Inputs`,
       count: stage.itemCount,
@@ -199,5 +208,6 @@ export function tracerToStepGraphConfig(
     questionNodes: questionNodes.length > 0 ? questionNodes : fallback?.questionNodes || [],
     scriptNode,
     destinationBuckets,
+    slices: fallback?.slices,
   };
 }

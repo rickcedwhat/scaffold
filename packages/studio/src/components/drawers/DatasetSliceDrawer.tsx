@@ -191,7 +191,6 @@ export function DatasetSliceDrawer({
                 color: colors.text.primary,
                 fontSize: '13px',
                 fontFamily: 'monospace',
-                outline: 'none',
               }}
             />
 
@@ -207,7 +206,6 @@ export function DatasetSliceDrawer({
                 color: colors.text.primary,
                 fontSize: '12px',
                 fontFamily: 'sans-serif',
-                outline: 'none',
               }}
             >
               <option value="conf-desc">Highest Confidence</option>

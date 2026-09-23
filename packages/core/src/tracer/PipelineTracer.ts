@@ -435,6 +435,6 @@ export class PipelineTracer {
 
     this._pipelineId = parsed.pipelineId;
     this.startTime = parsed.startTime;
+    this.endTime = parsed.endTime;
   }
 }
-
