@@ -45,7 +45,25 @@ describe('PipelineTracer', () => {
 
     expect(ended.status).toBe('success');
     expect(ended.durationMs).toBeGreaterThanOrEqual(0);
+    expect(ended.metrics?.durationMs).toBe(ended.durationMs);
     expect(ended.summaryMetric).toBe('50k -> 2.5k words');
+  });
+
+  it('merges final metrics before recording the computed duration', () => {
+    const tracer = new PipelineTracer();
+    tracer.startStage({ id: 'stage-metrics', name: 'Metrics Stage', type: 'transform', itemCount: 5 });
+
+    const ended = tracer.endStage('stage-metrics', {
+      metrics: { processed: 4, durationMs: 999 },
+    });
+
+    expect(ended.metrics).toMatchObject({
+      total: 5,
+      processed: 4,
+      passCount: 0,
+      flagCount: 0,
+      durationMs: ended.durationMs,
+    });
   });
 
   it('records LLM, JEV, and Transform trace events', () => {
@@ -71,6 +89,43 @@ describe('PipelineTracer', () => {
     const stage = tracer.getStage('stage-jev')!;
     expect(stage.events).toHaveLength(1);
     expect(stage.metrics?.passCount).toBe(1);
+  });
+
+  it('classifies non-error JEV verdicts consistently in metrics and graph options', () => {
+    const tracer = new PipelineTracer();
+    tracer.startStage({ id: 'stage-verdicts', name: 'Verdicts', type: 'jev', itemCount: 4 });
+
+    const events = [
+      { verdict: 'valid', confidence: 0.1, status: 'success' as const },
+      { verdict: 'clean_match', confidence: 0.2, status: 'success' as const },
+      { verdict: 'proper_noun', confidence: 0.99, status: 'success' as const },
+      { verdict: 'valid', confidence: 1, status: 'error' as const },
+    ];
+    events.forEach((event) => {
+      tracer.recordEvent<JevTraceEvent>({
+        category: 'jev',
+        stageId: 'stage-verdicts',
+        type: 'choice',
+        question: 'Lexical Validity',
+        ...event,
+      });
+    });
+
+    expect(tracer.getStage('stage-verdicts')?.metrics).toMatchObject({
+      processed: 4,
+      passCount: 2,
+      flagCount: 1,
+    });
+
+    const graph = tracer.toStepGraphConfig('stage-verdicts');
+    const question = graph?.questionNodes[0];
+    expect(question?.type).toBe('choice');
+    if (question?.type !== 'choice') throw new Error('Expected a choice node');
+    expect(question.options).toEqual([
+      expect.objectContaining({ key: 'valid', count: 1, isFlag: false }),
+      expect.objectContaining({ key: 'clean_match', count: 1, isFlag: false }),
+      expect.objectContaining({ key: 'proper_noun', count: 1, isFlag: true }),
+    ]);
   });
 
   it('wraps and traces LLM execution with latency and token usage', async () => {
@@ -220,8 +275,68 @@ describe('PipelineTracer', () => {
 
     const tracer2 = new PipelineTracer({ pipelineId: 'empty' });
     tracer2.importJSON(json);
+    expect(tracer2.pipelineId).toBe('snap-1');
     expect(tracer2.getStages()).toHaveLength(1);
     expect(tracer2.getStage('st-1')?.name).toBe('Stage 1');
+  });
+
+  it('returns snapshots that do not change with later stage mutations', () => {
+    const tracer = new PipelineTracer();
+    const snapshotSpy = vi.fn();
+    tracer.on('snapshot', snapshotSpy);
+    tracer.startStage({ id: 'st-copy', name: 'Snapshot Copy', type: 'transform' });
+    tracer.recordEvent<CustomTraceEvent>({
+      category: 'custom',
+      stageId: 'st-copy',
+      name: 'before-snapshot',
+      status: 'success',
+      payload: { nested: { value: 'original' } },
+    });
+
+    const snapshot = tracer.getSnapshot();
+    const listenerSnapshot = snapshotSpy.mock.calls[0][0];
+    tracer.updateStageMetrics('st-copy', { processed: 99 });
+    tracer.recordEvent<CustomTraceEvent>({
+      category: 'custom',
+      stageId: 'st-copy',
+      name: 'after-snapshot',
+      status: 'success',
+    });
+    const liveEvent = tracer.getStage('st-copy')?.events[0] as CustomTraceEvent;
+    (liveEvent.payload?.nested as { value: string }).value = 'mutated';
+
+    expect(snapshot.stages[0].events).toHaveLength(1);
+    expect(snapshot.stages[0].metrics?.processed).toBe(1);
+    expect((snapshot.stages[0].events[0] as CustomTraceEvent).payload).toEqual({
+      nested: { value: 'original' },
+    });
+    expect(listenerSnapshot).toEqual(snapshot);
+  });
+
+  it('builds score tiers from recorded confidence values', () => {
+    const tracer = new PipelineTracer();
+    tracer.startStage({ id: 'st-score', name: 'Score Stage', type: 'jev' });
+
+    [0.95, 0.8, 0.79, 0.2].forEach((confidence) => {
+      tracer.recordEvent<JevTraceEvent>({
+        category: 'jev',
+        stageId: 'st-score',
+        type: 'score',
+        question: 'Confidence',
+        verdict: 'scored',
+        confidence,
+        status: 'success',
+      });
+    });
+
+    const graph = tracer.toStepGraphConfig('st-score');
+    const question = graph?.questionNodes[0];
+    expect(question?.type).toBe('score');
+    if (question?.type !== 'score') throw new Error('Expected a score node');
+    expect(question.tiers).toEqual([
+      { key: 'high', label: 'High Confidence', percentage: 50, count: 2 },
+      { key: 'low', label: 'Low Confidence', percentage: 50, count: 2, isFlag: true },
+    ]);
   });
 
   it('adapts state to @scaffold/ui PipelineStageConfig and StepGraphConfig', () => {
@@ -283,5 +398,23 @@ describe('PipelineTracer', () => {
     expect(stepConfig?.questionNodes[0].title).toBe('Lexical Validity');
     expect(stepConfig?.scriptNode?.title).toBe('decideShouldRemove');
     expect(stepConfig?.destinationBuckets).toHaveLength(2);
+  });
+
+  it('does not let fallback data overwrite computed graph fields', () => {
+    const tracer = new PipelineTracer();
+    tracer.startStage({ id: 'st-fallback', name: 'Computed Stage', type: 'jev' });
+
+    const graph = tracer.toStepGraphConfig('st-fallback', {
+      stageId: 'fallback-id',
+      stageName: 'Fallback Stage',
+      stageType: 'llm',
+      questionNodes: [],
+    });
+
+    expect(graph).toMatchObject({
+      stageId: 'st-fallback',
+      stageName: 'Computed Stage',
+      stageType: 'jev',
+    });
   });
 });

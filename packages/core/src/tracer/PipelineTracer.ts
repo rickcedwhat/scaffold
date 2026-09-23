@@ -25,8 +25,12 @@ function generateEventId(prefix: string): string {
   return `${prefix}-${Date.now()}-${nextEventCounter}`;
 }
 
+function isPassingJevVerdict(verdict: string): boolean {
+  return verdict === 'valid' || verdict.startsWith('clean');
+}
+
 export class PipelineTracer {
-  public readonly pipelineId: string;
+  private _pipelineId: string;
   private stages: Map<string, StageExecutionState> = new Map();
   private stageOrder: string[] = [];
   private startTime: number;
@@ -35,7 +39,7 @@ export class PipelineTracer {
   private maxEventsPerStage: number;
 
   constructor(options: PipelineTracerOptions = {}) {
-    this.pipelineId = options.pipelineId || `pipeline-${Date.now()}`;
+    this._pipelineId = options.pipelineId || `pipeline-${Date.now()}`;
     this.startTime = Date.now();
     this.maxEventsPerStage = options.maxEventsPerStage || 1000;
 
@@ -45,6 +49,10 @@ export class PipelineTracer {
     if (options.onStageChange) {
       this.on('stageChange', options.onStageChange as TracerListener<unknown>);
     }
+  }
+
+  public get pipelineId(): string {
+    return this._pipelineId;
   }
 
   // ─── Event Emitter ─────────────────────────────────────────
@@ -142,13 +150,11 @@ export class PipelineTracer {
     if (options.summaryMetric) {
       stage.summaryMetric = options.summaryMetric;
     }
-    if (options.metrics) {
-      stage.metrics = {
-        ...stage.metrics,
-        ...options.metrics,
-        durationMs: stage.durationMs,
-      };
-    }
+    stage.metrics = {
+      ...stage.metrics,
+      ...options.metrics,
+      durationMs: stage.durationMs,
+    };
 
     this.emit('stageChange', stage);
     return stage;
@@ -203,7 +209,9 @@ export class PipelineTracer {
       stage.metrics.processed = (stage.metrics.processed || 0) + 1;
       if (event.category === 'jev') {
         const jev = event as unknown as JevTraceEvent;
-        if (jev.verdict === 'valid' || jev.verdict.startsWith('clean') || jev.confidence >= 0.8) {
+        if (jev.status === 'error') {
+          // Error events are processed, but are neither passes nor flags.
+        } else if (isPassingJevVerdict(jev.verdict)) {
           stage.metrics.passCount = (stage.metrics.passCount || 0) + 1;
         } else {
           stage.metrics.flagCount = (stage.metrics.flagCount || 0) + 1;
@@ -390,7 +398,7 @@ export class PipelineTracer {
   // ─── Snapshots & Persistence ───────────────────────────────
 
   public getSnapshot(): PipelineSnapshot {
-    const stages = this.getStages();
+    const stages = structuredClone(this.getStages());
     let totalEvents = 0;
     let anyError = false;
     let anyRunning = false;
@@ -434,6 +442,7 @@ export class PipelineTracer {
       this.stageOrder.push(stage.id);
     });
 
+    this._pipelineId = parsed.pipelineId;
     this.startTime = parsed.startTime;
     this.endTime = parsed.endTime;
   }
@@ -471,7 +480,9 @@ export class PipelineTracer {
 
     // Collect question nodes from Jev events
     const questionNodes: Array<ChoiceNodeConfig | ScoreNodeConfig> = [];
-    const jevEvents = stage.events.filter((e): e is JevTraceEvent => e.category === 'jev');
+    const jevEvents = stage.events.filter(
+      (e): e is JevTraceEvent => e.category === 'jev' && e.status !== 'error'
+    );
 
     const groupedByQuestion = new Map<string, JevTraceEvent[]>();
     jevEvents.forEach((ev) => {
@@ -486,15 +497,32 @@ export class PipelineTracer {
       const first = events[0];
 
       if (first.type === 'score') {
+        const cutoffValue = 0.8;
+        const highConfidenceCount = events.filter((event) => event.confidence >= cutoffValue).length;
+        const lowConfidenceCount = total - highConfidenceCount;
+        const percentage = (count: number) =>
+          total === 0 ? 0 : Math.round((count / total) * 1000) / 10;
+
         questionNodes.push({
           id: `score-${qIdx}`,
           type: 'score',
           title: question,
           metricLabel: 'score',
-          cutoffValue: 0.8,
+          cutoffValue,
           tiers: [
-            { key: 'high', label: 'High Confidence', percentage: 80, count: Math.round(total * 0.8) },
-            { key: 'low', label: 'Low Confidence', percentage: 20, count: Math.round(total * 0.2), isFlag: true },
+            {
+              key: 'high',
+              label: 'High Confidence',
+              percentage: percentage(highConfidenceCount),
+              count: highConfidenceCount,
+            },
+            {
+              key: 'low',
+              label: 'Low Confidence',
+              percentage: percentage(lowConfidenceCount),
+              count: lowConfidenceCount,
+              isFlag: true,
+            },
           ],
         });
       } else {
@@ -505,7 +533,7 @@ export class PipelineTracer {
 
         const options = Object.entries(countsByVerdict).map(([verdict, count]) => {
           const percentage = Math.round((count / (total || 1)) * 1000) / 10;
-          const isFlag = verdict !== 'valid' && !verdict.startsWith('clean');
+          const isFlag = !isPassingJevVerdict(verdict);
           return {
             key: verdict,
             label: verdict,
@@ -581,7 +609,6 @@ export class PipelineTracer {
       questionNodes: questionNodes.length > 0 ? questionNodes : fallback?.questionNodes || [],
       scriptNode,
       destinationBuckets,
-      ...fallback,
     };
   }
 }
