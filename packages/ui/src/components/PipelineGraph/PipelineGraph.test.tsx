@@ -151,6 +151,7 @@ describe('PipelineGraph & StepGraph', () => {
         stages={mockStages}
         defaultZoomLevel="macro"
         stepGraphConfig={mockStepConfig}
+        onSelectStage={() => {}}
       />
     );
 
@@ -170,6 +171,23 @@ describe('PipelineGraph & StepGraph', () => {
     fireEvent.click(backBtn);
 
     expect(screen.getByText('Pipeline Stage Sequence')).toBeInTheDocument();
+  });
+
+  it('keeps macro view and hides stage navigation without onSelectStage', () => {
+    render(
+      <PipelineGraph
+        stages={mockStages}
+        activeStageId="stage-2"
+        defaultZoomLevel="macro"
+        stepGraphConfig={mockStepConfig}
+      />
+    );
+
+    fireEvent.click(screen.getByText('Jev Lexical Filter'));
+    fireEvent.keyDown(screen.getByText('Jev Lexical Filter'), { key: 'Enter' });
+
+    expect(screen.getByText('Pipeline Stage Sequence')).toBeInTheDocument();
+    expect(screen.queryByText('STAGE ARCHITECTURE')).not.toBeInTheDocument();
   });
 
   it('renders StepGraph with choice, score, script, and bucket nodes', () => {
@@ -284,6 +302,20 @@ describe('PipelineGraph & StepGraph', () => {
     const prevBtnOn3 = screen.getByRole('button', { name: /prev/i });
     fireEvent.click(prevBtnOn3);
     expect(currentStage).toBe('stage-2');
+  });
+
+  it('does not expose adjacent-stage navigation without onSelectStage', () => {
+    render(
+      <PipelineGraph
+        stages={mockStages}
+        activeStageId="stage-2"
+        defaultZoomLevel="micro"
+        stepGraphConfig={mockStepConfig}
+      />
+    );
+
+    expect(screen.queryByRole('button', { name: /previous/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /next/i })).not.toBeInTheDocument();
   });
 
   it('triggers onSelectScript when clicking the Script Rule node', () => {

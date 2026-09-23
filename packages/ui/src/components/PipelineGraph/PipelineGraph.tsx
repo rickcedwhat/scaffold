@@ -132,7 +132,7 @@ export function PipelineGraph({
               const isRunning = stage.status === 'running';
               const statusColor =
                 stage.status === 'success'
-                  ? colors.intent.success.main
+                  ? colors.intent.success.hover
                   : stage.status === 'flagged' || stage.status === 'error'
                     ? colors.intent.danger.main
                     : isRunning
@@ -143,14 +143,17 @@ export function PipelineGraph({
                 <div
                   key={stage.id}
                   onClick={() => {
-                    onSelectStage?.(stage.id);
-                    setZoomLevel('micro');
+                    if (onSelectStage) {
+                      onSelectStage(stage.id);
+                      setZoomLevel('micro');
+                    }
                   }}
                   role="button"
                   tabIndex={0}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      onSelectStage?.(stage.id);
+                    if (onSelectStage && (e.key === 'Enter' || e.key === ' ')) {
+                      e.preventDefault();
+                      onSelectStage(stage.id);
                       setZoomLevel('micro');
                     }
                   }}
@@ -235,7 +238,7 @@ export function PipelineGraph({
                       fontFamily: tokens.typography.fontFamily.mono,
                     }}
                   >
-                    <span style={{ color: colors.text.muted }}>
+                    <span style={{ color: colors.text.secondary }}>
                       {stage.itemCount !== undefined
                         ? `${stage.itemCount.toLocaleString()} items`
                         : ''}
@@ -258,8 +261,8 @@ export function PipelineGraph({
           onSelectSlice={handleSelectSlice}
           onSelectScript={handleSelectScript}
           onBack={() => setZoomLevel('macro')}
-          onPrev={prevStage ? () => onSelectStage?.(prevStage.id) : undefined}
-          onNext={nextStage ? () => onSelectStage?.(nextStage.id) : undefined}
+          onPrev={onSelectStage && prevStage ? () => onSelectStage(prevStage.id) : undefined}
+          onNext={onSelectStage && nextStage ? () => onSelectStage(nextStage.id) : undefined}
           prevLabel={prevStage?.name}
           nextLabel={nextStage?.name}
         />
