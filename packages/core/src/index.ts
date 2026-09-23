@@ -25,3 +25,18 @@ export {
   type RenderStormProviderProps,
   type RenderStormContextValue,
 } from './circuit-breaker/RenderStormProvider';
+
+export {
+  PipelineTracer,
+  type TraceEventCategory,
+  type BaseTraceEvent,
+  type LLMTraceEvent,
+  type JevTraceEvent,
+  type TransformTraceEvent,
+  type CustomTraceEvent,
+  type PipelineTraceEvent,
+  type StageExecutionMetrics,
+  type StageExecutionState,
+  type PipelineSnapshot,
+  type PipelineTracerOptions,
+} from './tracer';
