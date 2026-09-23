@@ -14,4 +14,5 @@ export type {
   StageExecutionState,
   PipelineSnapshot,
   PipelineTracerOptions,
+  TracerListener,
 } from './types';

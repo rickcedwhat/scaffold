@@ -39,4 +39,5 @@ export {
   type StageExecutionState,
   type PipelineSnapshot,
   type PipelineTracerOptions,
+  type TracerListener,
 } from './tracer';

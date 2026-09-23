@@ -1,9 +1,9 @@
 import type {
   PipelineStageType,
   PipelineStageStatus,
-  PipelineStageConfig,
-  StepGraphConfig,
 } from '@scaffold/ui';
+
+export type TracerListener<T = unknown> = (data: T) => void;
 
 export type TraceEventCategory = 'llm' | 'jev' | 'transform' | 'custom';
 

@@ -13,10 +13,10 @@ import type {
   LLMTraceEvent,
   JevTraceEvent,
   TransformTraceEvent,
-  CustomTraceEvent,
   StageExecutionState,
   PipelineSnapshot,
   PipelineTracerOptions,
+  TracerListener,
 } from './types';
 
 let nextEventCounter = 0;
@@ -31,7 +31,7 @@ export class PipelineTracer {
   private stageOrder: string[] = [];
   private startTime: number;
   private endTime?: number;
-  private listeners: Map<string, Set<Function>> = new Map();
+  private listeners: Map<string, Set<TracerListener<unknown>>> = new Map();
   private maxEventsPerStage: number;
 
   constructor(options: PipelineTracerOptions = {}) {
@@ -40,16 +40,16 @@ export class PipelineTracer {
     this.maxEventsPerStage = options.maxEventsPerStage || 1000;
 
     if (options.onEvent) {
-      this.on('event', options.onEvent);
+      this.on('event', options.onEvent as TracerListener<unknown>);
     }
     if (options.onStageChange) {
-      this.on('stageChange', options.onStageChange);
+      this.on('stageChange', options.onStageChange as TracerListener<unknown>);
     }
   }
 
   // ─── Event Emitter ─────────────────────────────────────────
 
-  public on(event: 'event' | 'stageChange' | 'snapshot', listener: Function): () => void {
+  public on(event: 'event' | 'stageChange' | 'snapshot', listener: TracerListener<unknown>): () => void {
     if (!this.listeners.has(event)) {
       this.listeners.set(event, new Set());
     }
@@ -60,7 +60,7 @@ export class PipelineTracer {
     };
   }
 
-  public off(event: 'event' | 'stageChange' | 'snapshot', listener: Function): void {
+  public off(event: 'event' | 'stageChange' | 'snapshot', listener: TracerListener<unknown>): void {
     this.listeners.get(event)?.delete(listener);
   }
 
