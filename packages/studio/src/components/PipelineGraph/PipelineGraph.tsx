@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
-import { useTheme } from '../../theme/ThemeContext';
-import { StepGraph } from './StepGraph';
-import { DatasetSliceDrawer } from './DatasetSliceDrawer';
-import { ScriptInspectorDrawer } from './ScriptInspectorDrawer';
+import { useTheme } from '@scaffold/ui';
+import { StepGraph } from '../StepGraph/StepGraph';
+import { DatasetSliceDrawer } from '../drawers/DatasetSliceDrawer';
+import { ScriptInspectorDrawer } from '../drawers/ScriptInspectorDrawer';
 import type {
   PipelineStageConfig,
   StepGraphConfig,
   OutcomeSlice,
   ScriptRuleNodeConfig,
-} from './types';
+} from '../../types';
 
 export interface PipelineGraphProps {
   stages: PipelineStageConfig[];

@@ -3,6 +3,8 @@ export {
 } from './PipelineTracer';
 
 export type {
+  PipelineStageType,
+  PipelineStageStatus,
   TraceEventCategory,
   BaseTraceEvent,
   LLMTraceEvent,

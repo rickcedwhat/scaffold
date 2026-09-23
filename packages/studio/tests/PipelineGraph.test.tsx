@@ -1,22 +1,21 @@
 import { describe, it, expect } from 'vitest';
 import { render as tlRender, screen, fireEvent } from '@testing-library/react';
 import React, { type ReactElement } from 'react';
-import { ThemeProvider } from '../../theme/ThemeContext';
-import { PipelineGraph } from './PipelineGraph';
-import { StepGraph } from './StepGraph';
-import { DatasetSliceDrawer } from './DatasetSliceDrawer';
-import { ScriptInspectorDrawer } from './ScriptInspectorDrawer';
+import { ThemeProvider } from '@scaffold/ui';
+import {
+  PipelineGraph,
+  StepGraph,
+  DatasetSliceDrawer,
+  ScriptInspectorDrawer,
+  type PipelineStageConfig,
+  type StepGraphConfig,
+  type OutcomeSlice,
+  type ScriptRuleNodeConfig,
+} from '../src';
 
 function render(ui: ReactElement) {
   return tlRender(<ThemeProvider>{ui}</ThemeProvider>);
 }
-
-import type {
-  PipelineStageConfig,
-  StepGraphConfig,
-  OutcomeSlice,
-  ScriptRuleNodeConfig,
-} from './types';
 
 const mockStages: PipelineStageConfig[] = [
   {

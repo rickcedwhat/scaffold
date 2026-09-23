@@ -28,6 +28,8 @@ export {
 
 export {
   PipelineTracer,
+  type PipelineStageType,
+  type PipelineStageStatus,
   type TraceEventCategory,
   type BaseTraceEvent,
   type LLMTraceEvent,

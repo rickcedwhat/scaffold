@@ -1,7 +1,5 @@
-import type {
-  PipelineStageType,
-  PipelineStageStatus,
-} from '@scaffold/ui';
+export type PipelineStageType = 'llm' | 'jev' | 'transform' | 'human';
+export type PipelineStageStatus = 'idle' | 'running' | 'success' | 'flagged' | 'error' | 'queued';
 
 export type TracerListener<T = unknown> = (data: T) => void;
 

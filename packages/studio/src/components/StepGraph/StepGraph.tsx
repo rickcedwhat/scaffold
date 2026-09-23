@@ -1,11 +1,11 @@
 import React, { useRef, useState, useCallback, useLayoutEffect, useEffect } from 'react';
-import { useTheme } from '../../theme/ThemeContext';
+import { useTheme } from '@scaffold/ui';
 import type {
   StepGraphConfig,
   ChoiceNodeConfig,
   ScoreNodeConfig,
   ScriptRuleNodeConfig,
-} from './types';
+} from '../../types';
 
 export interface StepGraphProps {
   config: StepGraphConfig;

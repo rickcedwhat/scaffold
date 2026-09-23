@@ -1,9 +1,9 @@
 /**
- * Domain-agnostic types for Pipeline & Evaluation Graph visualizers.
+ * Domain-agnostic types for Pipeline & Evaluation Studio visualizers.
  */
 
-export type PipelineStageType = 'llm' | 'jev' | 'transform' | 'human';
-export type PipelineStageStatus = 'idle' | 'running' | 'success' | 'flagged' | 'error' | 'queued';
+import type { PipelineStageType, PipelineStageStatus } from '@scaffold/core';
+export type { PipelineStageType, PipelineStageStatus };
 
 export interface PipelineStageConfig {
   id: string;

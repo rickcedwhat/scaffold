@@ -45,7 +45,6 @@ import {
   EmptyState,
   StatusIllustration,
   Fab,
-  PipelineGraph,
   type FabAction,
   type FabPlacement,
   type FabTrigger,
@@ -55,6 +54,7 @@ import {
   type EmptyStateSize,
   type EmptyStateLayout,
 } from '@scaffold/ui';
+import { PipelineGraph } from '@scaffold/studio';
 import { ComponentExample } from './components/ComponentExample';
 import { SNIPPETS } from './snippets';
 import {
