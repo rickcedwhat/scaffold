@@ -45,6 +45,7 @@ import {
   EmptyState,
   StatusIllustration,
   Fab,
+  PipelineGraph,
   type FabAction,
   type FabPlacement,
   type FabTrigger,
@@ -82,8 +83,16 @@ import {
   Share2,
   Trash2,
   RotateCcw,
+  Workflow,
 } from 'lucide-react';
 import { useRenderStorm } from '@scaffold/core';
+import {
+  mockPipelineStages,
+  stage2StepConfig,
+  stepConfigsByStageId,
+  mockPipelineSlices,
+} from './data/pipelineMocks';
+
 
 export type WorkbenchTab =
   | 'button'
@@ -100,11 +109,13 @@ export type WorkbenchTab =
   | 'stack'
   | 'cards'
   | 'typography'
-  | 'tokens';
+  | 'tokens'
+  | 'pipelineStudio';
 
 export function App() {
   const { mode, toggleMode, colors, tokens } = useTheme();
-  const [activeTab, setActiveTab] = useState<WorkbenchTab>('textInput');
+  const [activeTab, setActiveTab] = useState<WorkbenchTab>('pipelineStudio');
+  const [activePipelineStageId, setActivePipelineStageId] = useState<string>('stage-4');
 
   // Circuit Breaker interactive simulation state
   const {
@@ -242,6 +253,7 @@ export function App() {
     stack: 'Stack & Grid',
     cards: 'Cards',
     typography: 'Typography',
+    pipelineStudio: 'Pipeline Studio',
     tokens: 'Design Tokens',
   };
 
@@ -350,6 +362,16 @@ export function App() {
                 onClick={() => setActiveTab('circuitBreaker')}
               >
                 Circuit Breaker
+              </SidebarItem>
+            </SidebarSection>
+
+            <SidebarSection title="AI & Pipelines">
+              <SidebarItem
+                icon={<Workflow size={16} />}
+                active={activeTab === 'pipelineStudio'}
+                onClick={() => setActiveTab('pipelineStudio')}
+              >
+                Pipeline Studio
               </SidebarItem>
             </SidebarSection>
 
@@ -1917,6 +1939,36 @@ export function App() {
                       </Card>
                     ))}
                   </Grid>
+                </ComponentExample>
+              </Stack>
+            )}
+
+            {/* Pipeline Studio Tab */}
+            {activeTab === 'pipelineStudio' && (
+              <Stack gap={6}>
+                <div>
+                  <Heading level={3} size="lg">
+                    Pipeline Studio &amp; AI Node Graphs
+                  </Heading>
+                  <Text size="sm" color="secondary">
+                    Visual DAGs, parallel evaluation questions (Choice, Score), first-class Script Rule nodes, and searchable dataset slice drawers.
+                  </Text>
+                </div>
+
+                <ComponentExample
+                  title="Pipeline Studio"
+                  description="Inspect the full pipeline, zoom into stage-level node graphs, and browse outcome slices."
+                  code={SNIPPETS.pipelineStudio.basic}
+                  defaultExpanded={false}
+                >
+                  <PipelineGraph
+                    stages={mockPipelineStages}
+                    activeStageId={activePipelineStageId}
+                    onSelectStage={(id) => setActivePipelineStageId(id)}
+                    stepGraphConfig={stepConfigsByStageId[activePipelineStageId] || stage2StepConfig}
+                    slices={mockPipelineSlices}
+                    defaultZoomLevel="macro"
+                  />
                 </ComponentExample>
               </Stack>
             )}

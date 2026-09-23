@@ -435,4 +435,27 @@ import { Sparkles } from 'lucide-react';
   onClick={() => openAssistant()}
 />`,
   },
+
+  pipelineStudio: {
+    basic: `// High-Level Pipeline + Detailed Step Graph
+import { PipelineGraph } from '@scaffold/ui';
+
+<PipelineGraph
+  stages={stages}
+  activeStageId="stage-4"
+  stepGraphConfig={stepGraphConfig}
+  slices={slices}
+  defaultZoomLevel="micro"
+/>`,
+    stepGraph: `// Detailed Step Graph with Choice, Score, and ScriptRule Nodes
+import { StepGraph } from '@scaffold/ui';
+
+<StepGraph
+  config={stepGraphConfig}
+  onSelectSlice={(key, title, count) => openDrawer(key)}
+  onSelectScript={(script) => openScriptInspector(script)}
+  wrap={true}
+/>`,
+  },
 };
+
