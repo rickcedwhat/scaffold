@@ -306,13 +306,14 @@ describe('PipelineGraph & StepGraph', () => {
   it('discloses hover popovers on diagram nodes', () => {
     render(<StepGraph config={mockStepConfig} />);
 
-    // Hover over the script node
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
+
     const scriptNode = screen.getByText('decideShouldRemove()');
     fireEvent.mouseEnter(scriptNode);
 
-    // Popover content should be in the DOM
-    expect(screen.getByText('scripts/applyValidityPrune.ts')).toBeInTheDocument();
-    expect(screen.getByText(/Click node to open full code drawer/i)).toBeInTheDocument();
+    const tooltip = screen.getByRole('tooltip');
+    expect(tooltip).toBeVisible();
+    expect(tooltip).toHaveTextContent('scripts/applyValidityPrune.ts');
 
     fireEvent.mouseLeave(scriptNode);
   });
@@ -336,5 +337,143 @@ describe('PipelineGraph & StepGraph', () => {
 
     expect(selectedKey).toBe('proper_noun');
   });
-});
 
+  it('uses the active step configuration slice before the global fallback', () => {
+    const localSlice = {
+      ...mockSlices.proper_noun,
+      title: 'Stage-specific proper nouns',
+    };
+
+    render(
+      <PipelineGraph
+        stages={mockStages}
+        defaultZoomLevel="micro"
+        stepGraphConfig={{
+          ...mockStepConfig,
+          slices: { proper_noun: localSlice },
+        }}
+        slices={mockSlices}
+      />
+    );
+
+    fireEvent.mouseEnter(screen.getByText('Q1: Lexical Validity'));
+    fireEvent.click(screen.getByText(/proper_noun/i));
+
+    expect(screen.getByRole('dialog', { name: 'Stage-specific proper nouns' })).toBeVisible();
+  });
+
+  it('provides a way back when micro zoom has no step configuration', () => {
+    render(<PipelineGraph stages={mockStages} defaultZoomLevel="micro" />);
+
+    expect(screen.getByText('Stage configuration unavailable')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /all stages/i }));
+    expect(screen.getByText('Pipeline Stage Sequence')).toBeInTheDocument();
+  });
+
+  it('wraps the architecture grid when wrap is enabled', () => {
+    render(<StepGraph config={mockStepConfig} wrap />);
+
+    const sourceNode = screen.getByText('Candidate Words').closest('[role="button"]');
+    const graphGrid = sourceNode?.parentElement?.parentElement;
+    expect(graphGrid).toHaveStyle({
+      gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+    });
+  });
+
+  it('resets filtering for a different slice but preserves it when reopening the same slice', () => {
+    const { rerender } = render(
+      <DatasetSliceDrawer
+        slice={mockSlices.proper_noun}
+        isOpen={true}
+        onClose={() => {}}
+        pageSize={1}
+      />
+    );
+    const search = screen.getByRole('textbox', { name: 'Search sample items' });
+    fireEvent.change(search, { target: { value: 's' } });
+    fireEvent.click(screen.getByRole('button', { name: /next/i }));
+    expect(screen.getByText('2 / 2')).toBeInTheDocument();
+
+    rerender(
+      <ThemeProvider>
+        <DatasetSliceDrawer
+          slice={mockSlices.proper_noun}
+          isOpen={false}
+          onClose={() => {}}
+          pageSize={1}
+        />
+      </ThemeProvider>
+    );
+    rerender(
+      <ThemeProvider>
+        <DatasetSliceDrawer
+          slice={mockSlices.proper_noun}
+          isOpen={true}
+          onClose={() => {}}
+          pageSize={1}
+        />
+      </ThemeProvider>
+    );
+    expect(screen.getByRole('textbox', { name: 'Search sample items' })).toHaveValue('s');
+    expect(screen.getByText('2 / 2')).toBeInTheDocument();
+
+    rerender(
+      <ThemeProvider>
+        <DatasetSliceDrawer
+          slice={{ ...mockSlices.proper_noun, key: 'other', title: 'Other slice' }}
+          isOpen={true}
+          onClose={() => {}}
+          pageSize={1}
+        />
+      </ThemeProvider>
+    );
+    expect(screen.getByRole('textbox', { name: 'Search sample items' })).toHaveValue('');
+    expect(screen.getByText('1 / 2')).toBeInTheDocument();
+  });
+
+  it('names drawer controls and distinguishes empty samples from no matches', () => {
+    const { rerender } = render(
+      <DatasetSliceDrawer
+        slice={{ key: 'empty', title: 'Empty slice', count: 0, items: [] }}
+        isOpen={true}
+        onClose={() => {}}
+      />
+    );
+
+    expect(screen.getByRole('textbox', { name: 'Search sample items' })).toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: 'Sort sample items' })).toBeInTheDocument();
+    expect(screen.getByText('No sample items available')).toBeInTheDocument();
+
+    rerender(
+      <ThemeProvider>
+        <DatasetSliceDrawer
+          slice={mockSlices.proper_noun}
+          isOpen={true}
+          onClose={() => {}}
+          pageSize={1}
+        />
+      </ThemeProvider>
+    );
+    expect(screen.getByText('Showing 1–1 of 2')).toBeInTheDocument();
+    fireEvent.change(screen.getByRole('textbox', { name: 'Search sample items' }), {
+      target: { value: 'missing' },
+    });
+    expect(screen.getByText('No items match the current search filter.')).toBeInTheDocument();
+  });
+
+  it('closes modal drawers with Escape', () => {
+    let closed = false;
+    render(
+      <ScriptInspectorDrawer
+        script={mockScriptNode}
+        isOpen={true}
+        onClose={() => {
+          closed = true;
+        }}
+      />
+    );
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(closed).toBe(true);
+  });
+});

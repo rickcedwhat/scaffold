@@ -1955,14 +1955,21 @@ export function App() {
                   </Text>
                 </div>
 
-                <PipelineGraph
-                  stages={mockPipelineStages}
-                  activeStageId={activePipelineStageId}
-                  onSelectStage={(id) => setActivePipelineStageId(id)}
-                  stepGraphConfig={stepConfigsByStageId[activePipelineStageId] || stage2StepConfig}
-                  slices={mockPipelineSlices}
-                  defaultZoomLevel="macro"
-                />
+                <ComponentExample
+                  title="Pipeline Studio"
+                  description="Inspect the full pipeline, zoom into stage-level node graphs, and browse outcome slices."
+                  code={SNIPPETS.pipelineStudio.basic}
+                  defaultExpanded={false}
+                >
+                  <PipelineGraph
+                    stages={mockPipelineStages}
+                    activeStageId={activePipelineStageId}
+                    onSelectStage={(id) => setActivePipelineStageId(id)}
+                    stepGraphConfig={stepConfigsByStageId[activePipelineStageId] || stage2StepConfig}
+                    slices={mockPipelineSlices}
+                    defaultZoomLevel="macro"
+                  />
+                </ComponentExample>
               </Stack>
             )}
           </Container>

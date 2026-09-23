@@ -27,7 +27,7 @@ export function PipelineGraph({
   slices = {},
   defaultZoomLevel = 'macro',
 }: PipelineGraphProps) {
-  const { tokens } = useTheme();
+  const { colors, tokens } = useTheme();
   const [zoomLevel, setZoomLevel] = useState<'macro' | 'micro'>(defaultZoomLevel);
   const [selectedSlice, setSelectedSlice] = useState<OutcomeSlice | null>(null);
   const [selectedScript, setSelectedScript] = useState<ScriptRuleNodeConfig | null>(null);
@@ -39,8 +39,9 @@ export function PipelineGraph({
     currentIndex >= 0 && currentIndex < stages.length - 1 ? stages[currentIndex + 1] : undefined;
 
   const handleSelectSlice = (sliceKey: string, title: string, count: number) => {
-    if (slices[sliceKey]) {
-      setSelectedSlice(slices[sliceKey]);
+    const matchedSlice = stepGraphConfig?.slices?.[sliceKey] ?? slices[sliceKey];
+    if (matchedSlice) {
+      setSelectedSlice(matchedSlice);
     } else {
       setSelectedSlice({
         key: sliceKey,
@@ -68,11 +69,11 @@ export function PipelineGraph({
       {zoomLevel === 'macro' && (
         <div
           style={{
-            backgroundColor: '#030712',
-            border: '1px solid #1e293b',
+            backgroundColor: colors.bg.canvas,
+            border: `1px solid ${colors.border.subtle}`,
             borderRadius: tokens.radii.xl,
             padding: tokens.spacing[5],
-            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)',
+            boxShadow: tokens.shadows.xl,
             display: 'flex',
             flexDirection: 'column',
             gap: tokens.spacing[4],
@@ -83,19 +84,38 @@ export function PipelineGraph({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              borderBottom: '1px solid #1e293b',
+              borderBottom: `1px solid ${colors.border.subtle}`,
               paddingBottom: tokens.spacing[3],
             }}
           >
             <div>
-              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: '#f8fafc' }}>
+              <h3
+                style={{
+                  margin: 0,
+                  fontSize: tokens.typography.fontSize.base,
+                  fontWeight: 700,
+                  color: colors.text.primary,
+                }}
+              >
                 Pipeline Stage Sequence
               </h3>
-              <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#94a3b8' }}>
+              <p
+                style={{
+                  margin: `${tokens.spacing[1]} 0 0 0`,
+                  fontSize: tokens.typography.fontSize.xs,
+                  color: colors.text.secondary,
+                }}
+              >
                 Click any stage card to zoom in and inspect its live node diagram.
               </p>
             </div>
-            <span style={{ fontSize: '12px', fontFamily: 'monospace', color: '#818cf8' }}>
+            <span
+              style={{
+                fontSize: tokens.typography.fontSize.xs,
+                fontFamily: tokens.typography.fontFamily.mono,
+                color: colors.intent.primary.main,
+              }}
+            >
               {stages.length} Stages Configured
             </span>
           </div>
@@ -110,6 +130,14 @@ export function PipelineGraph({
             {stages.map((stage) => {
               const isSelected = stage.id === currentActiveStageId;
               const isRunning = stage.status === 'running';
+              const statusColor =
+                stage.status === 'success'
+                  ? colors.intent.success.main
+                  : stage.status === 'flagged' || stage.status === 'error'
+                    ? colors.intent.danger.main
+                    : isRunning
+                      ? colors.intent.primary.main
+                      : colors.intent.neutral.main;
 
               return (
                 <div
@@ -127,8 +155,8 @@ export function PipelineGraph({
                     }
                   }}
                   style={{
-                    backgroundColor: '#0b0f19',
-                    border: `2px solid ${isSelected ? '#6366f1' : '#1e293b'}`,
+                    backgroundColor: colors.bg.surface,
+                    border: `2px solid ${isSelected ? colors.intent.primary.main : colors.border.subtle}`,
                     borderRadius: tokens.radii.lg,
                     padding: tokens.spacing[4],
                     cursor: 'pointer',
@@ -151,9 +179,9 @@ export function PipelineGraph({
                     >
                       <span
                         style={{
-                          fontSize: '10px',
-                          fontFamily: 'monospace',
-                          color: isRunning ? '#22d3ee' : '#94a3b8',
+                          fontSize: tokens.typography.fontSize.xs,
+                          fontFamily: tokens.typography.fontFamily.mono,
+                          color: isRunning ? colors.intent.primary.main : colors.text.secondary,
                           fontWeight: 700,
                         }}
                       >
@@ -161,14 +189,9 @@ export function PipelineGraph({
                       </span>
                       <span
                         style={{
-                          fontSize: '10px',
-                          fontFamily: 'monospace',
-                          color:
-                            stage.status === 'success'
-                              ? '#34d399'
-                              : isRunning
-                                ? '#22d3ee'
-                                : '#64748b',
+                          fontSize: tokens.typography.fontSize.xs,
+                          fontFamily: tokens.typography.fontFamily.mono,
+                          color: statusColor,
                         }}
                       >
                         {stage.status.toUpperCase()}
@@ -178,9 +201,9 @@ export function PipelineGraph({
                     <h4
                       style={{
                         margin: '0 0 4px 0',
-                        fontSize: '14px',
+                        fontSize: tokens.typography.fontSize.sm,
                         fontWeight: 700,
-                        color: '#f8fafc',
+                        color: colors.text.primary,
                       }}
                     >
                       {stage.name}
@@ -190,8 +213,8 @@ export function PipelineGraph({
                       <p
                         style={{
                           margin: 0,
-                          fontSize: '11px',
-                          color: '#94a3b8',
+                          fontSize: tokens.typography.fontSize.xs,
+                          color: colors.text.secondary,
                           lineHeight: 1.4,
                         }}
                       >
@@ -202,22 +225,24 @@ export function PipelineGraph({
 
                   <div
                     style={{
-                      borderTop: '1px solid #1e293b',
+                      borderTop: `1px solid ${colors.border.subtle}`,
                       paddingTop: tokens.spacing[2],
                       marginTop: tokens.spacing[2],
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
-                      fontSize: '11px',
-                      fontFamily: 'monospace',
+                      fontSize: tokens.typography.fontSize.xs,
+                      fontFamily: tokens.typography.fontFamily.mono,
                     }}
                   >
-                    <span style={{ color: '#64748b' }}>
+                    <span style={{ color: colors.text.muted }}>
                       {stage.itemCount !== undefined
                         ? `${stage.itemCount.toLocaleString()} items`
                         : ''}
                     </span>
-                    <span style={{ color: '#818cf8', fontWeight: 600 }}>Inspect &rarr;</span>
+                    <span style={{ color: colors.intent.primary.main, fontWeight: 600 }}>
+                      Inspect &rarr;
+                    </span>
                   </div>
                 </div>
               );
@@ -238,6 +263,56 @@ export function PipelineGraph({
           prevLabel={prevStage?.name}
           nextLabel={nextStage?.name}
         />
+      )}
+
+      {zoomLevel === 'micro' && !stepGraphConfig && (
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'flex-start',
+            gap: tokens.spacing[3],
+            padding: tokens.spacing[6],
+            backgroundColor: colors.bg.surface,
+            border: `1px solid ${colors.border.subtle}`,
+            borderRadius: tokens.radii.xl,
+            boxShadow: tokens.shadows.lg,
+          }}
+        >
+          <h3
+            style={{
+              margin: 0,
+              color: colors.text.primary,
+              fontSize: tokens.typography.fontSize.base,
+            }}
+          >
+            Stage configuration unavailable
+          </h3>
+          <p
+            style={{
+              margin: 0,
+              color: colors.text.secondary,
+              fontSize: tokens.typography.fontSize.sm,
+            }}
+          >
+            This stage does not have a detailed step graph to inspect.
+          </p>
+          <button
+            type="button"
+            onClick={() => setZoomLevel('macro')}
+            style={{
+              padding: `${tokens.spacing[2]} ${tokens.spacing[3]}`,
+              color: colors.intent.primary.text,
+              backgroundColor: colors.intent.primary.main,
+              border: `1px solid ${colors.intent.primary.main}`,
+              borderRadius: tokens.radii.md,
+              fontSize: tokens.typography.fontSize.sm,
+              cursor: 'pointer',
+            }}
+          >
+            &larr; All Stages
+          </button>
+        </div>
       )}
 
       {/* Deep-Dive Inspection Drawers */}

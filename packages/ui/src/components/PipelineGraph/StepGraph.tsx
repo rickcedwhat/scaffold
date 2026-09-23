@@ -35,8 +35,9 @@ export function StepGraph({
   onNext,
   prevLabel,
   nextLabel,
+  wrap = false,
 }: StepGraphProps) {
-  const { tokens } = useTheme();
+  const { colors, tokens } = useTheme();
 
   const canvasRef = useRef<HTMLDivElement>(null);
   const srcPortRef = useRef<HTMLDivElement>(null);
@@ -110,7 +111,7 @@ export function StepGraph({
           newCables.push({
             id: `src-q-${idx}`,
             d: `M ${srcOut.x} ${srcOut.y} C ${srcOut.x + dx} ${srcOut.y}, ${qIn.x - dx} ${qIn.y}, ${qIn.x} ${qIn.y}`,
-            color: '#06b6d4',
+            color: colors.intent.primary.main,
             width: 2.5,
           });
         }
@@ -127,7 +128,7 @@ export function StepGraph({
           newCables.push({
             id: `q-script-${idx}`,
             d: `M ${qOut.x} ${qOut.y} C ${qOut.x + dx} ${qOut.y}, ${scriptIn.x - dx} ${qOut.y}, ${scriptIn.x} ${scriptIn.y}`,
-            color: '#a855f7',
+            color: colors.intent.primary.main,
             width: 2,
           });
         }
@@ -145,7 +146,7 @@ export function StepGraph({
       newCables.push({
         id: 'script-bucket-0',
         d: `M ${scriptOut1.x} ${scriptOut1.y} C ${scriptOut1.x + dx} ${scriptOut1.y}, ${bucket0In.x - dx} ${bucket0In.y}, ${bucket0In.x} ${bucket0In.y}`,
-        color: '#10b981',
+        color: colors.intent.success.main,
         width: 2.5,
       });
     }
@@ -156,13 +157,13 @@ export function StepGraph({
       newCables.push({
         id: 'script-bucket-1',
         d: `M ${scriptOut2.x} ${scriptOut2.y} C ${scriptOut2.x + dx} ${scriptOut2.y}, ${bucket1In.x - dx} ${bucket1In.y}, ${bucket1In.x} ${bucket1In.y}`,
-        color: isWarning ? '#f59e0b' : '#f43f5e',
+        color: isWarning ? colors.intent.secondary.main : colors.intent.danger.main,
         width: 2.5,
       });
     }
 
     setCables(newCables);
-  }, [config.destinationBuckets]);
+  }, [colors, config.destinationBuckets]);
 
   useLayoutEffect(() => {
     calculateCables();
@@ -193,13 +194,13 @@ export function StepGraph({
       ref={canvasRef}
       style={{
         position: 'relative',
-        backgroundColor: '#030712',
-        backgroundImage: 'radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px)',
+        backgroundColor: colors.bg.canvas,
+        backgroundImage: `radial-gradient(${colors.border.subtle} 1px, transparent 1px)`,
         backgroundSize: '20px 20px',
         borderRadius: tokens.radii.xl,
-        border: '1px solid #1e293b',
+        border: `1px solid ${colors.border.subtle}`,
         padding: tokens.spacing[6],
-        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5)',
+        boxShadow: tokens.shadows.xl,
         overflow: 'visible',
         width: '100%',
         boxSizing: 'border-box',
@@ -211,8 +212,8 @@ export function StepGraph({
           100% { stroke-dashoffset: 0; }
         }
         @keyframes pulse-ring {
-          0%, 100% { box-shadow: 0 0 15px -3px rgba(99, 102, 241, 0.4), 0 0 0 1px rgba(99, 102, 241, 0.6); }
-          50% { box-shadow: 0 0 25px 2px rgba(99, 102, 241, 0.8), 0 0 0 2px rgba(99, 102, 241, 1); }
+          0%, 100% { box-shadow: 0 0 15px -3px color-mix(in srgb, ${colors.intent.primary.main} 40%, transparent), 0 0 0 1px ${colors.intent.primary.main}; }
+          50% { box-shadow: 0 0 25px 2px color-mix(in srgb, ${colors.intent.primary.main} 70%, transparent), 0 0 0 2px ${colors.intent.primary.hover}; }
         }
         .active-cable {
           stroke-dasharray: 4 6;
@@ -229,7 +230,7 @@ export function StepGraph({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          borderBottom: '1px solid #1e293b',
+          borderBottom: `1px solid ${colors.border.subtle}`,
           paddingBottom: tokens.spacing[3],
           marginBottom: tokens.spacing[6],
           position: 'relative',
@@ -245,24 +246,24 @@ export function StepGraph({
                 display: 'flex',
                 alignItems: 'center',
                 gap: '6px',
-                backgroundColor: '#090d16',
-                border: '1px solid #334155',
+                backgroundColor: colors.bg.canvas,
+                border: `1px solid ${colors.border.default}`,
                 borderRadius: tokens.radii.md,
                 padding: `6px ${tokens.spacing[3]}`,
-                color: '#f8fafc',
-                fontSize: '12px',
-                fontFamily: 'monospace',
+                color: colors.text.primary,
+                fontSize: tokens.typography.fontSize.xs,
+                fontFamily: tokens.typography.fontFamily.mono,
                 fontWeight: 700,
                 cursor: 'pointer',
                 transition: 'all 0.15s ease',
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = '#818cf8';
-                e.currentTarget.style.backgroundColor = '#1e1b4b';
+                e.currentTarget.style.borderColor = colors.intent.primary.main;
+                e.currentTarget.style.backgroundColor = colors.intent.primary.subtle;
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = '#334155';
-                e.currentTarget.style.backgroundColor = '#090d16';
+                e.currentTarget.style.borderColor = colors.border.default;
+                e.currentTarget.style.backgroundColor = colors.bg.canvas;
               }}
             >
               &larr; All Stages
@@ -273,10 +274,10 @@ export function StepGraph({
             <div style={{ display: 'flex', alignItems: 'center', gap: tokens.spacing[2] }}>
               <span
                 style={{
-                  fontSize: '11px',
-                  fontFamily: 'monospace',
+                  fontSize: tokens.typography.fontSize.xs,
+                  fontFamily: tokens.typography.fontFamily.mono,
                   fontWeight: 700,
-                  color: '#818cf8',
+                  color: colors.intent.primary.main,
                   textTransform: 'uppercase',
                 }}
               >
@@ -284,14 +285,14 @@ export function StepGraph({
               </span>
               <span
                 style={{
-                  fontSize: '10px',
-                  fontFamily: 'monospace',
+                  fontSize: tokens.typography.fontSize.xs,
+                  fontFamily: tokens.typography.fontFamily.mono,
                   fontWeight: 700,
                   padding: `2px ${tokens.spacing[2]}`,
                   borderRadius: tokens.radii.sm,
-                  backgroundColor: 'rgba(99, 102, 241, 0.15)',
-                  color: '#a5b4fc',
-                  border: '1px solid rgba(99, 102, 241, 0.4)',
+                  backgroundColor: colors.intent.primary.subtle,
+                  color: colors.intent.primary.main,
+                  border: `1px solid ${colors.intent.primary.main}`,
                 }}
               >
                 {config.stageType.toUpperCase()} AI + SCRIPT RULES
@@ -300,9 +301,9 @@ export function StepGraph({
             <h2
               style={{
                 margin: '4px 0 0 0',
-                fontSize: '16px',
+                fontSize: tokens.typography.fontSize.base,
                 fontWeight: 700,
-                color: '#f8fafc',
+                color: colors.text.primary,
               }}
             >
               {config.stageName}
@@ -314,16 +315,16 @@ export function StepGraph({
           {config.scriptLabel && (
             <div
               style={{
-                fontSize: '12px',
-                fontFamily: 'monospace',
-                color: '#94a3b8',
-                backgroundColor: '#0f172a',
+                fontSize: tokens.typography.fontSize.xs,
+                fontFamily: tokens.typography.fontFamily.mono,
+                color: colors.text.secondary,
+                backgroundColor: colors.bg.subtle,
                 padding: `${tokens.spacing[1]} ${tokens.spacing[3]}`,
                 borderRadius: tokens.radii.md,
-                border: '1px solid #1e293b',
+                border: `1px solid ${colors.border.subtle}`,
               }}
             >
-              Script: <strong style={{ color: '#a5b4fc' }}>{config.scriptLabel}</strong>
+              Script: <strong style={{ color: colors.intent.primary.main }}>{config.scriptLabel}</strong>
             </div>
           )}
 
@@ -333,8 +334,8 @@ export function StepGraph({
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                backgroundColor: '#090d16',
-                border: '1px solid #334155',
+                backgroundColor: colors.bg.canvas,
+                border: `1px solid ${colors.border.default}`,
                 borderRadius: tokens.radii.md,
                 padding: '2px',
                 gap: '2px',
@@ -350,16 +351,16 @@ export function StepGraph({
                   border: 'none',
                   borderRadius: tokens.radii.sm,
                   padding: `5px ${tokens.spacing[2]}`,
-                  fontSize: '11px',
-                  fontFamily: 'monospace',
+                  fontSize: tokens.typography.fontSize.xs,
+                  fontFamily: tokens.typography.fontFamily.mono,
                   fontWeight: 700,
-                  color: onPrev ? '#f8fafc' : '#475569',
+                  color: onPrev ? colors.text.primary : colors.text.muted,
                   cursor: onPrev ? 'pointer' : 'not-allowed',
                 }}
               >
                 &larr; Prev
               </button>
-              <span style={{ color: '#334155', fontSize: '12px' }}>|</span>
+              <span style={{ color: colors.border.default, fontSize: tokens.typography.fontSize.xs }}>|</span>
               <button
                 type="button"
                 disabled={!onNext}
@@ -370,10 +371,10 @@ export function StepGraph({
                   border: 'none',
                   borderRadius: tokens.radii.sm,
                   padding: `5px ${tokens.spacing[2]}`,
-                  fontSize: '11px',
-                  fontFamily: 'monospace',
+                  fontSize: tokens.typography.fontSize.xs,
+                  fontFamily: tokens.typography.fontFamily.mono,
                   fontWeight: 700,
-                  color: onNext ? '#f8fafc' : '#475569',
+                  color: onNext ? colors.text.primary : colors.text.muted,
                   cursor: onNext ? 'pointer' : 'not-allowed',
                 }}
               >
@@ -412,13 +413,14 @@ export function StepGraph({
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns:
-            config.questionNodes.length > 1
+          gridTemplateColumns: wrap
+            ? 'repeat(auto-fit, minmax(220px, 1fr))'
+            : config.questionNodes.length > 1
               ? '2.5fr 4.2fr 3.3fr 2.5fr'
               : '2.8fr 3.2fr 3.2fr 2.6fr',
           gap: tokens.spacing[5],
           alignItems: 'center',
-          minHeight: '440px',
+          minHeight: wrap ? undefined : '440px',
           position: 'relative',
           zIndex: 2,
         }}
@@ -443,11 +445,11 @@ export function StepGraph({
               }
             }}
             style={{
-              backgroundColor: '#0b0f19',
-              border: '2px solid #06b6d4',
+              backgroundColor: colors.bg.surface,
+              border: `2px solid ${colors.intent.primary.main}`,
               borderRadius: tokens.radii.xl,
               padding: tokens.spacing[4],
-              boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.4)',
+              boxShadow: tokens.shadows.lg,
               position: 'relative',
               width: '100%',
               maxWidth: '220px',
@@ -465,9 +467,9 @@ export function StepGraph({
                 width: '36px',
                 height: '36px',
                 borderRadius: tokens.radii.lg,
-                backgroundColor: 'rgba(6, 182, 212, 0.12)',
-                border: '1px solid rgba(6, 182, 212, 0.4)',
-                color: '#22d3ee',
+                backgroundColor: colors.intent.primary.subtle,
+                border: `1px solid ${colors.intent.primary.main}`,
+                color: colors.intent.primary.main,
                 marginBottom: tokens.spacing[2],
               }}
             >
@@ -487,10 +489,10 @@ export function StepGraph({
 
             <div
               style={{
-                fontSize: '10px',
-                fontFamily: 'monospace',
+                fontSize: tokens.typography.fontSize.xs,
+                fontFamily: tokens.typography.fontFamily.mono,
                 textTransform: 'uppercase',
-                color: '#22d3ee',
+                color: colors.intent.primary.main,
                 fontWeight: 700,
                 letterSpacing: '0.05em',
               }}
@@ -500,10 +502,10 @@ export function StepGraph({
 
             <div
               style={{
-                fontSize: '26px',
+                fontSize: tokens.typography.fontSize['2xl'],
                 fontWeight: 700,
-                fontFamily: 'monospace',
-                color: '#ffffff',
+                fontFamily: tokens.typography.fontFamily.mono,
+                color: colors.text.primary,
                 margin: '2px 0',
               }}
             >
@@ -512,9 +514,9 @@ export function StepGraph({
 
             <div
               style={{
-                fontSize: '11px',
-                fontFamily: 'monospace',
-                color: '#94a3b8',
+                fontSize: tokens.typography.fontSize.xs,
+                fontFamily: tokens.typography.fontFamily.mono,
+                color: colors.text.secondary,
               }}
             >
               {config.source.sublabel || 'Candidate Tokens'}
@@ -531,9 +533,9 @@ export function StepGraph({
                 width: '16px',
                 height: '16px',
                 borderRadius: '50%',
-                backgroundColor: '#22d3ee',
-                border: '2px solid #030712',
-                boxShadow: '0 0 8px rgba(34, 211, 238, 0.9)',
+                backgroundColor: colors.intent.primary.main,
+                border: `2px solid ${colors.bg.canvas}`,
+                boxShadow: `0 0 8px ${colors.intent.primary.main}`,
               }}
             />
           </div>
@@ -560,11 +562,11 @@ export function StepGraph({
               transition:
                 'opacity 0.18s cubic-bezier(0.16, 1, 0.3, 1), transform 0.18s cubic-bezier(0.16, 1, 0.3, 1)',
               zIndex: 50,
-              backgroundColor: '#090d16',
-              border: '1px solid rgba(6, 182, 212, 0.6)',
+              backgroundColor: colors.bg.canvas,
+              border: `1px solid ${colors.intent.primary.main}`,
               borderRadius: tokens.radii.lg,
               padding: tokens.spacing[3],
-              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.85)',
+              boxShadow: tokens.shadows.xl,
               width: '260px',
               boxSizing: 'border-box',
             }}
@@ -584,16 +586,16 @@ export function StepGraph({
 
             <div
               style={{
-                fontSize: '11px',
+                fontSize: tokens.typography.fontSize.xs,
                 fontWeight: 700,
-                color: '#22d3ee',
-                fontFamily: 'monospace',
+                color: colors.intent.primary.main,
+                fontFamily: tokens.typography.fontFamily.mono,
                 marginBottom: '4px',
               }}
             >
               {config.source.label} Stream
             </div>
-            <p style={{ margin: 0, fontSize: '11px', color: '#cbd5e1', lineHeight: 1.4 }}>
+            <p style={{ margin: 0, fontSize: tokens.typography.fontSize.xs, color: colors.text.secondary, lineHeight: 1.4 }}>
               {config.source.description ||
                 `${config.source.count.toLocaleString()} candidate tokens filtered for pipeline processing.`}
             </p>
@@ -603,9 +605,9 @@ export function StepGraph({
                 onClick={() => onSelectSlice('all', config.source.label, config.source.count)}
                 style={{
                   marginTop: '8px',
-                  fontSize: '10px',
-                  fontFamily: 'monospace',
-                  color: '#22d3ee',
+                  fontSize: tokens.typography.fontSize.xs,
+                  fontFamily: tokens.typography.fontFamily.mono,
+                  color: colors.intent.primary.main,
                   background: 'none',
                   border: 'none',
                   padding: 0,
@@ -632,10 +634,12 @@ export function StepGraph({
             const isScore = node.type === 'score';
             const qId = `q-${idx}`;
             const isVisible = hoveredNodeId === qId || pinnedNodeId === qId;
-            const borderColor = isScore ? '#f59e0b' : '#a855f7';
-            const badgeBg = isScore ? 'rgba(245, 158, 11, 0.15)' : 'rgba(168, 85, 247, 0.15)';
-            const badgeColor = isScore ? '#fbbf24' : '#d8b4fe';
-            const portColor = isScore ? '#f59e0b' : '#22d3ee';
+            const borderColor = isScore ? colors.intent.secondary.main : colors.intent.primary.main;
+            const badgeBg = isScore
+              ? colors.intent.secondary.subtle
+              : colors.intent.primary.subtle;
+            const badgeColor = isScore ? colors.intent.secondary.main : colors.intent.primary.main;
+            const portColor = isScore ? colors.intent.secondary.main : colors.intent.primary.main;
 
             // Calculate percentages for summary
             let passPercentage = 0;
@@ -678,11 +682,11 @@ export function StepGraph({
                     }
                   }}
                   style={{
-                    backgroundColor: '#0b0f19',
+                    backgroundColor: colors.bg.surface,
                     border: `2px solid ${borderColor}`,
                     borderRadius: tokens.radii.xl,
                     padding: tokens.spacing[4],
-                    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.4)',
+                    boxShadow: tokens.shadows.lg,
                     position: 'relative',
                     width: '100%',
                     maxWidth: '240px',
@@ -704,7 +708,7 @@ export function StepGraph({
                       height: '14px',
                       borderRadius: '50%',
                       backgroundColor: portColor,
-                      border: '2px solid #030712',
+                      border: `2px solid ${colors.bg.canvas}`,
                     }}
                   />
 
@@ -721,9 +725,9 @@ export function StepGraph({
                       width: '14px',
                       height: '14px',
                       borderRadius: '50%',
-                      backgroundColor: '#c084fc',
-                      border: '2px solid #030712',
-                      boxShadow: '0 0 8px rgba(192, 132, 252, 0.9)',
+                      backgroundColor: colors.intent.primary.hover,
+                      border: `2px solid ${colors.bg.canvas}`,
+                      boxShadow: `0 0 8px ${colors.intent.primary.hover}`,
                     }}
                   />
 
@@ -738,8 +742,8 @@ export function StepGraph({
                   >
                     <span
                       style={{
-                        fontSize: '9px',
-                        fontFamily: 'monospace',
+                        fontSize: tokens.typography.fontSize.xs,
+                        fontFamily: tokens.typography.fontFamily.mono,
                         fontWeight: 700,
                         padding: '2px 6px',
                         borderRadius: tokens.radii.sm,
@@ -753,9 +757,9 @@ export function StepGraph({
                     {node.type === 'choice' && (node as ChoiceNodeConfig).throughput ? (
                       <span
                         style={{
-                          fontSize: '10px',
-                          fontFamily: 'monospace',
-                          color: '#c084fc',
+                          fontSize: tokens.typography.fontSize.xs,
+                          fontFamily: tokens.typography.fontFamily.mono,
+                          color: colors.intent.primary.hover,
                           fontWeight: 700,
                         }}
                       >
@@ -764,9 +768,9 @@ export function StepGraph({
                     ) : isScore ? (
                       <span
                         style={{
-                          fontSize: '10px',
-                          fontFamily: 'monospace',
-                          color: '#fbbf24',
+                          fontSize: tokens.typography.fontSize.xs,
+                          fontFamily: tokens.typography.fontFamily.mono,
+                          color: colors.intent.secondary.main,
                           fontWeight: 700,
                         }}
                       >
@@ -775,9 +779,9 @@ export function StepGraph({
                     ) : (
                       <span
                         style={{
-                          fontSize: '10px',
-                          fontFamily: 'monospace',
-                          color: '#94a3b8',
+                          fontSize: tokens.typography.fontSize.xs,
+                          fontFamily: tokens.typography.fontFamily.mono,
+                          color: colors.text.secondary,
                         }}
                       >
                         parallel
@@ -788,9 +792,9 @@ export function StepGraph({
                   {/* Title */}
                   <div
                     style={{
-                      fontSize: '12px',
+                      fontSize: tokens.typography.fontSize.xs,
                       fontWeight: 700,
-                      color: '#ffffff',
+                      color: colors.text.primary,
                       marginBottom: tokens.spacing[2],
                     }}
                   >
@@ -803,19 +807,24 @@ export function StepGraph({
                       width: '100%',
                       height: '10px',
                       borderRadius: '9999px',
-                      backgroundColor: '#030712',
+                      backgroundColor: colors.bg.canvas,
                       display: 'flex',
                       overflow: 'hidden',
-                      boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.6)',
+                      boxShadow: tokens.shadows.sm,
                       marginBottom: tokens.spacing[2],
                     }}
                   >
                     {node.type === 'choice'
                       ? (node as ChoiceNodeConfig).options.map((opt, optIdx) => {
-                          const colors = ['#10b981', '#f43f5e', '#f59e0b', '#a855f7', '#06b6d4'];
+                          const segmentColors = [
+                            colors.intent.success.main,
+                            colors.intent.danger.main,
+                            colors.intent.secondary.main,
+                            colors.intent.primary.main,
+                          ];
                           const segColor = opt.isFlag
-                            ? colors[(optIdx % (colors.length - 1)) + 1]
-                            : '#10b981';
+                            ? segmentColors[(optIdx % (segmentColors.length - 1)) + 1]
+                            : colors.intent.success.main;
                           return (
                             <div
                               key={opt.key}
@@ -829,8 +838,15 @@ export function StepGraph({
                           );
                         })
                       : (node as ScoreNodeConfig).tiers.map((tier, tIdx) => {
-                          const colors = ['#10b981', '#06b6d4', '#f59e0b', '#f43f5e'];
-                          const segColor = tier.isFlag ? '#f43f5e' : colors[tIdx % colors.length];
+                          const segmentColors = [
+                            colors.intent.success.main,
+                            colors.intent.primary.main,
+                            colors.intent.secondary.main,
+                            colors.intent.danger.main,
+                          ];
+                          const segColor = tier.isFlag
+                            ? colors.intent.danger.main
+                            : segmentColors[tIdx % segmentColors.length];
                           return (
                             <div
                               key={tier.key}
@@ -851,16 +867,16 @@ export function StepGraph({
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
-                      fontSize: '10px',
-                      fontFamily: 'monospace',
+                      fontSize: tokens.typography.fontSize.xs,
+                      fontFamily: tokens.typography.fontFamily.mono,
                     }}
                   >
-                    <span style={{ color: '#34d399', fontWeight: 700 }}>
+                    <span style={{ color: colors.intent.success.main, fontWeight: 700 }}>
                       {passPercentage}% {isScore ? 'Pass' : 'Valid'}
                     </span>
                     <span
                       style={{
-                        color: flagPercentage > 0 ? '#fb7185' : '#94a3b8',
+                        color: flagPercentage > 0 ? colors.intent.danger.main : colors.text.secondary,
                         fontWeight: 700,
                       }}
                     >
@@ -888,14 +904,14 @@ export function StepGraph({
                     transition:
                       'opacity 0.18s cubic-bezier(0.16, 1, 0.3, 1), transform 0.18s cubic-bezier(0.16, 1, 0.3, 1)',
                     zIndex: 50,
-                    backgroundColor: '#090d16',
+                    backgroundColor: colors.bg.canvas,
                     border: `1px solid ${borderColor}`,
                     borderRadius: tokens.radii.lg,
                     padding: tokens.spacing[3],
-                    boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.85)',
+                    boxShadow: tokens.shadows.xl,
                     width: '280px',
                     boxSizing: 'border-box',
-                    fontFamily: 'monospace',
+                    fontFamily: tokens.typography.fontFamily.mono,
                   }}
                 >
                   {/* Invisible bridge over the 8px gap */}
@@ -913,7 +929,7 @@ export function StepGraph({
 
                   <div
                     style={{
-                      fontSize: '11px',
+                      fontSize: tokens.typography.fontSize.xs,
                       fontWeight: 700,
                       color: badgeColor,
                       marginBottom: '2px',
@@ -922,7 +938,7 @@ export function StepGraph({
                     {node.title} Breakdown
                   </div>
                   {node.subtitle && (
-                    <div style={{ fontSize: '10px', color: '#94a3b8', marginBottom: '8px' }}>
+                    <div style={{ fontSize: tokens.typography.fontSize.xs, color: colors.text.secondary, marginBottom: '8px' }}>
                       {node.subtitle}
                     </div>
                   )}
@@ -932,7 +948,7 @@ export function StepGraph({
                       display: 'flex',
                       flexDirection: 'column',
                       gap: '4px',
-                      borderTop: '1px solid #1e293b',
+                      borderTop: `1px solid ${colors.border.subtle}`,
                       paddingTop: '6px',
                     }}
                   >
@@ -956,28 +972,28 @@ export function StepGraph({
                               justifyContent: 'space-between',
                               padding: '4px 6px',
                               borderRadius: tokens.radii.sm,
-                              backgroundColor: '#030712',
-                              border: `1px solid ${opt.isFlag ? 'rgba(244, 63, 94, 0.3)' : '#1e293b'}`,
+                              backgroundColor: colors.bg.canvas,
+                              border: `1px solid ${opt.isFlag ? colors.intent.danger.main : colors.border.subtle}`,
                               cursor: onSelectSlice ? 'pointer' : 'default',
-                              fontSize: '10px',
+                              fontSize: tokens.typography.fontSize.xs,
                               transition: 'border-color 0.15s ease, background-color 0.15s ease',
                             }}
                             onMouseEnter={(e) => {
-                              e.currentTarget.style.backgroundColor = '#111827';
+                              e.currentTarget.style.backgroundColor = colors.bg.subtle;
                               e.currentTarget.style.borderColor = opt.isFlag
-                                ? '#f43f5e'
-                                : '#10b981';
+                                ? colors.intent.danger.main
+                                : colors.intent.success.main;
                             }}
                             onMouseLeave={(e) => {
-                              e.currentTarget.style.backgroundColor = '#030712';
+                              e.currentTarget.style.backgroundColor = colors.bg.canvas;
                               e.currentTarget.style.borderColor = opt.isFlag
-                                ? 'rgba(244, 63, 94, 0.3)'
-                                : '#1e293b';
+                                ? colors.intent.danger.main
+                                : colors.border.subtle;
                             }}
                           >
                             <span
                               style={{
-                                color: opt.isFlag ? '#fb7185' : '#34d399',
+                                color: opt.isFlag ? colors.intent.danger.main : colors.intent.success.main,
                                 fontWeight: opt.isFlag ? 700 : 500,
                               }}
                             >
@@ -985,7 +1001,7 @@ export function StepGraph({
                             </span>
                             <span
                               style={{
-                                color: opt.isFlag ? '#fb7185' : '#34d399',
+                                color: opt.isFlag ? colors.intent.danger.main : colors.intent.success.main,
                                 fontWeight: 700,
                               }}
                             >
@@ -1017,28 +1033,28 @@ export function StepGraph({
                               justifyContent: 'space-between',
                               padding: '4px 6px',
                               borderRadius: tokens.radii.sm,
-                              backgroundColor: '#030712',
-                              border: `1px solid ${tier.isFlag ? 'rgba(244, 63, 94, 0.3)' : '#1e293b'}`,
+                              backgroundColor: colors.bg.canvas,
+                              border: `1px solid ${tier.isFlag ? colors.intent.danger.main : colors.border.subtle}`,
                               cursor: onSelectSlice ? 'pointer' : 'default',
-                              fontSize: '10px',
+                              fontSize: tokens.typography.fontSize.xs,
                               transition: 'border-color 0.15s ease, background-color 0.15s ease',
                             }}
                             onMouseEnter={(e) => {
-                              e.currentTarget.style.backgroundColor = '#111827';
+                              e.currentTarget.style.backgroundColor = colors.bg.subtle;
                               e.currentTarget.style.borderColor = tier.isFlag
-                                ? '#f43f5e'
-                                : '#10b981';
+                                ? colors.intent.danger.main
+                                : colors.intent.success.main;
                             }}
                             onMouseLeave={(e) => {
-                              e.currentTarget.style.backgroundColor = '#030712';
+                              e.currentTarget.style.backgroundColor = colors.bg.canvas;
                               e.currentTarget.style.borderColor = tier.isFlag
-                                ? 'rgba(244, 63, 94, 0.3)'
-                                : '#1e293b';
+                                ? colors.intent.danger.main
+                                : colors.border.subtle;
                             }}
                           >
                             <span
                               style={{
-                                color: tier.isFlag ? '#fb7185' : '#34d399',
+                                color: tier.isFlag ? colors.intent.danger.main : colors.intent.success.main,
                                 fontWeight: tier.isFlag ? 700 : 500,
                               }}
                             >
@@ -1046,7 +1062,7 @@ export function StepGraph({
                             </span>
                             <span
                               style={{
-                                color: tier.isFlag ? '#fb7185' : '#34d399',
+                                color: tier.isFlag ? colors.intent.danger.main : colors.intent.success.main,
                                 fontWeight: 700,
                               }}
                             >
@@ -1056,7 +1072,7 @@ export function StepGraph({
                         ))}
                   </div>
 
-                  <div style={{ marginTop: '8px', fontSize: '9px', color: '#64748b' }}>
+                  <div style={{ marginTop: '8px', fontSize: tokens.typography.fontSize.xs, color: colors.text.muted }}>
                     Click row to inspect sample words &rarr;
                   </div>
                 </div>
@@ -1088,8 +1104,8 @@ export function StepGraph({
                 }
               }}
               style={{
-                backgroundColor: '#0b0f19',
-                border: '2px solid #6366f1',
+                backgroundColor: colors.bg.surface,
+                border: `2px solid ${colors.intent.primary.main}`,
                 borderRadius: tokens.radii.xl,
                 padding: tokens.spacing[4],
                 position: 'relative',
@@ -1111,8 +1127,8 @@ export function StepGraph({
                   width: '14px',
                   height: '14px',
                   borderRadius: '50%',
-                  backgroundColor: '#c084fc',
-                  border: '2px solid #030712',
+                  backgroundColor: colors.intent.primary.hover,
+                  border: `2px solid ${colors.bg.canvas}`,
                 }}
               />
 
@@ -1126,9 +1142,9 @@ export function StepGraph({
                   width: '14px',
                   height: '14px',
                   borderRadius: '50%',
-                  backgroundColor: '#34d399',
-                  border: '2px solid #030712',
-                  boxShadow: '0 0 8px rgba(52, 211, 153, 0.9)',
+                  backgroundColor: colors.intent.success.main,
+                  border: `2px solid ${colors.bg.canvas}`,
+                  boxShadow: `0 0 8px ${colors.intent.success.main}`,
                 }}
               />
 
@@ -1143,9 +1159,9 @@ export function StepGraph({
                   height: '14px',
                   borderRadius: '50%',
                   backgroundColor:
-                    config.destinationBuckets[1]?.intent === 'warning' ? '#fbbf24' : '#fb7185',
-                  border: '2px solid #030712',
-                  boxShadow: '0 0 8px rgba(251, 113, 133, 0.9)',
+                    config.destinationBuckets[1]?.intent === 'warning' ? colors.intent.secondary.main : colors.intent.danger.main,
+                  border: `2px solid ${colors.bg.canvas}`,
+                  boxShadow: `0 0 8px ${colors.intent.danger.main}`,
                 }}
               />
 
@@ -1160,23 +1176,23 @@ export function StepGraph({
               >
                 <span
                   style={{
-                    fontSize: '9px',
-                    fontFamily: 'monospace',
+                    fontSize: tokens.typography.fontSize.xs,
+                    fontFamily: tokens.typography.fontFamily.mono,
                     fontWeight: 700,
                     padding: '2px 6px',
                     borderRadius: tokens.radii.sm,
-                    backgroundColor: 'rgba(99, 102, 241, 0.2)',
-                    color: '#a5b4fc',
-                    border: '1px solid rgba(99, 102, 241, 0.5)',
+                    backgroundColor: colors.intent.primary.subtle,
+                    color: colors.intent.primary.main,
+                    border: `1px solid ${colors.intent.primary.main}`,
                   }}
                 >
                   &lt;/&gt; SCRIPT RULE
                 </span>
                 <span
                   style={{
-                    fontSize: '10px',
-                    fontFamily: 'monospace',
-                    color: '#818cf8',
+                    fontSize: tokens.typography.fontSize.xs,
+                    fontFamily: tokens.typography.fontFamily.mono,
+                    color: colors.intent.primary.main,
                     textDecoration: 'underline',
                   }}
                 >
@@ -1187,10 +1203,10 @@ export function StepGraph({
               {/* Title */}
               <div
                 style={{
-                  fontSize: '13px',
+                  fontSize: tokens.typography.fontSize.sm,
                   fontWeight: 700,
-                  fontFamily: 'monospace',
-                  color: '#ffffff',
+                  fontFamily: tokens.typography.fontFamily.mono,
+                  color: colors.text.primary,
                   whiteSpace: 'nowrap',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
@@ -1204,12 +1220,12 @@ export function StepGraph({
                 style={{
                   margin: '8px 0',
                   padding: '4px 8px',
-                  backgroundColor: '#030712',
-                  border: '1px solid #1e293b',
+                  backgroundColor: colors.bg.canvas,
+                  border: `1px solid ${colors.border.subtle}`,
                   borderRadius: tokens.radii.md,
-                  fontFamily: 'monospace',
-                  fontSize: '10px',
-                  color: '#a5b4fc',
+                  fontFamily: tokens.typography.fontFamily.mono,
+                  fontSize: tokens.typography.fontSize.xs,
+                  color: colors.intent.primary.main,
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
@@ -1227,15 +1243,15 @@ export function StepGraph({
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
-                    fontSize: '10px',
-                    fontFamily: 'monospace',
+                    fontSize: tokens.typography.fontSize.xs,
+                    fontFamily: tokens.typography.fontFamily.mono,
                   }}
                 >
-                  <span style={{ color: '#fb7185', fontWeight: 700 }}>
+                  <span style={{ color: colors.intent.danger.main, fontWeight: 700 }}>
                     &bull; {config.scriptNode.decisionStats.primaryCount}{' '}
                     {config.scriptNode.decisionStats.primaryLabel}
                   </span>
-                  <span style={{ color: '#34d399', fontWeight: 700 }}>
+                  <span style={{ color: colors.intent.success.main, fontWeight: 700 }}>
                     &bull; {config.scriptNode.decisionStats.secondaryCount}{' '}
                     {config.scriptNode.decisionStats.secondaryLabel}
                   </span>
@@ -1265,14 +1281,14 @@ export function StepGraph({
                 transition:
                   'opacity 0.18s cubic-bezier(0.16, 1, 0.3, 1), transform 0.18s cubic-bezier(0.16, 1, 0.3, 1)',
                 zIndex: 50,
-                backgroundColor: '#090d16',
-                border: '1px solid rgba(99, 102, 241, 0.8)',
+                backgroundColor: colors.bg.canvas,
+                border: `1px solid ${colors.intent.primary.main}`,
                 borderRadius: tokens.radii.lg,
                 padding: tokens.spacing[3],
-                boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.85)',
+                boxShadow: tokens.shadows.xl,
                 width: '320px',
                 boxSizing: 'border-box',
-                fontFamily: 'monospace',
+                fontFamily: tokens.typography.fontFamily.mono,
               }}
             >
               {/* Invisible bridge over the 8px gap */}
@@ -1293,24 +1309,24 @@ export function StepGraph({
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  fontSize: '11px',
+                  fontSize: tokens.typography.fontSize.xs,
                   fontWeight: 700,
-                  color: '#a5b4fc',
+                  color: colors.intent.primary.main,
                   marginBottom: '4px',
                 }}
               >
                 <span>{config.scriptNode.filePath || 'Rule Implementation'}</span>
-                <span style={{ fontSize: '10px', color: '#64748b' }}>active</span>
+                <span style={{ fontSize: tokens.typography.fontSize.xs, color: colors.text.muted }}>active</span>
               </div>
 
               <pre
                 style={{
-                  backgroundColor: '#030712',
+                  backgroundColor: colors.bg.canvas,
                   padding: '8px',
                   borderRadius: tokens.radii.md,
-                  border: '1px solid #1e293b',
-                  fontSize: '10px',
-                  color: '#e2e8f0',
+                  border: `1px solid ${colors.border.subtle}`,
+                  fontSize: tokens.typography.fontSize.xs,
+                  color: colors.text.primary,
                   lineHeight: 1.4,
                   margin: '6px 0',
                   overflowX: 'auto',
@@ -1320,7 +1336,7 @@ export function StepGraph({
                 {config.scriptNode.codeSnippet}
               </pre>
 
-              <div style={{ fontSize: '10px', color: '#818cf8', marginTop: '6px' }}>
+              <div style={{ fontSize: tokens.typography.fontSize.xs, color: colors.intent.primary.main, marginTop: '6px' }}>
                 Click node to open full code drawer &rarr;
               </div>
             </div>
@@ -1338,9 +1354,9 @@ export function StepGraph({
           {config.destinationBuckets.map((bucket, bIdx) => {
             const isClean = bIdx === 0;
             const isWarning = bucket.intent === 'warning';
-            const borderColor = isClean ? '#10b981' : isWarning ? '#f59e0b' : '#f43f5e';
-            const tagColor = isClean ? '#34d399' : isWarning ? '#fbbf24' : '#fb7185';
-            const portColor = isClean ? '#34d399' : isWarning ? '#fbbf24' : '#fb7185';
+            const borderColor = isClean ? colors.intent.success.main : isWarning ? colors.intent.secondary.main : colors.intent.danger.main;
+            const tagColor = isClean ? colors.intent.success.main : isWarning ? colors.intent.secondary.main : colors.intent.danger.main;
+            const portColor = isClean ? colors.intent.success.main : isWarning ? colors.intent.secondary.main : colors.intent.danger.main;
             const bucketId = `bucket-${bIdx}`;
             const isVisible = hoveredNodeId === bucketId || pinnedNodeId === bucketId;
 
@@ -1363,11 +1379,11 @@ export function StepGraph({
                     }
                   }}
                   style={{
-                    backgroundColor: '#0b0f19',
+                    backgroundColor: colors.bg.surface,
                     border: `2px solid ${borderColor}`,
                     borderRadius: tokens.radii.xl,
                     padding: tokens.spacing[3],
-                    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.4)',
+                    boxShadow: tokens.shadows.lg,
                     position: 'relative',
                     cursor: onSelectSlice ? 'pointer' : 'default',
                     display: 'flex',
@@ -1390,7 +1406,7 @@ export function StepGraph({
                       height: '14px',
                       borderRadius: '50%',
                       backgroundColor: portColor,
-                      border: '2px solid #030712',
+                      border: `2px solid ${colors.bg.canvas}`,
                     }}
                   />
 
@@ -1399,8 +1415,8 @@ export function StepGraph({
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
-                      fontSize: '10px',
-                      fontFamily: 'monospace',
+                      fontSize: tokens.typography.fontSize.xs,
+                      fontFamily: tokens.typography.fontFamily.mono,
                       fontWeight: 700,
                       color: tagColor,
                       textTransform: 'uppercase',
@@ -1415,10 +1431,10 @@ export function StepGraph({
 
                   <div
                     style={{
-                      fontSize: '18px',
+                      fontSize: tokens.typography.fontSize.lg,
                       fontWeight: 700,
-                      fontFamily: 'monospace',
-                      color: '#ffffff',
+                      fontFamily: tokens.typography.fontFamily.mono,
+                      color: colors.text.primary,
                     }}
                   >
                     {bucket.count.toLocaleString()} words
@@ -1428,9 +1444,9 @@ export function StepGraph({
                     <p
                       style={{
                         margin: 0,
-                        fontSize: '10px',
-                        color: '#94a3b8',
-                        fontFamily: 'monospace',
+                        fontSize: tokens.typography.fontSize.xs,
+                        color: colors.text.secondary,
+                        fontFamily: tokens.typography.fontFamily.mono,
                       }}
                     >
                       {bucket.subtitle}
@@ -1455,14 +1471,14 @@ export function StepGraph({
                     transition:
                       'opacity 0.18s cubic-bezier(0.16, 1, 0.3, 1), transform 0.18s cubic-bezier(0.16, 1, 0.3, 1)',
                     zIndex: 50,
-                    backgroundColor: '#090d16',
+                    backgroundColor: colors.bg.canvas,
                     border: `1px solid ${borderColor}`,
                     borderRadius: tokens.radii.lg,
                     padding: tokens.spacing[3],
-                    boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.85)',
+                    boxShadow: tokens.shadows.xl,
                     width: '240px',
                     boxSizing: 'border-box',
-                    fontFamily: 'monospace',
+                    fontFamily: tokens.typography.fontFamily.mono,
                   }}
                 >
                   {/* Invisible bridge over the 8px gap */}
@@ -1480,7 +1496,7 @@ export function StepGraph({
 
                   <div
                     style={{
-                      fontSize: '11px',
+                      fontSize: tokens.typography.fontSize.xs,
                       fontWeight: 700,
                       color: tagColor,
                       marginBottom: '4px',
@@ -1488,13 +1504,13 @@ export function StepGraph({
                   >
                     {bucket.title} ({bucket.count.toLocaleString()} words)
                   </div>
-                  <p style={{ margin: 0, fontSize: '10px', color: '#cbd5e1', lineHeight: 1.4 }}>
+                  <p style={{ margin: 0, fontSize: tokens.typography.fontSize.xs, color: colors.text.secondary, lineHeight: 1.4 }}>
                     {bucket.description ||
                       (isClean
                         ? 'Verified passing headwords progressing to downstream stages.'
                         : 'Excluded outliers routed to prune log or human review queue.')}
                   </p>
-                  <div style={{ marginTop: '6px', fontSize: '9px', color: tagColor }}>
+                  <div style={{ marginTop: '6px', fontSize: tokens.typography.fontSize.xs, color: tagColor }}>
                     Click capsule to inspect items &rarr;
                   </div>
                 </div>

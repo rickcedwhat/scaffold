@@ -180,7 +180,7 @@ export const stage4StepConfig: StepGraphConfig = {
       title: 'Q3: Difficulty Tier Scoring',
       subtitle: 'Calibrated against 4-tier rubric (Elementary, Inter, Adv, Obscure)',
       metricLabel: 'difficulty',
-      cutoffValue: 'd <= 0.90',
+      cutoffValue: '0.90',
       tiers: [
         { key: 'elementary', label: 'Elem', percentage: 32, count: 771 },
         { key: 'intermediate', label: 'Inter', percentage: 46, count: 1108 },

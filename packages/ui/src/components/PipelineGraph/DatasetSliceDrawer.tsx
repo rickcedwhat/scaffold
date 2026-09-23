@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
+import * as RadixDialog from '@radix-ui/react-dialog';
 import { useTheme } from '../../theme/ThemeContext';
 import type { OutcomeSlice } from './types';
 
@@ -19,6 +20,15 @@ export function DatasetSliceDrawer({
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOption, setSortOption] = useState<'conf-desc' | 'conf-asc' | 'alpha'>('conf-desc');
   const [currentPage, setCurrentPage] = useState(1);
+  const previousSliceKey = useRef<string | null>(slice?.key ?? null);
+
+  useLayoutEffect(() => {
+    if (slice && previousSliceKey.current !== slice.key) {
+      setSearchQuery('');
+      setCurrentPage(1);
+      previousSliceKey.current = slice.key;
+    }
+  }, [slice]);
 
   const filteredItems = useMemo(() => {
     if (!slice?.items) return [];
@@ -50,28 +60,25 @@ export function DatasetSliceDrawer({
   const activePage = Math.min(currentPage, totalPages);
   const pagedItems = filteredItems.slice((activePage - 1) * pageSize, activePage * pageSize);
 
-  if (!isOpen || !slice) return null;
+  if (!slice) return null;
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label={slice.title}
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 100,
-        display: 'flex',
-        justifyContent: 'flex-end',
-        backgroundColor: 'rgba(0, 0, 0, 0.65)',
-        backdropFilter: 'blur(3px)',
-      }}
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
-      <div
+    <RadixDialog.Root open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <RadixDialog.Portal>
+        <RadixDialog.Overlay
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 100,
+            backgroundColor: colors.overlay.backdrop,
+            backdropFilter: 'blur(3px)',
+          }}
+        />
+        <RadixDialog.Content
         style={{
+          position: 'fixed',
+          inset: '0 0 0 auto',
+          zIndex: 101,
           width: '100%',
           maxWidth: '620px',
           height: '100%',
@@ -81,6 +88,7 @@ export function DatasetSliceDrawer({
           flexDirection: 'column',
           boxShadow: tokens.shadows.lg,
           boxSizing: 'border-box',
+          outline: 'none',
         }}
       >
         {/* Drawer Header */}
@@ -120,36 +128,39 @@ export function DatasetSliceDrawer({
                 {slice.count.toLocaleString()} items
               </span>
             </div>
-            <h3
-              style={{
-                margin: `${tokens.spacing[1]} 0 0 0`,
-                fontSize: '18px',
-                fontWeight: 700,
-                color: colors.text.primary,
-              }}
-            >
-              {slice.title}
-            </h3>
+            <RadixDialog.Title asChild>
+              <h3
+                style={{
+                  margin: `${tokens.spacing[1]} 0 0 0`,
+                  fontSize: '18px',
+                  fontWeight: 700,
+                  color: colors.text.primary,
+                }}
+              >
+                {slice.title}
+              </h3>
+            </RadixDialog.Title>
           </div>
 
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close drawer"
-            style={{
-              background: 'none',
-              border: `1px solid ${colors.border.subtle}`,
-              borderRadius: tokens.radii.md,
-              color: colors.text.muted,
-              padding: tokens.spacing[2],
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            &#x2715;
-          </button>
+          <RadixDialog.Close asChild>
+            <button
+              type="button"
+              aria-label="Close drawer"
+              style={{
+                background: 'none',
+                border: `1px solid ${colors.border.subtle}`,
+                borderRadius: tokens.radii.md,
+                color: colors.text.muted,
+                padding: tokens.spacing[2],
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              &#x2715;
+            </button>
+          </RadixDialog.Close>
         </div>
 
         {/* Filter / Search Bar */}
@@ -164,6 +175,7 @@ export function DatasetSliceDrawer({
         >
           <input
             type="text"
+            aria-label="Search sample items"
             placeholder="Search items, keywords, rationale..."
             value={searchQuery}
             onChange={(e) => {
@@ -184,6 +196,7 @@ export function DatasetSliceDrawer({
           />
 
           <select
+            aria-label="Sort sample items"
             value={sortOption}
             onChange={(e) => setSortOption(e.target.value as typeof sortOption)}
             style={{
@@ -224,7 +237,9 @@ export function DatasetSliceDrawer({
                 fontFamily: 'monospace',
               }}
             >
-              No items match the current search filter.
+              {slice.items.length === 0 && !searchQuery.trim()
+                ? 'No sample items available'
+                : 'No items match the current search filter.'}
             </div>
           ) : (
             pagedItems.map((item) => (
@@ -355,7 +370,7 @@ export function DatasetSliceDrawer({
           <span>
             {filteredItems.length === 0
               ? '0 items'
-              : `Showing ${(activePage - 1) * pageSize + 1}&ndash;${Math.min(
+              : `Showing ${(activePage - 1) * pageSize + 1}–${Math.min(
                   activePage * pageSize,
                   filteredItems.length
                 )} of ${filteredItems.length}`}
@@ -399,7 +414,8 @@ export function DatasetSliceDrawer({
             </button>
           </div>
         </div>
-      </div>
-    </div>
+        </RadixDialog.Content>
+      </RadixDialog.Portal>
+    </RadixDialog.Root>
   );
 }

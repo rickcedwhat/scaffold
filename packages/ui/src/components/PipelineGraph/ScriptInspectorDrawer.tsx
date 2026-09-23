@@ -1,4 +1,5 @@
 import React from 'react';
+import * as RadixDialog from '@radix-ui/react-dialog';
 import { useTheme } from '../../theme/ThemeContext';
 import type { ScriptRuleNodeConfig } from './types';
 
@@ -15,39 +16,37 @@ export function ScriptInspectorDrawer({
 }: ScriptInspectorDrawerProps) {
   const { colors, tokens } = useTheme();
 
-  if (!isOpen || !script) return null;
+  if (!script) return null;
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label={script.title}
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 100,
-        display: 'flex',
-        justifyContent: 'flex-end',
-        backgroundColor: 'rgba(0, 0, 0, 0.65)',
-        backdropFilter: 'blur(3px)',
-      }}
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
-      <div
-        style={{
-          width: '100%',
-          maxWidth: '560px',
-          height: '100%',
-          backgroundColor: colors.bg.surface,
-          borderLeft: `1px solid ${colors.border.subtle}`,
-          display: 'flex',
-          flexDirection: 'column',
-          boxShadow: tokens.shadows.lg,
-          boxSizing: 'border-box',
-        }}
-      >
+    <RadixDialog.Root open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <RadixDialog.Portal>
+        <RadixDialog.Overlay
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 100,
+            backgroundColor: colors.overlay.backdrop,
+            backdropFilter: 'blur(3px)',
+          }}
+        />
+        <RadixDialog.Content
+          style={{
+            position: 'fixed',
+            inset: '0 0 0 auto',
+            zIndex: 101,
+            width: '100%',
+            maxWidth: '560px',
+            height: '100%',
+            backgroundColor: colors.bg.surface,
+            borderLeft: `1px solid ${colors.border.subtle}`,
+            display: 'flex',
+            flexDirection: 'column',
+            boxShadow: tokens.shadows.lg,
+            boxSizing: 'border-box',
+            outline: 'none',
+          }}
+        >
         {/* Header */}
         <div
           style={{
@@ -74,17 +73,19 @@ export function ScriptInspectorDrawer({
             >
               SCRIPT &amp; RULE NODE INSPECTOR
             </span>
-            <h3
-              style={{
-                margin: `${tokens.spacing[1]} 0 0 0`,
-                fontSize: '18px',
-                fontWeight: 700,
-                fontFamily: 'monospace',
-                color: colors.text.primary,
-              }}
-            >
-              {script.title}
-            </h3>
+            <RadixDialog.Title asChild>
+              <h3
+                style={{
+                  margin: `${tokens.spacing[1]} 0 0 0`,
+                  fontSize: '18px',
+                  fontWeight: 700,
+                  fontFamily: 'monospace',
+                  color: colors.text.primary,
+                }}
+              >
+                {script.title}
+              </h3>
+            </RadixDialog.Title>
             {script.filePath && (
               <p
                 style={{
@@ -99,24 +100,25 @@ export function ScriptInspectorDrawer({
             )}
           </div>
 
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close drawer"
-            style={{
-              background: 'none',
-              border: `1px solid ${colors.border.subtle}`,
-              borderRadius: tokens.radii.md,
-              color: colors.text.muted,
-              padding: tokens.spacing[2],
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            &#x2715;
-          </button>
+          <RadixDialog.Close asChild>
+            <button
+              type="button"
+              aria-label="Close drawer"
+              style={{
+                background: 'none',
+                border: `1px solid ${colors.border.subtle}`,
+                borderRadius: tokens.radii.md,
+                color: colors.text.muted,
+                padding: tokens.spacing[2],
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              &#x2715;
+            </button>
+          </RadixDialog.Close>
         </div>
 
         {/* Content */}
@@ -263,7 +265,8 @@ export function ScriptInspectorDrawer({
             </div>
           )}
         </div>
-      </div>
-    </div>
+        </RadixDialog.Content>
+      </RadixDialog.Portal>
+    </RadixDialog.Root>
   );
 }
