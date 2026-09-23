@@ -27,12 +27,13 @@ export function PipelineGraph({
   slices = {},
   defaultZoomLevel = 'micro',
 }: PipelineGraphProps) {
-  const { colors, tokens } = useTheme();
+  const { tokens } = useTheme();
   const [zoomLevel, setZoomLevel] = useState<'macro' | 'micro'>(defaultZoomLevel);
   const [selectedSlice, setSelectedSlice] = useState<OutcomeSlice | null>(null);
   const [selectedScript, setSelectedScript] = useState<ScriptRuleNodeConfig | null>(null);
 
-  const selectedStage = stages.find((s) => s.id === activeStageId) || stages[0];
+  const currentActiveStageId = activeStageId || stages[0]?.id;
+  const selectedStage = stages.find((s) => s.id === currentActiveStageId) || stages[0];
 
   const handleSelectSlice = (sliceKey: string, title: string, count: number) => {
     if (slices[sliceKey]) {
@@ -56,111 +57,164 @@ export function PipelineGraph({
       style={{
         display: 'flex',
         flexDirection: 'column',
-        gap: tokens.spacing[5],
+        gap: tokens.spacing[4],
         width: '100%',
         boxSizing: 'border-box',
       }}
     >
-      {/* Top Navigation & Zoom Controls */}
+      {/* Sleek Top Control & Breadcrumb Header matching mockup */}
       <div
         style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           flexWrap: 'wrap',
-          gap: tokens.spacing[3],
-          backgroundColor: colors.bg.surface,
-          border: `1px solid ${colors.border.subtle}`,
+          gap: tokens.spacing[4],
+          backgroundColor: '#030712',
+          border: '1px solid #1e293b',
           borderRadius: tokens.radii.xl,
-          padding: `${tokens.spacing[3]} ${tokens.spacing[4]}`,
+          padding: `${tokens.spacing[3]} ${tokens.spacing[5]}`,
+          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.3)',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: tokens.spacing[2] }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: tokens.spacing[3] }}>
           <span
             style={{
               fontSize: '11px',
               fontFamily: 'monospace',
               fontWeight: 700,
-              textTransform: 'uppercase',
-              padding: `2px ${tokens.spacing[2]}`,
+              padding: `4px ${tokens.spacing[2]}`,
               borderRadius: tokens.radii.sm,
               backgroundColor: 'rgba(99, 102, 241, 0.15)',
-              color: colors.intent.primary.main,
+              color: '#818cf8',
+              border: '1px solid #4338ca',
             }}
           >
-            PIPELINE GRAPH
+            GRAPH STUDIO
           </span>
 
-          <span
+          {/* Breadcrumb Navigation */}
+          <nav
             style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: tokens.spacing[2],
               fontSize: '13px',
-              fontWeight: 600,
-              color: colors.text.primary,
+              fontFamily: 'sans-serif',
             }}
           >
-            {selectedStage?.name || 'Pipeline Studio'}
-          </span>
+            <span style={{ color: '#22d3ee', fontFamily: 'monospace', fontSize: '12px' }}>
+              [{selectedStage.id.toUpperCase()}]
+            </span>
+            <span style={{ fontWeight: 600, color: '#f8fafc' }}>
+              {selectedStage.name}
+            </span>
+          </nav>
         </div>
 
-        {/* Zoom Level Switcher */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            backgroundColor: colors.bg.canvas,
-            border: `1px solid ${colors.border.default}`,
-            borderRadius: tokens.radii.lg,
-            padding: '2px',
-          }}
-        >
-          <button
-            type="button"
-            onClick={() => setZoomLevel('macro')}
+        {/* Right side: View Step Selector & Zoom Switcher */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: tokens.spacing[3] }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: tokens.spacing[2] }}>
+            <span style={{ fontSize: '12px', color: '#94a3b8', fontFamily: 'sans-serif' }}>
+              View Step:
+            </span>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                backgroundColor: '#090d16',
+                border: '1px solid #1e293b',
+                borderRadius: tokens.radii.lg,
+                padding: '3px',
+                gap: '2px',
+              }}
+            >
+              {stages.slice(0, 3).map((stage) => {
+                const isSelected = stage.id === currentActiveStageId;
+                return (
+                  <button
+                    key={stage.id}
+                    type="button"
+                    onClick={() => {
+                      onSelectStage?.(stage.id);
+                      setZoomLevel('micro');
+                    }}
+                    style={{
+                      fontSize: '11px',
+                      fontFamily: 'monospace',
+                      fontWeight: isSelected ? 700 : 500,
+                      padding: `5px ${tokens.spacing[2]}`,
+                      borderRadius: tokens.radii.md,
+                      backgroundColor: isSelected ? 'rgba(99, 102, 241, 0.25)' : 'transparent',
+                      color: isSelected ? '#c7d2fe' : '#94a3b8',
+                      border: isSelected ? '1px solid rgba(99, 102, 241, 0.6)' : '1px solid transparent',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease',
+                    }}
+                  >
+                    {stage.id.toUpperCase()} ({stage.badge || stage.type})
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Toggle between Detailed Step Graph and Macro Pipeline */}
+          <div
             style={{
-              fontSize: '12px',
-              fontFamily: 'sans-serif',
-              fontWeight: zoomLevel === 'macro' ? 700 : 500,
-              padding: `${tokens.spacing[1]} ${tokens.spacing[3]}`,
-              borderRadius: tokens.radii.md,
-              backgroundColor: zoomLevel === 'macro' ? colors.bg.surface : 'transparent',
-              color: zoomLevel === 'macro' ? colors.intent.primary.main : colors.text.muted,
-              border: zoomLevel === 'macro' ? `1px solid ${colors.border.subtle}` : 'none',
-              cursor: 'pointer',
-              transition: 'all 0.15s ease',
+              display: 'flex',
+              alignItems: 'center',
+              backgroundColor: '#090d16',
+              border: '1px solid #1e293b',
+              borderRadius: tokens.radii.lg,
+              padding: '3px',
             }}
           >
-            Macro Pipeline
-          </button>
-          <button
-            type="button"
-            onClick={() => setZoomLevel('micro')}
-            style={{
-              fontSize: '12px',
-              fontFamily: 'sans-serif',
-              fontWeight: zoomLevel === 'micro' ? 700 : 500,
-              padding: `${tokens.spacing[1]} ${tokens.spacing[3]}`,
-              borderRadius: tokens.radii.md,
-              backgroundColor: zoomLevel === 'micro' ? colors.bg.surface : 'transparent',
-              color: zoomLevel === 'micro' ? colors.intent.primary.main : colors.text.muted,
-              border: zoomLevel === 'micro' ? `1px solid ${colors.border.subtle}` : 'none',
-              cursor: 'pointer',
-              transition: 'all 0.15s ease',
-            }}
-          >
-            Detailed Step Graph
-          </button>
+            <button
+              type="button"
+              onClick={() => setZoomLevel('micro')}
+              style={{
+                fontSize: '11px',
+                fontWeight: zoomLevel === 'micro' ? 700 : 500,
+                padding: `5px ${tokens.spacing[2]}`,
+                borderRadius: tokens.radii.md,
+                backgroundColor: zoomLevel === 'micro' ? '#1e293b' : 'transparent',
+                color: zoomLevel === 'micro' ? '#f8fafc' : '#64748b',
+                border: 'none',
+                cursor: 'pointer',
+              }}
+            >
+              Detailed Step Graph
+            </button>
+            <button
+              type="button"
+              onClick={() => setZoomLevel('macro')}
+              style={{
+                fontSize: '11px',
+                fontWeight: zoomLevel === 'macro' ? 700 : 500,
+                padding: `5px ${tokens.spacing[2]}`,
+                borderRadius: tokens.radii.md,
+                backgroundColor: zoomLevel === 'macro' ? '#1e293b' : 'transparent',
+                color: zoomLevel === 'macro' ? '#f8fafc' : '#64748b',
+                border: 'none',
+                cursor: 'pointer',
+              }}
+            >
+              Macro Pipeline
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* MACRO VIEW: Connected High-Level Pipeline Stages */}
+      {/* MACRO VIEW: High-Level Overview Cards */}
       {zoomLevel === 'macro' && (
         <div
           style={{
-            backgroundColor: colors.bg.surface,
-            border: `1px solid ${colors.border.subtle}`,
+            backgroundColor: '#030712',
+            border: '1px solid #1e293b',
             borderRadius: tokens.radii.xl,
             padding: tokens.spacing[5],
-            boxShadow: tokens.shadows.md,
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)',
             display: 'flex',
             flexDirection: 'column',
             gap: tokens.spacing[4],
@@ -171,51 +225,32 @@ export function PipelineGraph({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              borderBottom: `1px solid ${colors.border.subtle}`,
+              borderBottom: '1px solid #1e293b',
               paddingBottom: tokens.spacing[3],
             }}
           >
             <div>
-              <h3
-                style={{
-                  margin: 0,
-                  fontSize: '16px',
-                  fontWeight: 700,
-                  color: colors.text.primary,
-                }}
-              >
-                Connected Pipeline Stages
+              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: '#f8fafc' }}>
+                Pipeline Stage Sequence
               </h3>
-              <p
-                style={{
-                  margin: `${tokens.spacing[1]} 0 0 0`,
-                  fontSize: '12px',
-                  color: colors.text.muted,
-                }}
-              >
-                Click any stage card to zoom in and inspect its internal operation nodes.
+              <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#94a3b8' }}>
+                Click any stage card to zoom in and inspect its live node diagram.
               </p>
             </div>
-            <span
-              style={{
-                fontSize: '12px',
-                fontFamily: 'monospace',
-                color: colors.intent.primary.main,
-              }}
-            >
-              {stages.length} Stages Total
+            <span style={{ fontSize: '12px', fontFamily: 'monospace', color: '#818cf8' }}>
+              {stages.length} Stages Configured
             </span>
           </div>
 
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
               gap: tokens.spacing[3],
             }}
           >
-            {stages.map((stage, idx) => {
-              const isSelected = stage.id === (activeStageId || stages[0].id);
+            {stages.map((stage) => {
+              const isSelected = stage.id === currentActiveStageId;
               const isRunning = stage.status === 'running';
 
               return (
@@ -234,8 +269,8 @@ export function PipelineGraph({
                     }
                   }}
                   style={{
-                    backgroundColor: colors.bg.canvas,
-                    border: `2px solid ${isSelected ? colors.intent.primary.main : colors.border.subtle}`,
+                    backgroundColor: '#0b0f19',
+                    border: `2px solid ${isSelected ? '#6366f1' : '#1e293b'}`,
                     borderRadius: tokens.radii.lg,
                     padding: tokens.spacing[4],
                     cursor: 'pointer',
@@ -244,7 +279,7 @@ export function PipelineGraph({
                     justifyContent: 'space-between',
                     minHeight: '140px',
                     boxSizing: 'border-box',
-                    transition: 'border-color 0.15s ease',
+                    transition: 'all 0.15s ease',
                   }}
                 >
                   <div>
@@ -260,56 +295,34 @@ export function PipelineGraph({
                         style={{
                           fontSize: '10px',
                           fontFamily: 'monospace',
-                          color: isRunning ? colors.intent.primary.main : colors.text.muted,
+                          color: isRunning ? '#22d3ee' : '#94a3b8',
                           fontWeight: 700,
                         }}
                       >
-                        {isRunning ? '● ACTIVE' : `STAGE ${String(idx + 1).padStart(2, '0')}`}
+                        {stage.badge || stage.type.toUpperCase()}
                       </span>
-
                       <span
                         style={{
-                          fontSize: '9px',
+                          fontSize: '10px',
                           fontFamily: 'monospace',
-                          fontWeight: 700,
-                          padding: `1px ${tokens.spacing[1]}`,
-                          borderRadius: tokens.radii.sm,
-                          backgroundColor:
-                            stage.type === 'jev'
-                              ? 'rgba(6, 182, 212, 0.15)'
-                              : stage.type === 'llm'
-                              ? 'rgba(168, 85, 247, 0.15)'
-                              : 'rgba(148, 163, 184, 0.15)',
                           color:
-                            stage.type === 'jev'
-                              ? colors.intent.primary.main
-                              : stage.type === 'llm'
-                              ? '#a855f7'
-                              : colors.text.muted,
+                            stage.status === 'success'
+                              ? '#34d399'
+                              : isRunning
+                                ? '#22d3ee'
+                                : '#64748b',
                         }}
                       >
-                        {stage.type.toUpperCase()}
+                        {stage.status.toUpperCase()}
                       </span>
                     </div>
 
-                    <div
-                      style={{
-                        fontSize: '14px',
-                        fontWeight: 700,
-                        color: colors.text.primary,
-                      }}
-                    >
+                    <h4 style={{ margin: '0 0 4px 0', fontSize: '14px', fontWeight: 700, color: '#f8fafc' }}>
                       {stage.name}
-                    </div>
+                    </h4>
+
                     {stage.description && (
-                      <p
-                        style={{
-                          margin: `${tokens.spacing[1]} 0 0 0`,
-                          fontSize: '11px',
-                          color: colors.text.muted,
-                          lineHeight: 1.35,
-                        }}
-                      >
+                      <p style={{ margin: 0, fontSize: '11px', color: '#94a3b8', lineHeight: 1.4 }}>
                         {stage.description}
                       </p>
                     )}
@@ -317,7 +330,7 @@ export function PipelineGraph({
 
                   <div
                     style={{
-                      borderTop: `1px solid ${colors.border.subtle}`,
+                      borderTop: '1px solid #1e293b',
                       paddingTop: tokens.spacing[2],
                       marginTop: tokens.spacing[2],
                       display: 'flex',
@@ -327,12 +340,10 @@ export function PipelineGraph({
                       fontFamily: 'monospace',
                     }}
                   >
-                    <span style={{ color: colors.text.muted }}>
-                      {stage.itemCount.toLocaleString()} items
+                    <span style={{ color: '#64748b' }}>
+                      {stage.itemCount !== undefined ? `${stage.itemCount.toLocaleString()} items` : ''}
                     </span>
-                    <span style={{ color: colors.intent.primary.main, fontWeight: 700 }}>
-                      Inspect &rarr;
-                    </span>
+                    <span style={{ color: '#818cf8', fontWeight: 600 }}>Inspect &rarr;</span>
                   </div>
                 </div>
               );
@@ -341,36 +352,25 @@ export function PipelineGraph({
         </div>
       )}
 
-      {/* MICRO VIEW: Detailed Step Node Graph */}
+      {/* MICRO VIEW: The Live Step Node Graph Canvas */}
       {zoomLevel === 'micro' && stepGraphConfig && (
-        <div
-          style={{
-            backgroundColor: colors.bg.surface,
-            border: `1px solid ${colors.border.subtle}`,
-            borderRadius: tokens.radii.xl,
-            padding: tokens.spacing[5],
-            boxShadow: tokens.shadows.md,
-          }}
-        >
-          <StepGraph
-            config={stepGraphConfig}
-            onSelectSlice={handleSelectSlice}
-            onSelectScript={handleSelectScript}
-          />
-        </div>
+        <StepGraph
+          config={stepGraphConfig}
+          onSelectSlice={handleSelectSlice}
+          onSelectScript={handleSelectScript}
+        />
       )}
 
-      {/* Dataset Drawer */}
+      {/* Deep-Dive Inspection Drawers */}
       <DatasetSliceDrawer
         slice={selectedSlice}
-        isOpen={Boolean(selectedSlice)}
+        isOpen={selectedSlice !== null}
         onClose={() => setSelectedSlice(null)}
       />
 
-      {/* Script Drawer */}
       <ScriptInspectorDrawer
         script={selectedScript}
-        isOpen={Boolean(selectedScript)}
+        isOpen={selectedScript !== null}
         onClose={() => setSelectedScript(null)}
       />
     </div>

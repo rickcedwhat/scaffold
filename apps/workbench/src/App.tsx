@@ -1955,55 +1955,18 @@ export function App() {
                   </Text>
                 </div>
 
-                <Card padding="compact" variant="subtle">
-                  <Stack direction="row" align="center" justify="between" wrap>
-                    <Stack direction="row" align="center" gap={2}>
-                      <Text size="xs" color="muted" weight="bold">
-                        EXPLORE WORKFLOW STAGES:
-                      </Text>
-                      <Button
-                        size="sm"
-                        intent={activePipelineStageId === 'stage-2' ? 'primary' : 'neutral'}
-                        variant={activePipelineStageId === 'stage-2' ? 'solid' : 'outline'}
-                        onClick={() => setActivePipelineStageId('stage-2')}
-                      >
-                        Stage 02: Lexical Prune
-                      </Button>
-                      <Button
-                        size="sm"
-                        intent={activePipelineStageId === 'stage-4' ? 'primary' : 'neutral'}
-                        variant={activePipelineStageId === 'stage-4' ? 'solid' : 'outline'}
-                        onClick={() => setActivePipelineStageId('stage-4')}
-                      >
-                        Stage 04: 3-Way JEV + Queue
-                      </Button>
-                    </Stack>
-
-                    <Text size="xs" color="secondary">
-                      Tip: Click any outcome strip (e.g. <em>wrong_meaning</em>) or the <em>&lt;/&gt; SCRIPT</em> card.
-                    </Text>
-                  </Stack>
-                </Card>
-
-                <ComponentExample
-                  title="Interactive Pipeline Graph Studio"
-                  description="Toggle between the Macro Pipeline view and the Detailed Step Graph. Click outcome strips to inspect paginated datasets or script rule logic."
-                  code={SNIPPETS.pipelineStudio.basic}
-                  defaultExpanded={false}
-                >
-                  <PipelineGraph
-                    stages={mockPipelineStages}
-                    activeStageId={activePipelineStageId}
-                    onSelectStage={(id) => setActivePipelineStageId(id)}
-                    stepGraphConfig={
-                      activePipelineStageId === 'stage-2'
-                        ? stage2StepConfig
-                        : stage4StepConfig
-                    }
-                    slices={mockPipelineSlices}
-                    defaultZoomLevel="micro"
-                  />
-                </ComponentExample>
+                <PipelineGraph
+                  stages={mockPipelineStages}
+                  activeStageId={activePipelineStageId}
+                  onSelectStage={(id) => setActivePipelineStageId(id)}
+                  stepGraphConfig={
+                    activePipelineStageId === 'stage-2'
+                      ? stage2StepConfig
+                      : stage4StepConfig
+                  }
+                  slices={mockPipelineSlices}
+                  defaultZoomLevel="micro"
+                />
               </Stack>
             )}
           </Container>

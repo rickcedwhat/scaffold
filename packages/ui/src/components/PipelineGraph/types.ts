@@ -85,6 +85,7 @@ export interface BucketNodeConfig {
   isFlag?: boolean;
   intent?: 'success' | 'warning' | 'error' | 'neutral';
   description?: string;
+  subtitle?: string;
 }
 
 export interface DatasetItem {
