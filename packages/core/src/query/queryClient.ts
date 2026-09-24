@@ -1,12 +1,6 @@
 import { QueryClient, type QueryClientConfig } from '@tanstack/react-query';
-import { defaultCircuitBreaker, type CircuitBreaker } from '../circuit-breaker/CircuitBreaker';
 
-export interface CreateQueryClientOptions extends QueryClientConfig {
-  /**
-   * Optional circuit breaker instance to guard against infinite render loops.
-   */
-  circuitBreaker?: CircuitBreaker;
-}
+export type CreateQueryClientOptions = QueryClientConfig;
 
 /**
  * Checks whether an error represents a client-side HTTP 4xx error that should not be retried.
@@ -17,6 +11,7 @@ export function isClientError(error: unknown): boolean {
   const err = error as Record<string, unknown>;
   const status = Number(err.status || err.statusCode || (err.response && (err.response as Record<string, unknown>).status));
 
+  if (status === 429) return false;
   if (!isNaN(status) && status >= 400 && status < 500) {
     return true;
   }
@@ -31,7 +26,7 @@ export function isClientError(error: unknown): boolean {
 }
 
 /**
- * Standard retry policy: up to 3 retries, but immediately aborts on 4xx client errors.
+ * Standard retry policy: up to 3 retries, but immediately aborts on 4xx client errors other than 429.
  */
 export function defaultRetry(failureCount: number, error: unknown): boolean {
   if (isClientError(error)) {
@@ -56,11 +51,14 @@ export function defaultRetryDelay(attemptIndex: number): number {
  * - staleTime: 2 minutes (120,000ms)
  * - gcTime: 10 minutes (600,000ms)
  * - refetchOnWindowFocus: false (avoids jarring re-renders during app switching)
- * - retry: defaultRetry (exponential backoff up to 3 times, aborts on 4xx)
+ * - retry: defaultRetry (exponential backoff up to 3 times, aborts on 4xx except 429)
  * - retryDelay: defaultRetryDelay (exponential backoff with jitter)
+ *
+ * To guard a query with a circuit breaker, wrap its query function with
+ * `protectQueryFn(queryFn, queryKey, breaker)` explicitly.
  */
 export function createQueryClient(options: CreateQueryClientOptions = {}): QueryClient {
-  const { circuitBreaker: _circuitBreaker = defaultCircuitBreaker, defaultOptions = {}, ...restConfig } = options;
+  const { defaultOptions = {}, ...restConfig } = options;
 
   return new QueryClient({
     defaultOptions: {

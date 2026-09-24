@@ -89,10 +89,12 @@ describe('useLiveDocument', () => {
 
     const queryKey = ['settings', 'app'] as const;
 
+    const onData = vi.fn();
     const { result } = renderHook(() =>
       useLiveDocument<{ theme: string }>(docRef, {
         queryKey,
         queryClient,
+        onData,
       })
     );
 
@@ -113,6 +115,60 @@ describe('useLiveDocument', () => {
     });
 
     expect(queryClient.getQueryData(queryKey)).toEqual({ theme: 'light' });
+
+    await act(async () => {
+      await emulator.deleteDoc(docRef);
+    });
+
+    expect(result.current.data).toBeNull();
+    expect(queryClient.getQueryData(queryKey)).toBeNull();
+    expect(onData).toHaveBeenCalledTimes(2);
+  });
+
+  it('keeps one subscription when an inline document target has the same path', () => {
+    const subscriptions = vi.fn();
+    const unsubscribe = vi.fn();
+    const createTarget = (path: string) => ({
+      path,
+      id: path.split('/')[1],
+      onSnapshot: (onNext: (snapshot: { id: string; exists: () => boolean; data: () => { name: string } }) => void) => {
+        subscriptions(path);
+        onNext({ id: path.split('/')[1], exists: () => true, data: () => ({ name: path }) });
+        return unsubscribe;
+      },
+    });
+
+    const { rerender, unmount } = renderHook(({ path }) => useLiveDocument(createTarget(path)), {
+      initialProps: { path: 'users/a' },
+    });
+    expect(subscriptions).toHaveBeenCalledTimes(1);
+
+    rerender({ path: 'users/a' });
+    expect(subscriptions).toHaveBeenCalledTimes(1);
+    expect(unsubscribe).not.toHaveBeenCalled();
+
+    rerender({ path: 'users/b' });
+    expect(subscriptions).toHaveBeenCalledTimes(2);
+    expect(unsubscribe).toHaveBeenCalledTimes(1);
+    unmount();
+    expect(unsubscribe).toHaveBeenCalledTimes(2);
+  });
+
+  it('uses targetKey to keep an inline function subscription stable', () => {
+    const subscribe = vi.fn();
+    const unsubscribe = vi.fn();
+    const { rerender, unmount } = renderHook(() => useLiveDocument(
+      () => {
+        subscribe();
+        return unsubscribe;
+      },
+      { targetKey: 'current-user' }
+    ));
+
+    rerender();
+    expect(subscribe).toHaveBeenCalledTimes(1);
+    unmount();
+    expect(unsubscribe).toHaveBeenCalledTimes(1);
   });
 
   it('handles custom subscription function targets', async () => {

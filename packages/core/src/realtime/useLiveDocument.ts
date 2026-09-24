@@ -19,6 +19,7 @@ export function useLiveDocument<T = Record<string, unknown>>(
     initialData = null,
     queryKey,
     queryClient,
+    targetKey,
     onData,
     onError,
   } = options;
@@ -39,6 +40,11 @@ export function useLiveDocument<T = Record<string, unknown>>(
   const onErrorRef = useRef(onError);
   const queryKeyRef = useRef(queryKey);
   const queryClientRef = useRef(queryClient);
+  const targetRef = useRef(target);
+  targetRef.current = target;
+  const targetIdentity = target
+    ? targetKey ?? (typeof target === 'object' && 'path' in target && typeof target.path === 'string' ? target.path : target)
+    : null;
 
   useEffect(() => {
     onDataRef.current = onData;
@@ -48,7 +54,8 @@ export function useLiveDocument<T = Record<string, unknown>>(
   });
 
   useEffect(() => {
-    if (!enabled || !target) {
+    const activeTarget = targetRef.current;
+    if (!enabled || !activeTarget) {
       setStatus('idle');
       return;
     }
@@ -65,9 +72,9 @@ export function useLiveDocument<T = Record<string, unknown>>(
 
       if (nextData !== null) {
         onDataRef.current?.(nextData);
-        if (queryKeyRef.current && queryClientRef.current) {
-          queryClientRef.current.setQueryData(queryKeyRef.current, nextData);
-        }
+      }
+      if (queryKeyRef.current && queryClientRef.current) {
+        queryClientRef.current.setQueryData(queryKeyRef.current, nextData);
       }
     };
 
@@ -82,12 +89,12 @@ export function useLiveDocument<T = Record<string, unknown>>(
 
     try {
       // 1. Function subscribable
-      if (typeof target === 'function') {
-        unsubscribe = target(handleData, handleError);
+      if (typeof activeTarget === 'function') {
+        unsubscribe = activeTarget(handleData, handleError);
       }
       // 2. Firestore DocumentReference-like
-      else if ('onSnapshot' in target && typeof target.onSnapshot === 'function') {
-        const firestoreTarget = target as FirestoreDocRefLike<T>;
+      else if ('onSnapshot' in activeTarget && typeof activeTarget.onSnapshot === 'function') {
+        const firestoreTarget = activeTarget as FirestoreDocRefLike<T>;
         if (firestoreTarget.id) setDocId(firestoreTarget.id);
 
         unsubscribe = firestoreTarget.onSnapshot(
@@ -106,8 +113,8 @@ export function useLiveDocument<T = Record<string, unknown>>(
         );
       }
       // 3. Observable-like
-      else if ('subscribe' in target && typeof (target as ObservableSubscribable<T>).subscribe === 'function') {
-        const sub = (target as ObservableSubscribable<T>).subscribe(handleData, handleError);
+      else if ('subscribe' in activeTarget && typeof (activeTarget as ObservableSubscribable<T>).subscribe === 'function') {
+        const sub = (activeTarget as ObservableSubscribable<T>).subscribe(handleData, handleError);
         unsubscribe = typeof sub === 'function' ? sub : () => sub.unsubscribe();
       }
     } catch (err) {
@@ -119,7 +126,7 @@ export function useLiveDocument<T = Record<string, unknown>>(
         unsubscribe();
       }
     };
-  }, [target, enabled]);
+  }, [targetIdentity, enabled]);
 
   return {
     data,

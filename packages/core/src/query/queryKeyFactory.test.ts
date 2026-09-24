@@ -34,4 +34,13 @@ describe('createQueryKeyFactory', () => {
     ]);
     expect(projectKeys.auditLog('proj-1')).toEqual(['projects', 'audit', 'proj-1']);
   });
+
+  it.each(['all', 'lists', 'list', 'details', 'detail'])(
+    'rejects custom definitions that replace %s',
+    (key) => {
+      expect(() => createQueryKeyFactory('users', () => ({
+        [key]: () => ['users'] as const,
+      }))).toThrow(`reserved key "${key}"`);
+    }
+  );
 });

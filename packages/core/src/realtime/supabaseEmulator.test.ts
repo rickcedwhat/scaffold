@@ -37,4 +37,24 @@ describe('createInMemorySupabaseEmulator', () => {
     channel.emitChange('INSERT', { id: 't2', title: 'Call mechanic' });
     expect(listener).toHaveBeenCalledTimes(2); // Did not receive third event
   });
+
+  it('dispatches each postgres_changes listener only for its configured event', () => {
+    const channel = createInMemorySupabaseEmulator().channel('events');
+    const inserts = vi.fn();
+    const deletes = vi.fn();
+    const wildcard = vi.fn();
+    channel.on('postgres_changes', { event: 'INSERT' }, inserts);
+    channel.on('postgres_changes', { event: 'DELETE' }, deletes);
+    channel.on('postgres_changes', { event: 123 }, wildcard);
+    channel.on('other_event', { event: '*' }, vi.fn());
+
+    channel.emitChange('INSERT', { id: 1 });
+    channel.emitChange('UPDATE', { id: 1 });
+    channel.emitChange('DELETE', { id: 1 });
+
+    expect(inserts).toHaveBeenCalledTimes(1);
+    expect(deletes).toHaveBeenCalledTimes(1);
+    expect(wildcard).toHaveBeenCalledTimes(3);
+    expect(channel.getListenerCount()).toBe(3);
+  });
 });

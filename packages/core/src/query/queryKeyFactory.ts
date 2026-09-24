@@ -66,5 +66,11 @@ export function createQueryKeyFactory<
     ? customDefinitions({ scope, all, lists, list, details, detail })
     : ({} as TCustom);
 
+  for (const key of ['all', 'lists', 'list', 'details', 'detail']) {
+    if (Object.prototype.hasOwnProperty.call(custom, key)) {
+      throw new Error(`Custom query key definition cannot replace reserved key "${key}"`);
+    }
+  }
+
   return Object.assign(base, custom) as QueryKeyFactory<TScope, TCustom>;
 }

@@ -39,7 +39,7 @@ export function createInMemorySupabaseEmulator(): InMemorySupabaseEmulator {
       return existing as unknown as InMemorySupabaseChannel<T>;
     }
 
-    const listeners: PostgresChangesCallback<T>[] = [];
+    const listeners: Array<{ event: string; callback: PostgresChangesCallback<T> }> = [];
     let statusCallback: ((status: string, err?: Error) => void) | undefined;
     let isSubscribed = false;
 
@@ -47,11 +47,14 @@ export function createInMemorySupabaseEmulator(): InMemorySupabaseEmulator {
       name,
       on: (
         event: string,
-        _filter: Record<string, unknown>,
+        filter: Record<string, unknown>,
         callback: (payload: { new: T; old: T; eventType: string }) => void
       ) => {
         if (event === 'postgres_changes') {
-          listeners.push(callback as PostgresChangesCallback<T>);
+          listeners.push({
+            event: typeof filter.event === 'string' ? filter.event : '*',
+            callback: callback as PostgresChangesCallback<T>,
+          });
         }
         return ch;
       },
@@ -81,7 +84,11 @@ export function createInMemorySupabaseEmulator(): InMemorySupabaseEmulator {
           new: newRecord,
           old: (oldRecord || {}) as T,
         };
-        listeners.forEach((fn) => fn(payload));
+        listeners.forEach((listener) => {
+          if (listener.event === '*' || listener.event === payload.eventType) {
+            listener.callback(payload);
+          }
+        });
       },
       emitStatus: (status: 'SUBSCRIBED' | 'TIMED_OUT' | 'CLOSED' | 'CHANNEL_ERROR', err?: Error) => {
         statusCallback?.(status, err);

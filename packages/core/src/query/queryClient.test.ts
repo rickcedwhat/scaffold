@@ -53,6 +53,12 @@ describe('createQueryClient & query policies', () => {
       expect(isClientError(undefined)).toBe(false);
     });
 
+    it('treats HTTP 429 as retryable across supported status shapes', () => {
+      expect(isClientError({ status: 429 })).toBe(false);
+      expect(isClientError({ statusCode: 429 })).toBe(false);
+      expect(isClientError({ response: { status: 429 } })).toBe(false);
+    });
+
     it('detects common client error codes in messages', () => {
       expect(isClientError({ code: 'permission-denied' })).toBe(true);
       expect(isClientError({ code: 'not-found' })).toBe(true);
@@ -73,6 +79,12 @@ describe('createQueryClient & query policies', () => {
       expect(defaultRetry(1, serverErr)).toBe(true);
       expect(defaultRetry(2, serverErr)).toBe(true);
       expect(defaultRetry(3, serverErr)).toBe(false);
+    });
+
+    it('retries HTTP 429 up to the normal retry limit', () => {
+      expect(defaultRetry(0, { status: 429 })).toBe(true);
+      expect(defaultRetry(2, { status: 429 })).toBe(true);
+      expect(defaultRetry(3, { status: 429 })).toBe(false);
     });
   });
 

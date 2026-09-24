@@ -90,4 +90,42 @@ describe('createInMemoryFirestoreEmulator', () => {
 
     unsub();
   });
+
+  it('excludes missing fields from inequality and range filters', async () => {
+    const emulator = createInMemoryFirestoreEmulator();
+    const collection = emulator.collection('scores');
+    await emulator.setDoc(emulator.doc('scores/missing'), { name: 'Missing' });
+    await emulator.setDoc(emulator.doc('scores/low'), { score: 1 });
+    await emulator.setDoc(emulator.doc('scores/high'), { score: 3 });
+
+    for (const [op, value, expected] of [
+      ['!=', 1, ['high']],
+      ['<', 2, ['low']],
+      ['<=', 1, ['low']],
+      ['>', 2, ['high']],
+      ['>=', 3, ['high']],
+    ] as const) {
+      const result = await emulator.getDocs(emulator.query(collection, emulator.where('score', op, value)));
+      expect(result.docs.map((doc) => doc.id)).toEqual(expected);
+    }
+
+    expect((await emulator.getDocs(emulator.query(collection, emulator.where('score', '==', undefined)))).docs.map((doc) => doc.id)).toEqual(['missing']);
+    expect((await emulator.getDocs(emulator.query(collection, emulator.where('score', 'in', [undefined])))).docs.map((doc) => doc.id)).toEqual(['missing']);
+  });
+
+  it('uses orderBy constraints in declaration order and document ID to break ties', async () => {
+    const emulator = createInMemoryFirestoreEmulator();
+    const collection = emulator.collection('rankings');
+    await emulator.setDoc(emulator.doc('rankings/z'), { group: 1, score: 2 });
+    await emulator.setDoc(emulator.doc('rankings/c'), { group: 2, score: 9 });
+    await emulator.setDoc(emulator.doc('rankings/b'), { group: 1, score: 2 });
+    await emulator.setDoc(emulator.doc('rankings/a'), { group: 1, score: 5 });
+
+    const result = await emulator.getDocs(emulator.query(
+      collection,
+      emulator.orderBy('group'),
+      emulator.orderBy('score', 'desc')
+    ));
+    expect(result.docs.map((doc) => doc.id)).toEqual(['a', 'b', 'z', 'c']);
+  });
 });

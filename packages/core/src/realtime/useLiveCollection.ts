@@ -20,7 +20,9 @@ export function useLiveCollection<T = Record<string, unknown>>(
     initialData = [],
     queryKey,
     queryClient,
+    targetKey,
     primaryKey = 'id',
+    realtimeFilter,
     onData,
     onError,
   } = options;
@@ -34,6 +36,14 @@ export function useLiveCollection<T = Record<string, unknown>>(
   const onErrorRef = useRef(onError);
   const queryKeyRef = useRef(queryKey);
   const queryClientRef = useRef(queryClient);
+  const targetRef = useRef(target);
+  targetRef.current = target;
+  const targetIdentity = target
+    ? targetKey ?? (typeof target === 'object' && 'path' in target && typeof target.path === 'string' ? target.path : target)
+    : null;
+  const schema = realtimeFilter?.schema ?? 'public';
+  const table = realtimeFilter?.table;
+  const filter = realtimeFilter?.filter;
 
   useEffect(() => {
     onDataRef.current = onData;
@@ -43,7 +53,8 @@ export function useLiveCollection<T = Record<string, unknown>>(
   });
 
   useEffect(() => {
-    if (!enabled || !target) {
+    const activeTarget = targetRef.current;
+    if (!enabled || !activeTarget) {
       setStatus('idle');
       return;
     }
@@ -74,12 +85,12 @@ export function useLiveCollection<T = Record<string, unknown>>(
 
     try {
       // 1. Function subscribable
-      if (typeof target === 'function') {
-        unsubscribe = target(handleData, handleError);
+      if (typeof activeTarget === 'function') {
+        unsubscribe = activeTarget(handleData, handleError);
       }
       // 2. Firestore Query / CollectionReference
-      else if ('onSnapshot' in target && typeof target.onSnapshot === 'function') {
-        const firestoreTarget = target as FirestoreQueryLike<T>;
+      else if ('onSnapshot' in activeTarget && typeof activeTarget.onSnapshot === 'function') {
+        const firestoreTarget = activeTarget as FirestoreQueryLike<T>;
         unsubscribe = firestoreTarget.onSnapshot(
           (snapshot: FirestoreQuerySnapshotLike<T>) => {
             const items = snapshot.docs.map((docSnap) => {
@@ -95,11 +106,11 @@ export function useLiveCollection<T = Record<string, unknown>>(
         );
       }
       // 3. Supabase Realtime Channel
-      else if ('on' in target && typeof target.on === 'function' && 'subscribe' in target) {
-        const channel = target as SupabaseChannelLike<T>;
+      else if ('on' in activeTarget && typeof activeTarget.on === 'function' && 'subscribe' in activeTarget) {
+        const channel = activeTarget as SupabaseChannelLike<T>;
         let currentItems = [...initialData];
 
-        channel.on('postgres_changes', { event: '*', schema: 'public' }, (payload) => {
+        channel.on('postgres_changes', { event: '*', schema, ...(table && { table }), ...(filter && { filter }) }, (payload) => {
           const pk = primaryKey as keyof T;
           if (payload.eventType === 'INSERT') {
             currentItems = [...currentItems, payload.new];
@@ -126,8 +137,8 @@ export function useLiveCollection<T = Record<string, unknown>>(
         };
       }
       // 4. Observable-like
-      else if ('subscribe' in target && typeof (target as ObservableSubscribable<T[]>).subscribe === 'function') {
-        const sub = (target as ObservableSubscribable<T[]>).subscribe(handleData, handleError);
+      else if ('subscribe' in activeTarget && typeof (activeTarget as ObservableSubscribable<T[]>).subscribe === 'function') {
+        const sub = (activeTarget as ObservableSubscribable<T[]>).subscribe(handleData, handleError);
         unsubscribe = typeof sub === 'function' ? sub : () => sub.unsubscribe();
       }
     } catch (err) {
@@ -139,7 +150,7 @@ export function useLiveCollection<T = Record<string, unknown>>(
         unsubscribe();
       }
     };
-  }, [target, enabled]);
+  }, [targetIdentity, enabled, schema, table, filter, primaryKey]);
 
   return {
     data,

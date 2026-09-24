@@ -107,9 +107,14 @@ export interface BaseLiveOptions<TData> {
    */
   queryKey?: readonly unknown[];
   /**
-   * Optional custom QueryClient to receive cache updates (defaults to global default or hook context).
+   * QueryClient needed alongside queryKey for cache synchronization.
+   * No provider or global-client fallback is applied.
    */
   queryClient?: QueryClient;
+  /**
+   * Stable identity for targets without a path, such as inline subscription functions.
+   */
+  targetKey?: string;
   /**
    * Callback fired on each real-time update.
    */
@@ -126,6 +131,8 @@ export interface LiveDocumentOptions<T> extends BaseLiveOptions<T> {
 
 export interface LiveCollectionOptions<T> extends BaseLiveOptions<T[]> {
   initialData?: T[];
+  /** Scope a Supabase postgres_changes subscription to a table and optional filter. */
+  realtimeFilter?: { schema?: string; table: string; filter?: string };
   /**
    * For Supabase channel targets: primary key field name (default: 'id') to merge changes.
    */

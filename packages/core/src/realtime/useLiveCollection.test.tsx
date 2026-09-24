@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { useLiveCollection } from './useLiveCollection';
 import { createInMemoryFirestoreEmulator } from './firestoreEmulator';
@@ -108,6 +108,72 @@ describe('useLiveCollection', () => {
 
     unmount();
     expect(channel.getListenerCount()).toBe(0);
+  });
+
+  it('passes realtimeFilter to postgres_changes and ignores inline option objects with unchanged fields', async () => {
+    const channel = createInMemorySupabaseEmulator().channel('tasks');
+    const on = vi.spyOn(channel, 'on');
+    const { result, rerender } = renderHook(({ table }) => useLiveCollection(channel, {
+      realtimeFilter: { schema: 'private', table, filter: 'owner_id=eq.1' },
+    }), { initialProps: { table: 'tasks' } });
+
+    await waitFor(() => expect(result.current.status).toBe('success'));
+    expect(on).toHaveBeenCalledWith('postgres_changes', {
+      event: '*', schema: 'private', table: 'tasks', filter: 'owner_id=eq.1',
+    }, expect.any(Function));
+    await act(async () => {
+      rerender({ table: 'tasks' });
+    });
+    expect(on).toHaveBeenCalledTimes(1);
+    await act(async () => {
+      rerender({ table: 'projects' });
+    });
+    expect(on).toHaveBeenCalledTimes(2);
+  });
+
+  it('keeps one subscription when an inline collection target has the same path', () => {
+    const subscriptions = vi.fn();
+    const unsubscribe = vi.fn();
+    const createTarget = (path: string) => ({
+      path,
+      onSnapshot: (onNext: (snapshot: { docs: Array<{ id: string; exists: () => boolean; data: () => { name: string } }> }) => void) => {
+        subscriptions(path);
+        onNext({ docs: [] });
+        return unsubscribe;
+      },
+    });
+
+    const { rerender, unmount } = renderHook(({ path }) => useLiveCollection(createTarget(path)), {
+      initialProps: { path: 'users' },
+    });
+    expect(subscriptions).toHaveBeenCalledTimes(1);
+
+    rerender({ path: 'users' });
+    expect(subscriptions).toHaveBeenCalledTimes(1);
+    expect(unsubscribe).not.toHaveBeenCalled();
+
+    rerender({ path: 'projects' });
+    expect(subscriptions).toHaveBeenCalledTimes(2);
+    expect(unsubscribe).toHaveBeenCalledTimes(1);
+    unmount();
+    expect(unsubscribe).toHaveBeenCalledTimes(2);
+  });
+
+  it('uses targetKey to keep an inline function subscription stable', () => {
+    const subscribe = vi.fn();
+    const unsubscribe = vi.fn();
+    const { rerender, unmount } = renderHook(() => useLiveCollection(
+      () => {
+        subscribe();
+        return unsubscribe;
+      },
+      { targetKey: 'active-users' }
+    ));
+
+    rerender();
+    expect(subscribe).toHaveBeenCalledTimes(1);
+    unmount();
+    expect(unsubscribe).toHaveBeenCalledTimes(1);
   });
 
   it('synchronizes live collection into TanStack Query cache when queryKey is provided', async () => {

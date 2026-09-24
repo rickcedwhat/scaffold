@@ -101,19 +101,19 @@ export function createInMemoryFirestoreEmulator(): InMemoryFirestoreEmulator {
             if (val !== c.value) return false;
             break;
           case '!=':
-            if (val === c.value) return false;
+            if (val === undefined || val === c.value) return false;
             break;
           case '<':
-            if ((val as number) >= (c.value as number)) return false;
+            if (val === undefined || (val as number) >= (c.value as number)) return false;
             break;
           case '<=':
-            if ((val as number) > (c.value as number)) return false;
+            if (val === undefined || (val as number) > (c.value as number)) return false;
             break;
           case '>':
-            if ((val as number) <= (c.value as number)) return false;
+            if (val === undefined || (val as number) <= (c.value as number)) return false;
             break;
           case '>=':
-            if ((val as number) < (c.value as number)) return false;
+            if (val === undefined || (val as number) < (c.value as number)) return false;
             break;
           case 'in':
             if (!Array.isArray(c.value) || !c.value.includes(val)) return false;
@@ -147,15 +147,16 @@ export function createInMemoryFirestoreEmulator(): InMemoryFirestoreEmulator {
 
     // Apply orderBy if specified
     const orderConstraints = constraints.filter((c) => c.type === 'orderBy');
-    for (const order of orderConstraints) {
-      const field = order.field;
-      const dir = order.direction === 'desc' ? -1 : 1;
+    if (orderConstraints.length > 0) {
       docs.sort((a, b) => {
-        const aVal = a.data()?.[field] ?? '';
-        const bVal = b.data()?.[field] ?? '';
-        if (aVal < bVal) return -1 * dir;
-        if (aVal > bVal) return 1 * dir;
-        return 0;
+        for (const order of orderConstraints) {
+          const aVal = a.data()?.[order.field] ?? '';
+          const bVal = b.data()?.[order.field] ?? '';
+          const direction = order.direction === 'desc' ? -1 : 1;
+          if (aVal < bVal) return -1 * direction;
+          if (aVal > bVal) return 1 * direction;
+        }
+        return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
       });
     }
 
