@@ -43,3 +43,9 @@ export {
   type PipelineTracerOptions,
   type TracerListener,
 } from './tracer';
+
+// TanStack Query Presets & Key Factory
+export * from './query';
+
+// Real-Time Data Hooks & Emulators (Firestore & Supabase)
+export * from './realtime';
