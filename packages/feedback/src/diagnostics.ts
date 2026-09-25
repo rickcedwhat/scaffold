@@ -4,19 +4,27 @@ const MAX_CAPTURED_ERRORS = 25;
 
 let capturedErrors: ConsoleErrorEntry[] = [];
 let captureInstalled = false;
+const activeInstallations = new Set<symbol>();
 let originalConsoleError: typeof console.error | null = null;
 
 /**
  * Installs a lightweight console.error interceptor.
- * Safe to call multiple times; only the first install sticks.
+ * Shared by active installations; the first installation sets the options.
  */
 export function installConsoleCapture(options?: { maxEntries?: number }): () => void {
   if (typeof window === 'undefined') {
     return () => undefined;
   }
 
+  const installation = Symbol();
+  activeInstallations.add(installation);
+  const cleanup = () => {
+    if (!activeInstallations.delete(installation)) return;
+    if (activeInstallations.size === 0) uninstallConsoleCapture();
+  };
+
   if (captureInstalled) {
-    return uninstallConsoleCapture;
+    return cleanup;
   }
 
   const max = options?.maxEntries ?? MAX_CAPTURED_ERRORS;
@@ -48,10 +56,11 @@ export function installConsoleCapture(options?: { maxEntries?: number }): () => 
   };
 
   captureInstalled = true;
-  return uninstallConsoleCapture;
+  return cleanup;
 }
 
 export function uninstallConsoleCapture(): void {
+  activeInstallations.clear();
   if (!captureInstalled || !originalConsoleError) return;
   console.error = originalConsoleError;
   originalConsoleError = null;

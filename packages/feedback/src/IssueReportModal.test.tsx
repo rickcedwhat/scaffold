@@ -59,11 +59,11 @@ describe('IssueReportModal', () => {
     expect(submit).not.toHaveBeenCalled();
 
     fireEvent.change(screen.getByPlaceholderText(/short summary/i), {
-      target: { value: 'Settings save failed' },
+      target: { value: '  Settings save failed  ' },
     });
     fireEvent.change(
       screen.getByPlaceholderText(/what went wrong/i),
-      { target: { value: 'Save button stays disabled after edits.' } },
+      { target: { value: '  Save button stays disabled after edits.  ' } },
     );
 
     fireEvent.click(screen.getByRole('button', { name: /submit report/i }));
@@ -79,6 +79,7 @@ describe('IssueReportModal', () => {
     };
     expect(payload).toMatchObject({
       title: 'Settings save failed',
+      description: 'Save button stays disabled after edits.',
       kind: 'feedback',
     });
     expect(payload.diagnostics.pathname).toBe('/dashboard');
@@ -87,6 +88,62 @@ describe('IssueReportModal', () => {
     expect(onSubmitted).toHaveBeenCalledWith(
       expect.objectContaining({ id: '7', provider: 'github' }),
     );
+  });
+
+  it.each([
+    ['   ', '          '],
+    ['  ab  ', '  123456789  '],
+  ])('rejects fields below the minimum after trimming', async (title, description) => {
+    const submit = vi.fn(async () => ({ id: '1', url: '', provider: 'test' }));
+    renderWithTheme(
+      <IssueReportModal open onOpenChange={() => undefined} enabled adapter={{ name: 'test', submit }} />,
+    );
+    fireEvent.change(screen.getByPlaceholderText(/short summary/i), {
+      target: { value: title },
+    });
+    fireEvent.change(screen.getByPlaceholderText(/what went wrong/i), {
+      target: { value: description },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /submit report/i }));
+    expect(await screen.findByText('Title must be at least 3 characters.')).toBeInTheDocument();
+    expect(await screen.findByText('Please provide a bit more detail (10+ characters).')).toBeInTheDocument();
+    expect(submit).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['https://example.test/issues/1', true],
+    ['http://example.test/issues/1', true],
+    ['not a url', false],
+    ['https://', false],
+    ['/issues/1', false],
+    ['//example.test/issues/1', false],
+    ['javascript:alert(1)', false],
+    ['data:text/html,hello', false],
+    ['ftp://example.test/issues/1', false],
+    ['', false],
+  ])('only links to absolute HTTP(S) issue URLs: %s', async (url, allowed) => {
+    renderWithTheme(
+      <IssueReportModal
+        open
+        onOpenChange={() => undefined}
+        enabled
+        adapter={createNoopIssueAdapter({ id: '1', url })}
+      />,
+    );
+    fireEvent.change(screen.getByPlaceholderText(/short summary/i), {
+      target: { value: '  abc  ' },
+    });
+    fireEvent.change(screen.getByPlaceholderText(/what went wrong/i), {
+      target: { value: '  1234567890  ' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /submit report/i }));
+    expect(await screen.findByText(/your report was filed/i)).toBeInTheDocument();
+    const link = screen.queryByRole('link', { name: 'View issue' });
+    if (allowed) {
+      expect(link).toHaveAttribute('href', url);
+    } else {
+      expect(link).not.toBeInTheDocument();
+    }
   });
 
   it('surfaces adapter errors', async () => {

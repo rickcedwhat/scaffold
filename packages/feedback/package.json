@@ -19,17 +19,6 @@
     "react-hook-form": ">=7.55.0",
     "zod": ">=3.25.0 || >=4.0.0"
   },
-  "peerDependenciesMeta": {
-    "@hookform/resolvers": {
-      "optional": true
-    },
-    "react-hook-form": {
-      "optional": true
-    },
-    "zod": {
-      "optional": true
-    }
-  },
   "dependencies": {
     "@scaffold/core": "*",
     "@scaffold/ui": "*",

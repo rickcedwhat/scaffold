@@ -37,6 +37,49 @@ describe('diagnostics', () => {
     clearCapturedConsoleErrors();
   });
 
+  it.each([0, 1])('keeps capture until the final cleanup (first release: %s)', (first) => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    try {
+      const cleanups = [installConsoleCapture(), installConsoleCapture()];
+      const interceptor = console.error;
+      cleanups[first]!();
+      cleanups[first]!();
+      expect(console.error).toBe(interceptor);
+      console.error('still captured');
+      expect(getCapturedConsoleErrors().map((entry) => entry.message)).toEqual([
+        'still captured',
+      ]);
+      expect(spy).toHaveBeenCalledTimes(1);
+
+      cleanups[1 - first]!();
+      cleanups[1 - first]!();
+      console.error('after final cleanup');
+      expect(getCapturedConsoleErrors()).toHaveLength(1);
+      expect(spy).toHaveBeenCalledTimes(2);
+    } finally {
+      uninstallConsoleCapture();
+      spy.mockRestore();
+    }
+  });
+
+  it('ignores old cleanups after an explicit uninstall and reinstall', () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    try {
+      const oldCleanup = installConsoleCapture();
+      uninstallConsoleCapture();
+      const cleanup = installConsoleCapture();
+      oldCleanup();
+      console.error('new installation');
+      expect(getCapturedConsoleErrors()[0]?.message).toBe('new installation');
+      cleanup();
+      console.error('released');
+      expect(getCapturedConsoleErrors()).toHaveLength(1);
+    } finally {
+      uninstallConsoleCapture();
+      spy.mockRestore();
+    }
+  });
+
   it('captures viewport and route context', () => {
     const snap = captureDiagnostics({
       pathname: '/dashboard/settings',

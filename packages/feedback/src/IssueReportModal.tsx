@@ -27,10 +27,19 @@ import type {
 } from './types';
 
 const reportSchema = createFormSchema({
-  title: z.string().min(3, 'Title must be at least 3 characters.'),
-  description: z.string().min(10, 'Please provide a bit more detail (10+ characters).'),
+  title: z.string().trim().min(3, 'Title must be at least 3 characters.'),
+  description: z.string().trim().min(10, 'Please provide a bit more detail (10+ characters).'),
   kind: z.enum(['bug', 'feedback', 'question']),
 });
+
+function isHttpUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return url.protocol === 'http:' || url.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
 
 type ReportValues = z.infer<typeof reportSchema>;
 
@@ -180,7 +189,7 @@ function IssueReportModalInner({
             <Badge intent="success" size="sm">
               {adapter.name}: {result.id}
             </Badge>
-            {result.url ? (
+            {result.url && isHttpUrl(result.url) ? (
               <Text size="sm">
                 <a href={result.url} target="_blank" rel="noreferrer">
                   View issue
