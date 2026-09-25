@@ -11,7 +11,7 @@ import {
   Dropdown,
   Badge,
 } from '@scaffold/ui';
-import { createFormSchema, useAppForm, z } from '@scaffold/core';
+import { createFormSchema, useAppForm, z } from '@scaffold/core/form';
 
 const projectSchema = createFormSchema({
   title: z.string().min(1, 'Project title is required.'),
@@ -70,7 +70,7 @@ export function FormPresetsDemo() {
           Form Presets
         </Heading>
         <Text size="sm" color="secondary">
-          `useAppForm` + Zod via `@scaffold/core`, bound to FormField, TextInput,
+          `useAppForm` + Zod via `@scaffold/core/form`, bound to FormField, TextInput,
           Textarea, and Dropdown with accessible error delivery.
         </Text>
       </div>

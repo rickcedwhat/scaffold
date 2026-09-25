@@ -49,6 +49,3 @@ export * from './query';
 
 // Real-Time Data Hooks & Emulators (Firestore & Supabase)
 export * from './realtime';
-
-// Form Presets — React Hook Form + Zod
-export * from './form';

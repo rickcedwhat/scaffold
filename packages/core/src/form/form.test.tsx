@@ -1,13 +1,15 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, expectTypeOf, vi } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
-import { createFormSchema, z } from './createFormSchema';
 import {
+  createFormSchema,
+  z,
+  useAppForm,
+  setTypedValue,
   flattenFieldErrors,
   getErrorMessage,
   getFieldError,
   getFirstErrorPath,
-} from './fieldHelpers';
-import { useAppForm } from './useAppForm';
+} from '@scaffold/core/form';
 import type { FieldErrors } from 'react-hook-form';
 
 const profileSchema = createFormSchema({
@@ -83,6 +85,49 @@ describe('fieldHelpers', () => {
 });
 
 describe('useAppForm', () => {
+  it('keeps fields and defaults as schema input and submits transformed output', async () => {
+    const schema = createFormSchema({
+      age: z.string().transform(Number),
+      name: z.string().default('Anonymous'),
+    }).transform(({ age, name }) => ({ years: age, name }));
+    const { result } = renderHook(() => useAppForm({
+      schema,
+      defaultValues: { age: '21' },
+    }));
+
+    expectTypeOf(result.current.getValues()).toEqualTypeOf<{
+      age: string;
+      name?: string | undefined;
+    }>();
+    expectTypeOf(result.current.register).parameter(0).toEqualTypeOf<'age' | 'name'>();
+    expectTypeOf(result.current.commitDefaults).parameter(0).toEqualTypeOf<
+      z.input<typeof schema> | undefined
+    >();
+    expectTypeOf(result.current.setValue<'age'>).parameter(1).toEqualTypeOf<string>();
+
+    act(() => { setTypedValue(result.current, 'age', '42'); });
+    expect(result.current.fieldProps('age').hasError).toBe(false);
+
+    const onValid = vi.fn();
+    await act(async () => {
+      await result.current.handleAppSubmit((values) => {
+        expectTypeOf(values).toEqualTypeOf<{ years: number; name: string }>();
+        onValid(values);
+      }, (errors) => {
+        expectTypeOf(errors).toEqualTypeOf<FieldErrors<z.input<typeof schema>>>();
+      })();
+      await result.current.handleSubmit((values) => {
+        expectTypeOf(values).toEqualTypeOf<{ years: number; name: string }>();
+        onValid(values);
+      })();
+    });
+
+    expect(onValid).toHaveBeenCalledTimes(2);
+    expect(onValid).toHaveBeenNthCalledWith(1, { years: 42, name: 'Anonymous' });
+    expect(onValid).toHaveBeenNthCalledWith(2, { years: 42, name: 'Anonymous' });
+    expect(result.current.getValues()).toEqual({ age: '42' });
+  });
+
   it('validates on submit and surfaces field errors for FormField', async () => {
     const { result } = renderHook(() =>
       useAppForm({

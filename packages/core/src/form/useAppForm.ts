@@ -12,7 +12,7 @@ import {
   type UseFormReturn,
 } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import type { ZodType } from 'zod';
+import type { input, output, ZodType } from 'zod';
 import {
   flattenFieldErrors,
   getErrorMessage,
@@ -22,16 +22,28 @@ import {
   type FormControlA11yProps,
 } from './fieldHelpers';
 
-export interface UseAppFormOptions<TFieldValues extends FieldValues>
-  extends Omit<UseFormProps<TFieldValues>, 'resolver'> {
+type FormSchema = ZodType & {
+  _input: FieldValues;
+  _output: FieldValues;
+};
+
+// Extract preserves object schema types across Zod 3/4's inference utilities.
+type FormInput<TSchema extends FormSchema> = Extract<input<TSchema>, FieldValues>;
+type FormOutput<TSchema extends FormSchema> = Extract<output<TSchema>, FieldValues>;
+
+export interface UseAppFormOptions<TSchema extends FormSchema>
+  extends Omit<UseFormProps<FormInput<TSchema>, unknown, FormOutput<TSchema>>, 'resolver'> {
   /**
    * Zod schema used as the form resolver.
    * Prefer schemas built with `createFormSchema`.
    */
-  schema: ZodType<TFieldValues>;
+  schema: TSchema;
 }
 
-export interface AppFormHelpers<TFieldValues extends FieldValues> {
+export interface AppFormHelpers<
+  TFieldValues extends FieldValues,
+  TOutput extends FieldValues = TFieldValues,
+> {
   /** Message for a field, if any. */
   fieldError: (name: FieldPath<TFieldValues>) => string | undefined;
   /** Accessibility + dirty props for UI FormField / controls. */
@@ -58,13 +70,15 @@ export interface AppFormHelpers<TFieldValues extends FieldValues> {
    * Typed submit wrapper that keeps handler signatures clean.
    */
   handleAppSubmit: (
-    onValid: SubmitHandler<TFieldValues>,
+    onValid: SubmitHandler<TOutput>,
     onInvalid?: SubmitErrorHandler<TFieldValues>,
   ) => (e?: BaseSyntheticEvent) => Promise<void>;
 }
 
-export type UseAppFormReturn<TFieldValues extends FieldValues> =
-  UseFormReturn<TFieldValues> & AppFormHelpers<TFieldValues>;
+export type UseAppFormReturn<
+  TFieldValues extends FieldValues,
+  TOutput extends FieldValues = TFieldValues,
+> = UseFormReturn<TFieldValues, unknown, TOutput> & AppFormHelpers<TFieldValues, TOutput>;
 
 const DEFAULT_MODE = 'onTouched' as const;
 
@@ -78,9 +92,9 @@ const DEFAULT_MODE = 'onTouched' as const;
  *
  * Extra helpers map errors onto `@scaffold/ui` FormField / Input props.
  */
-export function useAppForm<TFieldValues extends FieldValues>(
-  options: UseAppFormOptions<TFieldValues>,
-): UseAppFormReturn<TFieldValues> {
+export function useAppForm<TSchema extends FormSchema>(
+  options: UseAppFormOptions<TSchema>,
+): UseAppFormReturn<FormInput<TSchema>, FormOutput<TSchema>> {
   const {
     schema,
     mode = DEFAULT_MODE,
@@ -89,20 +103,20 @@ export function useAppForm<TFieldValues extends FieldValues>(
     ...rest
   } = options;
 
-  const form = useForm<TFieldValues>({
+  const form = useForm<FormInput<TSchema>, unknown, FormOutput<TSchema>>({
     ...rest,
     defaultValues,
     mode,
     shouldFocusError,
-    // zodResolver's Zod 4 overloads disagree with ZodType<TFieldValues>;
-    // cast keeps call sites fully typed against the schema output.
-    resolver: zodResolver(schema as never) as Resolver<TFieldValues>,
+    // Bridge the resolver's separate Zod 3/4 overloads while preserving
+    // the schema's input and output types at the form boundary.
+    resolver: zodResolver(schema as never) as Resolver<FormInput<TSchema>, unknown, FormOutput<TSchema>>,
   });
 
   // Subscribe to formState so helpers re-render when validation changes.
   const { errors, dirtyFields, isSubmitted, submitCount } = form.formState;
 
-  const helpers = useMemo<AppFormHelpers<TFieldValues>>(() => {
+  const helpers = useMemo<AppFormHelpers<FormInput<TSchema>, FormOutput<TSchema>>>(() => {
     return {
       fieldError(name) {
         return getErrorMessage(getFieldError(errors, name));
@@ -151,7 +165,7 @@ export function setTypedValue<
   TFieldValues extends FieldValues,
   TName extends FieldPath<TFieldValues>,
 >(
-  form: UseFormReturn<TFieldValues>,
+  form: Pick<UseFormReturn<TFieldValues>, 'setValue'>,
   name: TName,
   value: PathValue<TFieldValues, TName>,
   options?: Parameters<UseFormReturn<TFieldValues>['setValue']>[2],

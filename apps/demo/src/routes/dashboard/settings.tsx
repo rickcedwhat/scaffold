@@ -11,7 +11,7 @@ import {
   Button,
   useTheme,
 } from '@scaffold/ui';
-import { createFormSchema, useAppForm, z } from '@scaffold/core';
+import { createFormSchema, useAppForm, z } from '@scaffold/core/form';
 import { Check, Save, User, Mail, Building, AlertCircle } from 'lucide-react';
 
 export const Route = createFileRoute('/dashboard/settings')({

@@ -127,7 +127,7 @@ export interface FormControlA11yProps {
  * Derives FormField-friendly a11y + error props for a registered field.
  */
 export function getFormControlProps<TFieldValues extends FieldValues>(
-  form: UseFormReturn<TFieldValues>,
+  form: Pick<UseFormReturn<TFieldValues>, 'formState' | 'getFieldState'>,
   name: FieldPath<TFieldValues>,
   options?: { describedById?: string },
 ): FormControlA11yProps {
