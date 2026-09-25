@@ -14,6 +14,7 @@ import {
   Button,
   useTheme,
 } from '@scaffold/ui';
+import { FeedbackWidget, createNoopIssueAdapter } from '@scaffold/feedback';
 import {
   LayoutDashboard,
   FolderKanban,
@@ -23,7 +24,9 @@ import {
   Moon,
   Home,
   Bell,
+  MessageSquarePlus,
 } from 'lucide-react';
+import { useMemo, useState } from 'react';
 
 export const Route = createFileRoute('/dashboard')({
   component: DashboardLayout,
@@ -33,8 +36,20 @@ function DashboardLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const { mode, toggleMode, colors } = useTheme();
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   const currentPath = location.pathname;
+
+  // Demo uses a noop adapter so reports succeed locally without tokens.
+  // Swap for createGitHubIssueAdapter({ repository, token | proxyUrl }) in real apps.
+  const feedbackAdapter = useMemo(
+    () =>
+      createNoopIssueAdapter({
+        id: 'demo-1',
+        url: 'https://github.com/rickcedwhat/scaffold/issues',
+      }),
+    [],
+  );
 
   return (
     <div
@@ -47,7 +62,6 @@ function DashboardLayout() {
         color: colors.text.primary,
       }}
     >
-      {/* Left Sidebar Navigation */}
       <Sidebar width="260px">
         <SidebarHeader>
           <Stack direction="row" gap={2} align="center">
@@ -68,9 +82,7 @@ function DashboardLayout() {
               S
             </div>
             <Stack direction="column" gap={1}>
-              <Heading level={4}>
-                Scaffold
-              </Heading>
+              <Heading level={4}>Scaffold</Heading>
               <Text size="xs" color="secondary">
                 Starter Application
               </Text>
@@ -92,7 +104,11 @@ function DashboardLayout() {
               active={currentPath === '/dashboard/projects'}
               icon={<FolderKanban size={18} />}
               onClick={() => navigate({ to: '/dashboard/projects' })}
-              badge={<Badge intent="primary" size="sm">Query</Badge>}
+              badge={
+                <Badge intent="primary" size="sm">
+                  Query
+                </Badge>
+              }
             >
               Projects
             </SidebarItem>
@@ -101,7 +117,11 @@ function DashboardLayout() {
               active={currentPath === '/dashboard/search'}
               icon={<Search size={18} />}
               onClick={() => navigate({ to: '/dashboard/search' })}
-              badge={<Badge intent="neutral" size="sm">URL</Badge>}
+              badge={
+                <Badge intent="neutral" size="sm">
+                  URL
+                </Badge>
+              }
             >
               Search
             </SidebarItem>
@@ -124,7 +144,13 @@ function DashboardLayout() {
                 <Text size="sm" weight="medium">
                   Alex Developer
                 </Text>
-                <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <div
+                  style={{
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
                   <Text size="xs" color="secondary">
                     alex@example.com
                   </Text>
@@ -166,7 +192,6 @@ function DashboardLayout() {
         </SidebarFooter>
       </Sidebar>
 
-      {/* Main Content Area */}
       <div
         style={{
           flex: 1,
@@ -176,7 +201,6 @@ function DashboardLayout() {
           overflow: 'hidden',
         }}
       >
-        {/* Top Header Bar */}
         <div
           style={{
             height: '60px',
@@ -199,14 +223,25 @@ function DashboardLayout() {
               {currentPath === '/dashboard'
                 ? 'Overview'
                 : currentPath === '/dashboard/projects'
-                ? 'Projects'
-                : currentPath === '/dashboard/search'
-                ? 'Search'
-                : 'Settings'}
+                  ? 'Projects'
+                  : currentPath === '/dashboard/search'
+                    ? 'Search'
+                    : 'Settings'}
             </Text>
           </Stack>
 
           <Stack direction="row" gap={2} align="center">
+            <Button
+              variant="ghost"
+              size="sm"
+              aria-label="Report feedback"
+              onClick={() => setFeedbackOpen(true)}
+            >
+              <Stack direction="row" gap={1} align="center">
+                <MessageSquarePlus size={16} />
+                <span>Feedback</span>
+              </Stack>
+            </Button>
             <Button variant="ghost" size="sm" aria-label="Notifications">
               <Bell size={16} />
             </Button>
@@ -216,7 +251,6 @@ function DashboardLayout() {
           </Stack>
         </div>
 
-        {/* Nested Route Viewport */}
         <div
           style={{
             flex: 1,
@@ -227,6 +261,18 @@ function DashboardLayout() {
           <Outlet />
         </div>
       </div>
+
+      <FeedbackWidget
+        enabled
+        adapter={feedbackAdapter}
+        pathname={currentPath}
+        open={feedbackOpen}
+        onOpenChange={setFeedbackOpen}
+        defaultLabels={['demo', 'in-app']}
+        extraDiagnostics={{ app: 'scaffold-demo' }}
+        toastOnSuccess={false}
+        trigger={null}
+      />
     </div>
   );
 }
