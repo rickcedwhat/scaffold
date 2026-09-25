@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { renderApp, screen, fireEvent } from '@scaffold/test-utils';
+import { renderApp, screen, fireEvent, waitFor } from '@scaffold/test-utils';
 import { routeTree } from './routeTree.gen';
 
 describe('Scaffold Starter Application', () => {
@@ -56,13 +56,15 @@ describe('Scaffold Starter Application', () => {
     const saveButton = screen.getByRole('button', { name: /save preferences/i });
     fireEvent.click(saveButton);
     expect(screen.queryByText('Changes Saved!')).not.toBeInTheDocument();
-    expect(screen.getByText('Fix Errors to Save')).toBeInTheDocument();
+    expect(await screen.findByText('Fix Errors to Save')).toBeInTheDocument();
     expect(screen.getByText('Please resolve highlighted errors')).toBeInTheDocument();
 
     // Fix the email to valid
     fireEvent.change(emailInput, { target: { value: 'alex@scaffold.dev' } });
-    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-    expect(emailInput).toHaveAttribute('aria-invalid', 'false');
+    await waitFor(() => {
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+      expect(emailInput).toHaveAttribute('aria-invalid', 'false');
+    });
 
     // Save should succeed now
     const updatedSaveButton = screen.getByRole('button', { name: /save preferences/i });

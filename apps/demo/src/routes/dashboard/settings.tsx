@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, type FormEvent } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
 import {
   Stack,
@@ -11,19 +11,25 @@ import {
   Button,
   useTheme,
 } from '@scaffold/ui';
+import { createFormSchema, useAppForm, z } from '@scaffold/core';
 import { Check, Save, User, Mail, Building, AlertCircle } from 'lucide-react';
 
 export const Route = createFileRoute('/dashboard/settings')({
   component: SettingsComponent,
 });
 
-interface SettingsValues {
-  name: string;
-  email: string;
-  org: string;
-  role: string;
-  timezone: string;
-}
+const settingsSchema = createFormSchema({
+  name: z.string().min(1, 'Full name is required.'),
+  email: z
+    .string()
+    .min(1, 'Email address is required.')
+    .email('Please enter a valid email address (e.g. name@example.com).'),
+  org: z.string().min(1, 'Organization name is required.'),
+  role: z.enum(['admin', 'editor', 'viewer']),
+  timezone: z.enum(['utc', 'est', 'cst', 'pst', 'gmt']),
+});
+
+type SettingsValues = z.infer<typeof settingsSchema>;
 
 const INITIAL_SETTINGS: SettingsValues = {
   name: 'Alex Developer',
@@ -35,20 +41,28 @@ const INITIAL_SETTINGS: SettingsValues = {
 
 function SettingsComponent() {
   const { colors } = useTheme();
-
-  const [savedValues, setSavedValues] = useState<SettingsValues>(INITIAL_SETTINGS);
-
-  const [name, setName] = useState(savedValues.name);
-  const [email, setEmail] = useState(savedValues.email);
-  const [org, setOrg] = useState(savedValues.org);
-  const [role, setRole] = useState(savedValues.role);
-  const [timezone, setTimezone] = useState(savedValues.timezone);
-
   const [saved, setSaved] = useState(false);
   const [submitError, setSubmitError] = useState(false);
-  const [touched, setTouched] = useState<Record<string, boolean>>({});
-
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const form = useAppForm({
+    schema: settingsSchema,
+    defaultValues: INITIAL_SETTINGS,
+  });
+
+  const {
+    register,
+    handleAppSubmit,
+    fieldProps,
+    isFieldDirty,
+    formState: { isSubmitting },
+    commitDefaults,
+    watch,
+    setValue,
+  } = form;
+
+  const role = watch('role');
+  const timezone = watch('timezone');
 
   useEffect(() => {
     return () => {
@@ -58,57 +72,16 @@ function SettingsComponent() {
     };
   }, []);
 
-  const nameIsDirty = name !== savedValues.name;
-  const emailIsDirty = email !== savedValues.email;
-  const orgIsDirty = org !== savedValues.org;
-  const roleIsDirty = role !== savedValues.role;
-  const timezoneIsDirty = timezone !== savedValues.timezone;
-
-  const validateEmail = (val: string) => {
-    if (!val.trim()) return 'Email address is required.';
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(val)) return "Please enter a valid email address (e.g. name@example.com).";
-    return '';
+  const clearSubmitError = () => {
+    if (submitError) setSubmitError(false);
   };
 
-  const validateName = (val: string) => {
-    if (!val.trim()) return 'Full name is required.';
-    return '';
-  };
-
-  const validateOrg = (val: string) => {
-    if (!val.trim()) return 'Organization name is required.';
-    return '';
-  };
-
-  const nameError = touched.name ? validateName(name) : '';
-  const emailError = touched.email ? validateEmail(email) : '';
-  const orgError = touched.org ? validateOrg(org) : '';
-
-  const handleBlur = (field: string) => () => {
-    setTouched((prev) => ({ ...prev, [field]: true }));
-  };
-
-  const handleSubmit = (e: FormEvent) => {
-    e.preventDefault();
-    setTouched({ name: true, email: true, org: true });
-
-    const currentNameError = validateName(name);
-    const currentEmailError = validateEmail(email);
-    const currentOrgError = validateOrg(org);
-
-    if (currentNameError || currentEmailError || currentOrgError) {
-      setSubmitError(true);
-      setSaved(false);
-      return;
-    }
-
+  const onValid = (values: SettingsValues) => {
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
     }
     setSubmitError(false);
-    setSavedValues({ name, email, org, role, timezone });
-    setTouched({});
+    commitDefaults(values);
     setSaved(true);
     saveTimeoutRef.current = setTimeout(() => {
       setSaved(false);
@@ -116,9 +89,17 @@ function SettingsComponent() {
     }, 2500);
   };
 
+  const onInvalid = () => {
+    setSubmitError(true);
+    setSaved(false);
+  };
+
+  const nameField = fieldProps('name');
+  const emailField = fieldProps('email');
+  const orgField = fieldProps('org');
+
   return (
     <Stack direction="column" gap={6}>
-      {/* Title */}
       <Stack direction="column" gap={1}>
         <Heading level={2} size="xl">
           Workspace Settings
@@ -128,9 +109,8 @@ function SettingsComponent() {
         </Text>
       </Stack>
 
-      <form onSubmit={handleSubmit} noValidate>
+      <form onSubmit={handleAppSubmit(onValid, onInvalid)} noValidate>
         <Stack direction="column" gap={6}>
-          {/* Profile Section */}
           <Card padding="normal">
             <Stack direction="column" gap={4}>
               <Heading level={4} size="base">
@@ -143,21 +123,20 @@ function SettingsComponent() {
               <TextInput
                 label="Full Name"
                 placeholder="Enter your name"
-                value={name}
-                onChange={(e) => {
-                  setName(e.target.value);
-                  if (submitError) setSubmitError(false);
-                }}
-                onBlur={handleBlur('name')}
-                error={Boolean(nameError)}
-                isDirty={nameIsDirty}
+                {...register('name', { onChange: clearSubmitError })}
+                error={nameField.hasError}
+                isDirty={isFieldDirty('name')}
                 prefixSlot={
                   <User
                     size={16}
-                    color={nameError ? colors.intent.danger.main : colors.text.secondary}
+                    color={
+                      nameField.hasError
+                        ? colors.intent.danger.main
+                        : colors.text.secondary
+                    }
                   />
                 }
-                helperText={nameError || undefined}
+                helperText={nameField.errorMessage}
                 fullWidth
               />
 
@@ -165,22 +144,22 @@ function SettingsComponent() {
                 label="Email Address"
                 placeholder="Enter your email"
                 type="email"
-                value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value);
-                  if (submitError) setSubmitError(false);
-                }}
-                onBlur={handleBlur('email')}
-                error={Boolean(emailError)}
-                isDirty={emailIsDirty}
+                {...register('email', { onChange: clearSubmitError })}
+                error={emailField.hasError}
+                isDirty={isFieldDirty('email')}
                 prefixSlot={
                   <Mail
                     size={16}
-                    color={emailError ? colors.intent.danger.main : colors.text.secondary}
+                    color={
+                      emailField.hasError
+                        ? colors.intent.danger.main
+                        : colors.text.secondary
+                    }
                   />
                 }
                 helperText={
-                  emailError || 'Gravatar will automatically sync your profile image.'
+                  emailField.errorMessage ||
+                  'Gravatar will automatically sync your profile image.'
                 }
                 fullWidth
               />
@@ -188,27 +167,25 @@ function SettingsComponent() {
               <TextInput
                 label="Organization"
                 placeholder="Enter organization"
-                value={org}
-                onChange={(e) => {
-                  setOrg(e.target.value);
-                  if (submitError) setSubmitError(false);
-                }}
-                onBlur={handleBlur('org')}
-                error={Boolean(orgError)}
-                isDirty={orgIsDirty}
+                {...register('org', { onChange: clearSubmitError })}
+                error={orgField.hasError}
+                isDirty={isFieldDirty('org')}
                 prefixSlot={
                   <Building
                     size={16}
-                    color={orgError ? colors.intent.danger.main : colors.text.secondary}
+                    color={
+                      orgField.hasError
+                        ? colors.intent.danger.main
+                        : colors.text.secondary
+                    }
                   />
                 }
-                helperText={orgError || undefined}
+                helperText={orgField.errorMessage}
                 fullWidth
               />
             </Stack>
           </Card>
 
-          {/* Preferences Section */}
           <Card padding="normal">
             <Stack direction="column" gap={4}>
               <Heading level={4} size="base">
@@ -222,10 +199,13 @@ function SettingsComponent() {
                 label="Default Project Role"
                 value={role}
                 onChange={(e) => {
-                  setRole(e.target.value);
-                  if (submitError) setSubmitError(false);
+                  setValue('role', e.target.value as SettingsValues['role'], {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  });
+                  clearSubmitError();
                 }}
-                isDirty={roleIsDirty}
+                isDirty={isFieldDirty('role')}
                 options={[
                   { value: 'admin', label: 'Administrator (Full Access)' },
                   { value: 'editor', label: 'Editor (Can Edit & Deploy)' },
@@ -238,10 +218,14 @@ function SettingsComponent() {
                 label="Preferred Timezone"
                 value={timezone}
                 onChange={(e) => {
-                  setTimezone(e.target.value);
-                  if (submitError) setSubmitError(false);
+                  setValue(
+                    'timezone',
+                    e.target.value as SettingsValues['timezone'],
+                    { shouldDirty: true, shouldValidate: true },
+                  );
+                  clearSubmitError();
                 }}
-                isDirty={timezoneIsDirty}
+                isDirty={isFieldDirty('timezone')}
                 options={[
                   { value: 'utc', label: 'UTC (Coordinated Universal Time)' },
                   { value: 'est', label: 'EST (Eastern Standard Time, UTC-5)' },
@@ -254,13 +238,13 @@ function SettingsComponent() {
             </Stack>
           </Card>
 
-          {/* Save Action */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
             <Button
               variant="solid"
               intent={submitError ? 'danger' : 'primary'}
               size="md"
               type="submit"
+              disabled={isSubmitting}
             >
               <Stack direction="row" gap={2} align="center">
                 {saved ? (
@@ -274,8 +258,8 @@ function SettingsComponent() {
                   {saved
                     ? 'Changes Saved!'
                     : submitError
-                    ? 'Fix Errors to Save'
-                    : 'Save Preferences'}
+                      ? 'Fix Errors to Save'
+                      : 'Save Preferences'}
                 </span>
               </Stack>
             </Button>

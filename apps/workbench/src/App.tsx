@@ -84,6 +84,7 @@ import {
   Trash2,
   RotateCcw,
   Workflow,
+  ClipboardList,
 } from 'lucide-react';
 import { useRenderStorm } from '@scaffold/core';
 import {
@@ -92,6 +93,7 @@ import {
   stepConfigsByStageId,
   mockPipelineSlices,
 } from './data/pipelineMocks';
+import { FormPresetsDemo } from './components/FormPresetsDemo';
 
 
 export type WorkbenchTab =
@@ -110,7 +112,8 @@ export type WorkbenchTab =
   | 'cards'
   | 'typography'
   | 'tokens'
-  | 'pipelineStudio';
+  | 'pipelineStudio'
+  | 'formPresets';
 
 export function App() {
   const { mode, toggleMode, colors, tokens } = useTheme();
@@ -255,6 +258,7 @@ export function App() {
     typography: 'Typography',
     pipelineStudio: 'Pipeline Studio',
     tokens: 'Design Tokens',
+    formPresets: 'Form Presets',
   };
 
   const intents: ButtonIntent[] = ['primary', 'secondary', 'neutral', 'success', 'danger'];
@@ -293,6 +297,13 @@ export function App() {
                 onClick={() => setActiveTab('dropdown')}
               >
                 Dropdown
+              </SidebarItem>
+              <SidebarItem
+                icon={<ClipboardList size={16} />}
+                active={activeTab === 'formPresets'}
+                onClick={() => setActiveTab('formPresets')}
+              >
+                Form Presets
               </SidebarItem>
               <SidebarItem
                 icon={<MousePointerClick size={16} />}
@@ -458,6 +469,8 @@ export function App() {
 
           {/* Main Container */}
           <Container maxWidth="xl">
+            {activeTab === 'formPresets' && <FormPresetsDemo />}
+
             {/* TextInput Tab */}
             {activeTab === 'textInput' && (
               <Stack gap={6}>
