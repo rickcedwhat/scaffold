@@ -94,6 +94,26 @@ describe('Scaffold Starter Application', () => {
     expect(screen.getByText('Saved successfully')).toBeInTheDocument();
   });
 
+  it('opens feedback modal from dashboard header and submits a noop report', async () => {
+    renderApp(routeTree, { initialPath: '/dashboard' });
+
+    expect(await screen.findByText('Workspace Overview')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /report feedback/i }));
+
+    expect(await screen.findByText('Report an issue')).toBeInTheDocument();
+
+    fireEvent.change(screen.getByPlaceholderText(/short summary/i), {
+      target: { value: 'Demo feedback report' },
+    });
+    fireEvent.change(screen.getByPlaceholderText(/what went wrong/i), {
+      target: { value: 'Just verifying the in-app reporting flow works end to end.' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /submit report/i }));
+
+    expect(await screen.findByText(/your report was filed/i)).toBeInTheDocument();
+    expect(screen.getByText(/demo-1/i)).toBeInTheDocument();
+  });
+
   it('renders projects route with loader data and filters', async () => {
     renderApp(routeTree, { initialPath: '/dashboard/projects' });
 

@@ -85,6 +85,7 @@ import {
   RotateCcw,
   Workflow,
   ClipboardList,
+  MessageSquarePlus,
 } from 'lucide-react';
 import { useRenderStorm } from '@scaffold/core';
 import {
@@ -94,6 +95,7 @@ import {
   mockPipelineSlices,
 } from './data/pipelineMocks';
 import { FormPresetsDemo } from './components/FormPresetsDemo';
+import { FeedbackDemo } from './components/FeedbackDemo';
 
 
 export type WorkbenchTab =
@@ -113,7 +115,8 @@ export type WorkbenchTab =
   | 'typography'
   | 'tokens'
   | 'pipelineStudio'
-  | 'formPresets';
+  | 'formPresets'
+  | 'feedback';
 
 export function App() {
   const { mode, toggleMode, colors, tokens } = useTheme();
@@ -259,6 +262,7 @@ export function App() {
     pipelineStudio: 'Pipeline Studio',
     tokens: 'Design Tokens',
     formPresets: 'Form Presets',
+    feedback: 'Feedback',
   };
 
   const intents: ButtonIntent[] = ['primary', 'secondary', 'neutral', 'success', 'danger'];
@@ -304,6 +308,13 @@ export function App() {
                 onClick={() => setActiveTab('formPresets')}
               >
                 Form Presets
+              </SidebarItem>
+              <SidebarItem
+                icon={<MessageSquarePlus size={16} />}
+                active={activeTab === 'feedback'}
+                onClick={() => setActiveTab('feedback')}
+              >
+                Feedback
               </SidebarItem>
               <SidebarItem
                 icon={<MousePointerClick size={16} />}
@@ -470,6 +481,7 @@ export function App() {
           {/* Main Container */}
           <Container maxWidth="xl">
             {activeTab === 'formPresets' && <FormPresetsDemo />}
+            {activeTab === 'feedback' && <FeedbackDemo />}
 
             {/* TextInput Tab */}
             {activeTab === 'textInput' && (
