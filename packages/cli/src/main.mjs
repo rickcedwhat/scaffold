@@ -20,7 +20,7 @@ export async function main(argv, deps = {}) {
   }
 
   const targetDir = path.join(repoRoot, 'examples', args.name);
-  const port = args.port ?? findFreePort(repoRoot);
+  const port = args.port ?? await findFreePort(repoRoot);
 
   generateApp({
     repoRoot,

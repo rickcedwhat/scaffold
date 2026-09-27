@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import net from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -20,6 +21,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.restoreAllMocks();
   fs.rmSync(tmpDir, { recursive: true, force: true });
 });
 
@@ -138,6 +140,42 @@ describe('generateApp', () => {
     expect(fs.existsSync(path.join(targetDir, 'src/feedback.test.tsx'))).toBe(true);
   });
 
+  it.each(['cpSync', 'renameSync'])('cleans up and preserves errors from %s', (operation) => {
+    const targetDir = path.join(tmpDir, 'examples/failed');
+    const error = new Error('Generation failed');
+    vi.spyOn(fs, operation).mockImplementationOnce(() => {
+      fs.mkdirSync(targetDir, { recursive: true });
+      fs.writeFileSync(path.join(targetDir, 'partial.txt'), 'partial');
+      throw error;
+    });
+
+    expect(() => generateApp({
+      repoRoot: REPO_ROOT,
+      targetDir,
+      name: 'failed',
+      title: 'Failed',
+      port: 5710,
+      features: [],
+    })).toThrow(error);
+    expect(fs.existsSync(targetDir)).toBe(false);
+  });
+
+  it('removes copied files when a template transform fails', () => {
+    createFixtureRepo(tmpDir);
+    fs.writeFileSync(path.join(tmpDir, 'apps/template/index.html'), '<title>Changed</title>');
+    const targetDir = path.join(tmpDir, 'examples/failed');
+
+    expect(() => generateApp({
+      repoRoot: tmpDir,
+      targetDir,
+      name: 'failed',
+      title: 'Failed',
+      port: 5710,
+      features: [],
+    })).toThrow(/Template drift/);
+    expect(fs.existsSync(targetDir)).toBe(false);
+  });
+
   it('refuses to overwrite an existing directory', () => {
     const targetDir = path.join(tmpDir, 'examples/taken');
     fs.mkdirSync(targetDir, { recursive: true });
@@ -151,20 +189,38 @@ describe('generateApp', () => {
         features: [],
       }),
     ).toThrow(/already exists/);
+    expect(fs.existsSync(targetDir)).toBe(true);
   });
 });
 
 describe('repo helpers', () => {
-  it('picks the first unclaimed port from 5710', () => {
+  it('skips ports claimed by workspace configs', async () => {
     createFixtureRepo(tmpDir);
-    for (const [name, port] of [['a', 5710], ['b', 5711]]) {
-      fs.mkdirSync(path.join(tmpDir, 'examples', name), { recursive: true });
+    for (const [directory, port] of [['apps/a', 5710], ['examples/b', 5711]]) {
+      fs.mkdirSync(path.join(tmpDir, directory), { recursive: true });
       fs.writeFileSync(
-        path.join(tmpDir, 'examples', name, 'vite.config.ts'),
+        path.join(tmpDir, directory, 'vite.config.ts'),
         `export default { server: { port: ${port} } };`,
       );
     }
-    expect(findFreePort(tmpDir)).toBe(5712);
+    expect(await findFreePort(tmpDir)).toBeGreaterThanOrEqual(5712);
+  });
+
+  it('skips a port bound by an OS process and releases its probe', async () => {
+    const occupiedPort = await findFreePort(tmpDir);
+    const server = net.createServer();
+    await new Promise((resolve, reject) => {
+      server.once('error', reject);
+      server.listen(occupiedPort, '127.0.0.1', resolve);
+    });
+    try {
+      expect(await findFreePort(tmpDir)).toBeGreaterThan(occupiedPort);
+    } finally {
+      await new Promise((resolve, reject) => {
+        server.close((error) => error ? reject(error) : resolve());
+      });
+    }
+    expect(await findFreePort(tmpDir)).toBe(occupiedPort);
   });
 
   it('adds examples/* to workspaces once', () => {
@@ -196,20 +252,23 @@ describe('main', () => {
     expect(register).toHaveBeenCalledWith({
       name: 'Recipe Box',
       directory: path.join(tmpDir, 'examples/recipe-box'),
-      port: 5710,
+      port: expect.any(Number),
     });
+    const { port } = register.mock.calls[0][0];
+    expect(read(path.join(tmpDir, 'examples/recipe-box/vite.config.ts'))).toContain(`port: ${port}`);
     expect(logs.join('\n')).toContain('npm --workspace=recipe-box run dev');
   });
 
   it('skips registration with --no-register', async () => {
     createFixtureRepo(tmpDir);
     const register = vi.fn();
-    await main(['new', 'quiet-app', '--no-register'], {
+    await main(['new', 'quiet-app', '--no-register', '--port', '5800'], {
       repoRoot: tmpDir,
       log: () => undefined,
       register,
     });
     expect(register).not.toHaveBeenCalled();
+    expect(read(path.join(tmpDir, 'examples/quiet-app/vite.config.ts'))).toContain('port: 5800');
   });
 });
 

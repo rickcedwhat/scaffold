@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import net from 'node:net';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { FEATURES } from './features.mjs';
@@ -43,11 +44,11 @@ export function resolveDependencyVersion(repoRoot, dependency) {
 }
 
 /**
- * Picks the first port >= 5710 not already claimed by an app's vite.config.ts.
+ * Picks the first port >= 5710 not claimed by a Vite config or an OS process.
  *
  * @param {string} repoRoot
  */
-export function findFreePort(repoRoot) {
+export async function findFreePort(repoRoot) {
   const used = new Set();
   for (const group of ['apps', 'examples']) {
     const groupDir = path.join(repoRoot, group);
@@ -60,9 +61,24 @@ export function findFreePort(repoRoot) {
     }
   }
 
-  let port = FIRST_EXAMPLE_PORT;
-  while (used.has(port)) port += 1;
-  return port;
+  for (let port = FIRST_EXAMPLE_PORT; port <= 65535; port += 1) {
+    if (used.has(port)) continue;
+    const available = await new Promise((resolve, reject) => {
+      const server = net.createServer();
+      server.once('error', (error) => {
+        if (error.code === 'EADDRINUSE' || error.code === 'EACCES') resolve(false);
+        else reject(error);
+      });
+      server.listen(port, () => {
+        server.close((error) => {
+          if (error) reject(error);
+          else resolve(true);
+        });
+      });
+    });
+    if (available) return port;
+  }
+  throw new Error('No available port found between 5710 and 65535.');
 }
 
 function replaceInFile(file, search, replacement) {
@@ -95,50 +111,59 @@ export function generateApp({ repoRoot, targetDir, name, title, port, features }
     throw new Error(`${path.relative(repoRoot, targetDir) || targetDir} already exists.`);
   }
 
-  fs.mkdirSync(path.dirname(targetDir), { recursive: true });
-  fs.cpSync(templateDir, targetDir, {
-    recursive: true,
-    filter: (source) => !SKIPPED_ENTRIES.has(path.basename(source)),
-  });
+  try {
+    fs.mkdirSync(path.dirname(targetDir), { recursive: true });
+    fs.cpSync(templateDir, targetDir, {
+      recursive: true,
+      filter: (source) => !SKIPPED_ENTRIES.has(path.basename(source)),
+    });
 
-  const manifestPath = path.join(targetDir, 'package.json');
-  const manifest = readJson(manifestPath);
-  manifest.name = name;
+    const manifestPath = path.join(targetDir, 'package.json');
+    const manifest = readJson(manifestPath);
+    manifest.name = name;
 
-  for (const feature of features) {
-    const definition = FEATURES[feature];
-    if (!definition) throw new Error(`Unknown feature "${feature}".`);
+    for (const feature of features) {
+      const definition = FEATURES[feature];
+      if (!definition) throw new Error(`Unknown feature "${feature}".`);
 
-    for (const dependency of definition.dependencies) {
-      manifest.dependencies[dependency] ??= resolveDependencyVersion(repoRoot, dependency);
+      for (const dependency of definition.dependencies) {
+        manifest.dependencies[dependency] ??= resolveDependencyVersion(repoRoot, dependency);
+      }
+      for (const file of definition.files) {
+        const destination = path.join(targetDir, file.to);
+        fs.mkdirSync(path.dirname(destination), { recursive: true });
+        fs.copyFileSync(path.join(FEATURE_TEMPLATES_DIR, file.from), destination);
+      }
     }
-    for (const file of definition.files) {
-      const destination = path.join(targetDir, file.to);
-      fs.mkdirSync(path.dirname(destination), { recursive: true });
-      fs.copyFileSync(path.join(FEATURE_TEMPLATES_DIR, file.from), destination);
+
+    manifest.dependencies = Object.fromEntries(
+      Object.entries(manifest.dependencies).sort(([a], [b]) => a.localeCompare(b)),
+    );
+    writeJson(manifestPath, manifest);
+
+    replaceInFile(path.join(targetDir, 'vite.config.ts'), `port: ${TEMPLATE_PORT}`, `port: ${port}`);
+    replaceInFile(
+      path.join(targetDir, 'index.html'),
+      '<title>Scaffold App Template</title>',
+      `<title>${escapeHtml(title)}</title>`,
+    );
+    replaceInFile(path.join(targetDir, 'src/routes/index.tsx'), 'Scaffold App', escapeJsxText(title));
+    replaceInFile(path.join(targetDir, 'src/template.test.tsx'), "'Scaffold App'", JSON.stringify(title));
+
+    fs.renameSync(
+      path.join(targetDir, 'src/template.test.tsx'),
+      path.join(targetDir, 'src/app.test.tsx'),
+    );
+
+    return { targetDir, port };
+  } catch (error) {
+    try {
+      fs.rmSync(targetDir, { recursive: true, force: true });
+    } catch {
+      // Preserve the generation error if cleanup also fails.
     }
+    throw error;
   }
-
-  manifest.dependencies = Object.fromEntries(
-    Object.entries(manifest.dependencies).sort(([a], [b]) => a.localeCompare(b)),
-  );
-  writeJson(manifestPath, manifest);
-
-  replaceInFile(path.join(targetDir, 'vite.config.ts'), `port: ${TEMPLATE_PORT}`, `port: ${port}`);
-  replaceInFile(
-    path.join(targetDir, 'index.html'),
-    '<title>Scaffold App Template</title>',
-    `<title>${escapeHtml(title)}</title>`,
-  );
-  replaceInFile(path.join(targetDir, 'src/routes/index.tsx'), 'Scaffold App', escapeJsxText(title));
-  replaceInFile(path.join(targetDir, 'src/template.test.tsx'), "'Scaffold App'", JSON.stringify(title));
-
-  fs.renameSync(
-    path.join(targetDir, 'src/template.test.tsx'),
-    path.join(targetDir, 'src/app.test.tsx'),
-  );
-
-  return { targetDir, port };
 }
 
 function escapeHtml(value) {
