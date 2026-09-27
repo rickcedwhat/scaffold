@@ -4,9 +4,11 @@
   "type": "module",
   "workspaces": [
     "packages/*",
-    "apps/*"
+    "apps/*",
+    "examples/*"
   ],
   "scripts": {
+    "new": "node packages/cli/bin/scaffold.mjs new",
     "dev": "npm --workspace=apps/workbench run dev --",
     "dev:demo": "npm --workspace=demo run dev --",
     "dev:template": "npm --workspace=template run dev --",
