@@ -34,7 +34,7 @@ export default [
   },
   // Node.js scripts — declare Node globals so console/process/fs are recognised
   {
-    files: ['**/scripts/**/*.mjs', '**/scripts/**/*.js'],
+    files: ['**/scripts/**/*.mjs', '**/scripts/**/*.js', 'packages/cli/**/*.mjs'],
     languageOptions: {
       globals: {
         console: 'readonly',
@@ -43,6 +43,9 @@ export default [
         __filename: 'readonly',
         Buffer: 'readonly',
         URL: 'readonly',
+        fetch: 'readonly',
+        Response: 'readonly',
+        AbortSignal: 'readonly',
       },
     },
   },
