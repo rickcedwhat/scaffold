@@ -11,6 +11,7 @@ import {
   generateApp,
   resolveDependencyVersion,
 } from './generate.mjs';
+import { getInfisicalToken, linkInfisical } from './infisical.mjs';
 import { main } from './main.mjs';
 import { registerWithDashboard } from './register.mjs';
 
@@ -73,6 +74,7 @@ describe('args', () => {
         '--port',
         '5800',
         '--no-register',
+        '--no-infisical',
       ]),
     ).toEqual({
       command: 'new',
@@ -81,7 +83,9 @@ describe('args', () => {
       port: 5800,
       features: ['forms', 'feedback'],
       register: false,
+      infisical: false,
     });
+    expect(parseCliArgs(['new', 'recipe-box'])).toMatchObject({ register: true, infisical: true });
   });
 
   it('returns help without a command and rejects bad input', () => {
@@ -245,6 +249,7 @@ describe('main', () => {
       repoRoot: tmpDir,
       log: (message) => logs.push(message),
       register,
+      getToken: async () => null,
     });
 
     expect(code).toBe(0);
@@ -262,13 +267,151 @@ describe('main', () => {
   it('skips registration with --no-register', async () => {
     createFixtureRepo(tmpDir);
     const register = vi.fn();
-    await main(['new', 'quiet-app', '--no-register', '--port', '5800'], {
+    const getToken = vi.fn();
+    await main(['new', 'quiet-app', '--no-register', '--no-infisical', '--port', '5800'], {
       repoRoot: tmpDir,
       log: () => undefined,
       register,
+      getToken,
     });
     expect(register).not.toHaveBeenCalled();
+    expect(getToken).not.toHaveBeenCalled();
     expect(read(path.join(tmpDir, 'examples/quiet-app/vite.config.ts'))).toContain('port: 5800');
+    expect(JSON.parse(read(path.join(tmpDir, 'examples/quiet-app/package.json'))).scripts.dev).toBe(
+      'vite',
+    );
+  });
+
+  it('runs dev through Infisical when the app is linked', async () => {
+    createFixtureRepo(tmpDir);
+    const linkSecrets = vi.fn(async () => ({ ok: true, projectId: 'p1', secretPath: '/linked-app' }));
+    const logs = [];
+
+    await main(['new', 'linked-app', '--no-register', '--port', '5801'], {
+      repoRoot: tmpDir,
+      log: (message) => logs.push(message),
+      getToken: async () => 'token',
+      linkSecrets,
+    });
+
+    expect(linkSecrets).toHaveBeenCalledWith({
+      name: 'linked-app',
+      targetDir: path.join(tmpDir, 'examples/linked-app'),
+      token: 'token',
+    });
+    const { scripts } = JSON.parse(read(path.join(tmpDir, 'examples/linked-app/package.json')));
+    expect(scripts.dev).toBe('infisical run --path=/linked-app --silent -- vite');
+    expect(scripts['dev:plain']).toBe('vite');
+    expect(logs.join('\n')).toContain('Linked Infisical folder /linked-app');
+  });
+
+  it('keeps plain Vite and explains why when Infisical is unavailable', async () => {
+    createFixtureRepo(tmpDir);
+    const logs = [];
+    await main(['new', 'offline-app', '--no-register', '--port', '5802'], {
+      repoRoot: tmpDir,
+      log: (message) => logs.push(message),
+      getToken: async () => null,
+    });
+    expect(JSON.parse(read(path.join(tmpDir, 'examples/offline-app/package.json'))).scripts.dev).toBe(
+      'vite',
+    );
+    expect(logs.join('\n')).toMatch(/Skipped Infisical setup: .*infisical login/);
+  });
+});
+
+describe('linkInfisical', () => {
+  function fakeInfisical({ folderStatus = 200, importStatus = 200, projects } = {}) {
+    const calls = [];
+    const fetchImpl = vi.fn(async (url, init = {}) => {
+      const route = String(url).replace('https://infisical.test/api', '');
+      calls.push({ method: init.method, route, body: init.body ? JSON.parse(init.body) : undefined });
+      if (route === '/v1/workspace') {
+        return Response.json({
+          workspaces: projects ?? [{ id: 'proj-1', slug: 'projects' }, { id: 'x', slug: 'other' }],
+        });
+      }
+      if (route === '/v1/folders') {
+        return Response.json(
+          folderStatus === 200 ? { folder: {} } : { message: 'Folder already exists' },
+          { status: folderStatus },
+        );
+      }
+      return Response.json({ secretImport: {} }, { status: importStatus });
+    });
+    return { fetchImpl, calls };
+  }
+
+  const options = (fetchImpl) => ({
+    name: 'recipe-box',
+    targetDir: tmpDir,
+    token: 't0ken',
+    fetchImpl,
+    apiUrl: 'https://infisical.test/api',
+  });
+
+  it('creates the app folder, imports /shared, and writes .infisical.json', async () => {
+    const { fetchImpl, calls } = fakeInfisical();
+
+    const result = await linkInfisical(options(fetchImpl));
+
+    expect(result).toEqual({ ok: true, projectId: 'proj-1', secretPath: '/recipe-box' });
+    expect(calls.map(({ method, route }) => `${method} ${route}`)).toEqual([
+      'GET /v1/workspace',
+      'POST /v1/folders',
+      'POST /v1/secret-imports',
+    ]);
+    expect(calls[1].body).toEqual({
+      workspaceId: 'proj-1',
+      environment: 'dev',
+      name: 'recipe-box',
+      path: '/',
+    });
+    expect(calls[2].body).toEqual({
+      workspaceId: 'proj-1',
+      environment: 'dev',
+      path: '/recipe-box',
+      import: { environment: 'dev', path: '/shared' },
+    });
+    expect(fetchImpl.mock.calls[0][1].headers.Authorization).toBe('Bearer t0ken');
+    expect(JSON.parse(read(path.join(tmpDir, '.infisical.json')))).toEqual({
+      workspaceId: 'proj-1',
+      defaultEnvironment: 'dev',
+      gitBranchToEnvironmentMapping: null,
+    });
+  });
+
+  it('treats an existing folder as success', async () => {
+    const { fetchImpl } = fakeInfisical({ folderStatus: 400 });
+    expect(await linkInfisical(options(fetchImpl))).toMatchObject({ ok: true });
+  });
+
+  it('fails softly without the shared project or when the import fails', async () => {
+    const missing = fakeInfisical({ projects: [] });
+    expect(await linkInfisical(options(missing.fetchImpl))).toEqual({
+      ok: false,
+      reason: 'no Infisical project with slug "projects"',
+    });
+
+    const broken = fakeInfisical({ importStatus: 500 });
+    expect(await linkInfisical(options(broken.fetchImpl))).toMatchObject({
+      ok: false,
+      reason: expect.stringContaining('importing /shared into /recipe-box failed (500)'),
+    });
+    expect(fs.existsSync(path.join(tmpDir, '.infisical.json'))).toBe(false);
+  });
+});
+
+describe('getInfisicalToken', () => {
+  it('returns the trimmed token, or null when the CLI fails', async () => {
+    expect(await getInfisicalToken({ exec: async () => ({ stdout: 'abc\n' }) })).toBe('abc');
+    expect(
+      await getInfisicalToken({
+        exec: async () => {
+          throw new Error('command not found: infisical');
+        },
+      }),
+    ).toBeNull();
   });
 });
 

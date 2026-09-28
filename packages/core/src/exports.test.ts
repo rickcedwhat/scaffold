@@ -8,4 +8,5 @@ it('loads root APIs without loading optional form dependencies', async () => {
   const core = await import('@scaffold/core');
   expect(core.CircuitBreaker).toBeTypeOf('function');
   expect(core).not.toHaveProperty('useAppForm');
+  expect(core).not.toHaveProperty('createClientEnv');
 });

@@ -63,22 +63,34 @@ export async function findFreePort(repoRoot) {
 
   for (let port = FIRST_EXAMPLE_PORT; port <= 65535; port += 1) {
     if (used.has(port)) continue;
+    if (await isPortFree(port)) return port;
+  }
+  throw new Error('No available port found between 5710 and 65535.');
+}
+
+// macOS lets the wildcard address bind while a loopback address holds the same
+// port, and Vite listens on localhost, so each loopback is probed separately.
+const PROBE_HOSTS = [undefined, '127.0.0.1', '::1'];
+
+async function isPortFree(port) {
+  for (const host of PROBE_HOSTS) {
     const available = await new Promise((resolve, reject) => {
       const server = net.createServer();
       server.once('error', (error) => {
         if (error.code === 'EADDRINUSE' || error.code === 'EACCES') resolve(false);
+        else if (error.code === 'EADDRNOTAVAIL' || error.code === 'EAFNOSUPPORT') resolve(true);
         else reject(error);
       });
-      server.listen(port, () => {
+      server.listen(port, host, () => {
         server.close((error) => {
           if (error) reject(error);
           else resolve(true);
         });
       });
     });
-    if (available) return port;
+    if (!available) return false;
   }
-  throw new Error('No available port found between 5710 and 65535.');
+  return true;
 }
 
 function replaceInFile(file, search, replacement) {
