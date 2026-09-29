@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import http from 'node:http';
 import net from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
@@ -374,6 +375,9 @@ describe('linkInfisical', () => {
       import: { environment: 'dev', path: '/shared' },
     });
     expect(fetchImpl.mock.calls[0][1].headers.Authorization).toBe('Bearer t0ken');
+    for (const [, init] of fetchImpl.mock.calls) {
+      expect(init.redirect).toBe('error');
+    }
     expect(JSON.parse(read(path.join(tmpDir, '.infisical.json')))).toEqual({
       workspaceId: 'proj-1',
       defaultEnvironment: 'dev',
@@ -384,6 +388,60 @@ describe('linkInfisical', () => {
   it('treats an existing folder as success', async () => {
     const { fetchImpl } = fakeInfisical({ folderStatus: 400 });
     expect(await linkInfisical(options(fetchImpl))).toMatchObject({ ok: true });
+  });
+
+  it.each([
+    'not-a-url',
+    '/api',
+    'http://infisical.test/api',
+    'http://localhost.example.com/api',
+    'http://localhost@infisical.test/api',
+    'http://127.0.0.1.example.com/api',
+    'http://128.0.0.1/api',
+    'http://[::]/api',
+    'ftp://localhost/api',
+  ])('rejects unsafe API URL %s before sending credentials', async (apiUrl) => {
+    const fetchImpl = vi.fn();
+    expect(await linkInfisical({ ...options(fetchImpl), apiUrl })).toMatchObject({
+      ok: false,
+      reason: expect.any(String),
+    });
+    expect(fetchImpl).not.toHaveBeenCalled();
+    expect(fs.existsSync(path.join(tmpDir, '.infisical.json'))).toBe(false);
+  });
+
+  it.each(['localhost', '127.0.0.1', '127.1.2.3', '[::1]'])(
+    'allows HTTP on loopback host %s',
+    async (host) => {
+      const fetchImpl = vi.fn(async () => Response.json({ workspaces: [] }));
+      const apiUrl = `http://${host}:8080/api`;
+      expect(await linkInfisical({ ...options(fetchImpl), apiUrl })).toEqual({
+        ok: false,
+        reason: 'no Infisical project with slug "projects"',
+      });
+      expect(fetchImpl).toHaveBeenCalledWith(`${apiUrl}/v1/workspace`, expect.any(Object));
+    },
+  );
+
+  it('fails softly without following a credentialed redirect', async () => {
+    const requests = [];
+    const server = http.createServer((req, res) => {
+      requests.push(req.url);
+      res.writeHead(302, { Location: '/redirect-target' });
+      res.end();
+    });
+    try {
+      await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+      const result = await linkInfisical({
+        ...options(fetch),
+        apiUrl: `http://127.0.0.1:${server.address().port}/api`,
+      });
+      expect(result).toMatchObject({ ok: false, reason: expect.any(String) });
+      expect(requests).toEqual(['/api/v1/workspace']);
+      expect(fs.existsSync(path.join(tmpDir, '.infisical.json'))).toBe(false);
+    } finally {
+      await new Promise((resolve) => server.close(resolve));
+    }
   });
 
   it('fails softly without the shared project or when the import fails', async () => {

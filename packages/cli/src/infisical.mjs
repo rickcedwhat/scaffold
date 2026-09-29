@@ -55,6 +55,7 @@ export async function linkInfisical({
   const request = async (method, route, body) => {
     const response = await fetchImpl(`${apiUrl}${route}`, {
       method,
+      redirect: 'error',
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: body ? JSON.stringify(body) : undefined,
       signal: AbortSignal.timeout(TIMEOUT_MS),
@@ -64,6 +65,18 @@ export async function linkInfisical({
   };
 
   try {
+    const url = new URL(apiUrl);
+    const isLoopback =
+      url.hostname === 'localhost' ||
+      url.hostname === '[::1]' ||
+      /^127(?:\.\d{1,3}){3}$/.test(url.hostname);
+    if (url.protocol !== 'https:' && !(url.protocol === 'http:' && isLoopback)) {
+      return {
+        ok: false,
+        reason: 'Infisical API URL must use HTTPS (HTTP is allowed only for loopback hosts)',
+      };
+    }
+
     const projects = await request('GET', '/v1/workspace');
     if (!projects.ok) return { ok: false, reason: `listing projects failed (${projects.status})` };
     const project = projects.json.workspaces?.find((workspace) => workspace.slug === projectSlug);
