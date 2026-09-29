@@ -1,0 +1,10 @@
+{
+  "infisical": {
+    "projectId": "0e7e1d0c-7654-45e9-b33b-3663320aa22a"
+  },
+  "recipes": {
+    "gemini": {
+      "gcpProject": "gen-lang-client-0286871743"
+    }
+  }
+}

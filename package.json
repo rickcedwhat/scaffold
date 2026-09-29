@@ -9,6 +9,7 @@
   ],
   "scripts": {
     "new": "node packages/cli/bin/scaffold.mjs new",
+    "scaffold": "node packages/cli/bin/scaffold.mjs",
     "dev": "npm --workspace=apps/workbench run dev --",
     "dev:demo": "npm --workspace=demo run dev --",
     "dev:template": "npm --workspace=template run dev --",
