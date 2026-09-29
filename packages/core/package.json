@@ -7,7 +7,8 @@
   "types": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
-    "./form": "./src/form/index.ts"
+    "./form": "./src/form/index.ts",
+    "./env": "./src/env/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

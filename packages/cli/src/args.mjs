@@ -11,6 +11,7 @@ Options:
   --title <title>     Display title (default: derived from name)
   --port <port>       Dev server port (default: next free port from 5710)
   --no-register       Skip registering with the local dev dashboard
+  --no-infisical      Skip creating the app's Infisical folder (dev uses plain Vite)
   -h, --help          Show this help
 
 Example:
@@ -51,6 +52,7 @@ export function titleFromName(name) {
  *   port?: number;
  *   features: string[];
  *   register: boolean;
+ *   infisical: boolean;
  * } | { command: 'help' }} ParsedArgs
  */
 
@@ -67,6 +69,7 @@ export function parseCliArgs(argv) {
       title: { type: 'string' },
       port: { type: 'string' },
       'no-register': { type: 'boolean', default: false },
+      'no-infisical': { type: 'boolean', default: false },
       help: { type: 'boolean', short: 'h', default: false },
     },
   });
@@ -108,5 +111,6 @@ export function parseCliArgs(argv) {
     port,
     features: [...new Set(features)],
     register: !values['no-register'],
+    infisical: !values['no-infisical'],
   };
 }
