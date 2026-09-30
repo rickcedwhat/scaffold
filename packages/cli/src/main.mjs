@@ -1,8 +1,11 @@
 import path from 'node:path';
 import { USAGE, parseCliArgs } from './args.mjs';
+import { loadConfig } from './config.mjs';
 import { REPO_ROOT, ensureExamplesWorkspace, findFreePort, generateApp } from './generate.mjs';
 import { getInfisicalToken, linkInfisical, useInfisicalDevScript } from './infisical.mjs';
+import { RECIPES } from './recipes/index.mjs';
 import { registerWithDashboard } from './register.mjs';
+import { addSecretRecipe } from './secrets.mjs';
 
 /**
  * @param {string[]} argv
@@ -12,6 +15,7 @@ import { registerWithDashboard } from './register.mjs';
  *   register?: typeof registerWithDashboard;
  *   getToken?: typeof getInfisicalToken;
  *   linkSecrets?: typeof linkInfisical;
+ *   exec?: import('./recipes/index.mjs').Exec;
  * }} [deps]
  * @returns {Promise<number>} process exit code
  */
@@ -25,6 +29,20 @@ export async function main(argv, deps = {}) {
   const args = parseCliArgs(argv);
   if (args.command === 'help') {
     log(USAGE);
+    return 0;
+  }
+  if (args.command === 'secrets-add') {
+    const result = await addSecretRecipe({
+      recipe: RECIPES[args.recipe],
+      app: args.app,
+      environment: args.environment,
+      config: loadConfig(repoRoot),
+      exec: deps.exec,
+    });
+    log(
+      `Created ${result.description} and stored ${result.envVars.join(', ')} in ` +
+        `${result.secretPath} (${result.environment}). It overrides the shared value.`,
+    );
     return 0;
   }
 

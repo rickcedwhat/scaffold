@@ -1,21 +1,29 @@
 import { parseArgs } from 'node:util';
 import { FEATURES } from './features.mjs';
+import { RECIPES } from './recipes/index.mjs';
+import { ENVIRONMENTS, validateSecretPath } from './secrets.mjs';
 
 export const USAGE = `Usage:
   scaffold new <name> [options]
+  scaffold secrets add <recipe> --app <folder> [--env <env>]
 
-Creates examples/<name> from apps/template inside this monorepo.
-
-Options:
+new: creates examples/<name> from apps/template inside this monorepo.
   --with <features>   Comma-separated opt-in features: ${Object.keys(FEATURES).join(', ')}
   --title <title>     Display title (default: derived from name)
   --port <port>       Dev server port (default: next free port from 5710)
   --no-register       Skip registering with the local dev dashboard
   --no-infisical      Skip creating the app's Infisical folder (dev uses plain Vite)
+
+secrets add: creates a dedicated credential and stores it in Infisical at
+/<folder>, overriding the shared one. Recipes: ${Object.keys(RECIPES).join(', ')}
+  --app <folder>      Infisical folder, e.g. recipe-box or career-hub/evals
+  --env <env>         ${ENVIRONMENTS.join(' | ')} (default: dev)
+
   -h, --help          Show this help
 
-Example:
-  npm run new -- recipe-box --with forms,feedback`;
+Examples:
+  npm run new -- recipe-box --with forms,feedback
+  npm run scaffold -- secrets add gemini --app recipe-box --env prod`;
 
 const RESERVED_NAMES = new Set(['demo', 'template', 'workbench', 'examples']);
 
@@ -53,6 +61,11 @@ export function titleFromName(name) {
  *   features: string[];
  *   register: boolean;
  *   infisical: boolean;
+ * } | {
+ *   command: 'secrets-add';
+ *   recipe: string;
+ *   app: string;
+ *   environment: string;
  * } | { command: 'help' }} ParsedArgs
  */
 
@@ -70,6 +83,8 @@ export function parseCliArgs(argv) {
       port: { type: 'string' },
       'no-register': { type: 'boolean', default: false },
       'no-infisical': { type: 'boolean', default: false },
+      app: { type: 'string' },
+      env: { type: 'string' },
       help: { type: 'boolean', short: 'h', default: false },
     },
   });
@@ -77,6 +92,9 @@ export function parseCliArgs(argv) {
   const [command, name] = positionals;
   if (values.help || !command || command === 'help') {
     return { command: 'help' };
+  }
+  if (command === 'secrets') {
+    return parseSecretsArgs(positionals.slice(1), values);
   }
   if (command !== 'new') {
     throw new Error(`Unknown command "${command}".\n\n${USAGE}`);
@@ -113,4 +131,24 @@ export function parseCliArgs(argv) {
     register: !values['no-register'],
     infisical: !values['no-infisical'],
   };
+}
+
+function parseSecretsArgs([subcommand, recipe], values) {
+  if (subcommand !== 'add') {
+    throw new Error(`Unknown secrets command "${subcommand ?? ''}".\n\n${USAGE}`);
+  }
+  if (!recipe || !(recipe in RECIPES)) {
+    throw new Error(
+      `Unknown recipe "${recipe ?? ''}". Available: ${Object.keys(RECIPES).join(', ')}.`,
+    );
+  }
+  const app = values.app ?? '';
+  const appError = validateSecretPath(app);
+  if (appError) throw new Error(appError);
+
+  const environment = values.env ?? 'dev';
+  if (!ENVIRONMENTS.includes(environment)) {
+    throw new Error(`--env must be one of: ${ENVIRONMENTS.join(', ')}.`);
+  }
+  return { command: 'secrets-add', recipe, app, environment };
 }
