@@ -14,7 +14,13 @@ const config = {
  * Fake `gcloud`/`infisical` runner. Captures the secrets file contents at call
  * time because the real file is deleted right after.
  */
-function fakeExec({ existingKeys = [], failSet = false, folderExists = false } = {}) {
+function fakeExec({
+  existingKeys = [],
+  failSet = false,
+  folderExists = false,
+  retrievalError,
+  keyString = 'AIza-secret\n',
+} = {}) {
   const calls = [];
   const exec = vi.fn(async (file, args) => {
     const subcommand = args.slice(0, args.findIndex((arg) => arg.startsWith('--')));
@@ -26,7 +32,11 @@ function fakeExec({ existingKeys = [], failSet = false, folderExists = false } =
       return { stdout: JSON.stringify(existingKeys) };
     }
     if (command === 'gcloud services api-keys create') {
-      return { stdout: JSON.stringify({ response: { uid: 'key-uid', keyString: 'AIza-secret' } }) };
+      return { stdout: JSON.stringify({ response: { uid: 'key-uid' } }) };
+    }
+    if (command === 'gcloud services api-keys get-key-string') {
+      if (retrievalError) throw retrievalError;
+      return { stdout: keyString };
     }
     if (command === 'infisical secrets folders create' && folderExists) {
       throw Object.assign(new Error('exit 1'), { stderr: 'Folder already exists' });
@@ -86,6 +96,7 @@ describe('addSecretRecipe with gemini', () => {
       'infisical secrets folders create',
       'gcloud services api-keys list',
       'gcloud services api-keys create',
+      'gcloud services api-keys get-key-string',
       'infisical secrets set',
     ]);
     expect(calls[0].args).toEqual(expect.arrayContaining(['--name=career-hub', '--path=/', '--env=prod']));
@@ -98,7 +109,16 @@ describe('addSecretRecipe with gemini', () => {
       ]),
     );
 
-    const setCall = calls[4];
+    expect(calls[4].args).toEqual([
+      'services',
+      'api-keys',
+      'get-key-string',
+      'key-uid',
+      '--project=gcp-proj',
+      '--format=value(keyString)',
+    ]);
+
+    const setCall = calls[5];
     expect(setCall.args).toEqual(
       expect.arrayContaining(['--path=/career-hub/evals', '--env=prod', '--projectId=inf-proj']),
     );
@@ -123,6 +143,36 @@ describe('addSecretRecipe with gemini', () => {
       addSecretRecipe({ recipe: gemini, app: 'recipe-box', environment: 'dev', config, exec }),
     ).rejects.toThrow(/already exists/);
     expect(calls.some((call) => call.command === 'gcloud services api-keys create')).toBe(false);
+  });
+
+  it('deletes the new key before propagating a retrieval failure', async () => {
+    const retrievalError = new Error('gcloud: permission denied');
+    const { exec, calls } = fakeExec({ retrievalError });
+    await expect(
+      addSecretRecipe({ recipe: gemini, app: 'recipe-box', environment: 'dev', config, exec }),
+    ).rejects.toBe(retrievalError);
+    expect(calls.map((call) => call.command)).toEqual([
+      'infisical secrets folders create',
+      'gcloud services api-keys list',
+      'gcloud services api-keys create',
+      'gcloud services api-keys get-key-string',
+      'gcloud services api-keys delete',
+    ]);
+    expect(calls.at(-1).args).toEqual([
+      'services', 'api-keys', 'delete', 'key-uid', '--project=gcp-proj', '--quiet',
+    ]);
+  });
+
+  it.each(['', ' \n\t '])('deletes the new key when retrieval returns %j', async (keyString) => {
+    const { exec, calls } = fakeExec({ keyString });
+    await expect(
+      addSecretRecipe({ recipe: gemini, app: 'recipe-box', environment: 'dev', config, exec }),
+    ).rejects.toThrow(/gcloud did not return the new key string/);
+    expect(calls.at(-1).command).toBe('gcloud services api-keys delete');
+    expect(calls.at(-1).args).toEqual([
+      'services', 'api-keys', 'delete', 'key-uid', '--project=gcp-proj', '--quiet',
+    ]);
+    expect(calls.some((call) => call.command === 'infisical secrets set')).toBe(false);
   });
 
   it('deletes the new key when storing it in Infisical fails', async () => {

@@ -34,22 +34,41 @@ export const gemini = {
       `--api-target=service=${GEMINI_SERVICE}`,
       '--format=json',
     ]);
-    const { uid, keyString } = JSON.parse(created).response ?? {};
-    if (!uid || !keyString) throw new Error('gcloud did not return the new key.');
+    const { uid } = JSON.parse(created).response ?? {};
+    if (!uid) throw new Error('gcloud did not return the new key.');
+
+    const rollback = async () => {
+      await exec('gcloud', [
+        'services',
+        'api-keys',
+        'delete',
+        uid,
+        `--project=${gcpProject}`,
+        '--quiet',
+      ]);
+    };
+
+    let keyString;
+    try {
+      const { stdout } = await exec('gcloud', [
+        'services',
+        'api-keys',
+        'get-key-string',
+        uid,
+        `--project=${gcpProject}`,
+        '--format=value(keyString)',
+      ]);
+      keyString = stdout.trim();
+      if (!keyString) throw new Error('gcloud did not return the new key string.');
+    } catch (error) {
+      await rollback();
+      throw error;
+    }
 
     return {
       description: `Gemini key "${displayName}" in ${gcpProject}`,
       secrets: { GEMINI_API_KEY: keyString },
-      rollback: async () => {
-        await exec('gcloud', [
-          'services',
-          'api-keys',
-          'delete',
-          uid,
-          `--project=${gcpProject}`,
-          '--quiet',
-        ]);
-      },
+      rollback,
     };
   },
 };
